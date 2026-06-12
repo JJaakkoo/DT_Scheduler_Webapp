@@ -1,1 +1,7 @@
 @import "tailwindcss";
+
+@theme {
+    --color-dreamtea-light: #B0E3F6;
+    --color-dreamtea-dark: #9FCBEB;
+    --color-dreamtea-white: #FDFDFE;
+}
