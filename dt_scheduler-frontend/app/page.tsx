@@ -8,12 +8,35 @@ export default function Home() {
             alt="The inside of Dream Tea"
             className="absolute top-0 right-0 h-full w-max-0.7 object-cover"
           />
-        <div className="relative z-10 w-[448] h-[540] bg-dreamtea-white rounded-3xl flex-col">
-          
-        </div>
+
+          {/* Log In Page Container */}
+          <div className="relative z-10 max-w-[448] h-[540] bg-dreamtea-white rounded-3xl flex flex-col items-center shrink-0 p-8">
+            
+            {/* Logo and Title Container */}
+            <div className="flex flex-row items-center">
+              <img
+                src="/dreamtealogo.svg"
+                alt="Dream Tea Logo"
+                className="object-contain"
+              />
+              <h1 className="font-inter font-bold text-[12px] text-left text-text-primary p-1">
+                Dream Tea Nexus
+              </h1>
+            </div>
+
+            {/* Welcome Back Container */}
+            <h1 className="font-inter font-bold text-[40px] p-10">
+              Welcome Back
+            </h1>
+
+            <div className="h-[100] w-[100] border-2">
+            </div>
+            <div className="h-[100] w-[100] border-2">
+            </div>
+          </div>
         </div>
       </div>
     </main>
   );
 
-}
+}``

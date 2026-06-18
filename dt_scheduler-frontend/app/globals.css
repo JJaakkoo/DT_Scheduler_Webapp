@@ -4,4 +4,7 @@
     --color-dreamtea-light: #B0E3F6;
     --color-dreamtea-dark: #9FCBEB;
     --color-dreamtea-white: #FDFDFE;
+    --color-text-primary: #1F1F1F;
+
+    --font-inter: var(--font-inter), sans-serif;
 }
