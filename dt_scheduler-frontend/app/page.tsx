@@ -13,26 +13,31 @@ export default function Home() {
           <div className="relative z-10 max-w-[448] h-[540] bg-dreamtea-white rounded-3xl flex flex-col items-center shrink-0 p-8">
             
             {/* Logo and Title Container */}
-            <div className="flex flex-row items-center">
+            <div className="flex flex-row items-center mb-6">
               <img
                 src="/dreamtealogo.svg"
                 alt="Dream Tea Logo"
                 className="object-contain"
               />
-              <h1 className="font-inter font-bold text-[12px] text-left text-text-primary p-1">
+              <h1 className="font-inter font-bold text-[16px] text-left text-text-primary p-1">
                 Dream Tea Nexus
               </h1>
             </div>
 
             {/* Welcome Back Container */}
-            <h1 className="font-inter font-bold text-[40px] p-10">
+            <h1 className="font-inter font-bold text-[40px] text-text-primary p-8">
               Welcome Back
             </h1>
 
-            <div className="h-[100] w-[100] border-2">
+            {/* Nexus Portal Login */}
+            <h1 className="font-inter font-bold text-[16px] text-text-primary p-2">
+              Nexus Portal Login
+            </h1>
+
+            <div className="border-2">
+
             </div>
-            <div className="h-[100] w-[100] border-2">
-            </div>
+
           </div>
         </div>
       </div>
