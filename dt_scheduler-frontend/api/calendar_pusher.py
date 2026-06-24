@@ -6,47 +6,42 @@ August 14, 2025'''
 from googleapiclient.errors import HttpError   
 
 def add_events_to_calendar(calendar_service, events):
-    print("Adding events to calendar...")
-
+    '''
+    Adds a list of events to the Google Calendar.
+    returns the number of failed events.
+    '''
     failed_events = 0
 
     for event in events:
-        print(event)
-        print(f"Adding: {event.get('summary', "Unknown Shift")} at {event.get("start", {}).get("dateTime", "Unknown Time")}...")
-
         try:
             event = calendar_service.events().insert(
                 calendarId='primary', 
                 body=event
             ).execute()
-            print(f"Shift added: {event.get('htmlLink')}")
-            
 
         except HttpError as error:
-            print(f"An error occurred: {error}")
-            print("Failed to add shift.")
+            print(f"Failed to add shift: {error}")
             failed_events += 1
 
     return failed_events
 
 def delete_events_from_calendar(calendar_service, events):
-    print("Deleting events from calendar...")
-
+    '''
+    Deletes a list of events from the Google Calendar.
+    returns the number of failed deletions.
+    '''
     failed_events = 0
 
     for event in events:
         event_id = event.get("event_id")
         try:
-            print(f"Deleting event with ID: {event_id}...")
             calendar_service.events().delete(
                 calendarId='primary',
                 eventId=event_id
             ).execute()
-            print("Event deleted successfully.")
 
         except HttpError as error:
-            print(f"An error occurred: {error}")
-            print("Failed to delete event.")
+            print(f"Failed to delete event: {error}")
             failed_events += 1
 
     return failed_events

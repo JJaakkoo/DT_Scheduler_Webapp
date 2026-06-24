@@ -5,13 +5,15 @@ August 14, 2025
 '''
 import base64
 import time
+import io
 
-def FDprocess(gmail_service):
-    print("Finding Dream Tea Schedule email...")
-    search_query = 'from:dreamteahousejacky@gmail.com subject:"Schedule" has:attachment'
+def FDprocess(gmail_service, search_query='from:dreamteahousejacky@gmail.com subject:"Schedule" has:attachment'):
+    '''
+    Pulls emails from the Gmail account using the Gmail API.
+    returns the filename of the latest attachment if found, otherwise None.
+    '''
 
     # look for email matching the search query
-    print(f"Search query: {search_query}")
     tries = 10
     while tries > 0:
         try:
@@ -25,22 +27,20 @@ def FDprocess(gmail_service):
                 print("Trying again...")
             else:
                 print("All 10 attempts failed. Please check your internet connection")
-                return None
+                return None, None
     
     threads = results.get("threads", [])
 
-    # did we find any emaisl?
+    # did we find any emails?
     if not threads:
-        print("No threads found")
-        return None
+        return None, None
     
     latest_thread_id = threads[0]["id"]
-    print(f"Found a thread!! ID: {latest_thread_id}")
 
     # get the full thread
     thread = gmail_service.users().threads().get(userId="me", id=latest_thread_id).execute()
 
-    # get the latest attachemtn
+    # get the latest attachment
     for message in reversed(thread["messages"]):
         attachment_part = None
         filename = None
@@ -51,17 +51,13 @@ def FDprocess(gmail_service):
 
             if filename and filename.endswith('.xlsx'):
                 attachment_part = part
-                print(f"Found an attachment: {filename}")
                 attachment_id = attachment_part["body"]["attachmentId"]
                 data = gmail_service.users().messages().attachments().get(userId='me', messageId=message['id'], id=attachment_id).execute()['data']
                 
-                # decode and save file
+                # decode and load file into memory buffer
                 file_data = base64.urlsafe_b64decode(data.encode('UTF-8'))
-                with open(filename, "wb") as f:
-                    f.write(file_data)
+                file_stream = io.BytesIO(file_data)
 
-                print(f"Attachement saved")
-                return filename
+                return filename, file_stream
             
-    print("Couldn't find an excel attachment :(")
-    return None
+    return None, None
