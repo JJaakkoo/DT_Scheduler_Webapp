@@ -2,7 +2,6 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   async rewrites() {
-    // Only proxy to a local Flask server when developing
     return process.env.NODE_ENV === "development"
       ? [
           {

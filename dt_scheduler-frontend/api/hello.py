@@ -10,5 +10,4 @@ def hello_world():
     })
 
 if __name__ == '__main__':
-    # This only runs on your local machine, never in the cloud
     app.run(port=5328)
