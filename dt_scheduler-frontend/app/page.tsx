@@ -1,4 +1,12 @@
+"use client";
+
+import { useState } from "react";
+
 export default function Home() {
+
+  // State for the "Remember me" button
+  const [isRemembered, setIsRemembered] = useState(false);
+
   return (
     <main className="h-screen w-screen flex items-center justify-center bg-dreamtea-light p-8">
       <div className="w-full max-w-5xl h-[540] bg-white rounded-3xl flex-row overflow-hidden shadow-xl">
@@ -34,8 +42,39 @@ export default function Home() {
               Nexus Portal Login
             </h1>
 
-            <div className="border-2">
+            {/* Login Items Container*/}
+            <div className="border-2 w-full flex flex-col items-center justify-center m-[30] gap-3">
 
+              {/* User Name Container */}
+              <div className="border-2 w-[240] h-[54] flex items-center justify-center rounded-3xl">
+
+              </div>
+
+              {/* Password Container */}
+              <div className="border-2 w-[240] h-[54] flex items-center justify-center rounded-3xl">
+
+              </div>
+
+              {/* Log In Button & Remember Me Container */}
+              <div className="border-2 w-[240] h-[42] flex items-center p-[2]">
+                
+                {/* Remember me button */}
+                <button 
+                  type="button"
+                  onClick={() => setIsRemembered(!isRemembered)}
+                  className="w-4 h-4 rounded-full flex items-center justify-center transition-all focus:outline-none border-[2] border-[#8C8C8D] bg-transparent hover:bg-gray-100">
+                
+                  {isRemembered && (
+                    <div className="w-2 h-2 rounded-full bg-black" />
+                  )}
+                </button>
+
+                {/* Optional text label next to the button inside the flex row */}
+                <span className="text-xs ml-1 text-gray-700 select-none">
+                  Remember me
+                </span>
+
+              </div>
             </div>
 
           </div>
