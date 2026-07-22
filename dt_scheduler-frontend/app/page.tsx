@@ -15,9 +15,9 @@ export default function Home() {
   // Mount the Google Identity Services script
   useEffect(() => {
     // 1. Define the callback function LOCALLY
-    // @ts-ignore - Bypass strict parameter typing for this callback
+    // @ts-ignore - Tell VS Code to bypass strict parameter typing
     function handleGoogleResponse(response) {
-      console.log("SUCCESS! Encoded JWT ID token: ", response.credential);
+      // TODO: Send response.credential to your backend database to verify the user!
     }
 
     // 2. Wrap initialization in a reusable function
