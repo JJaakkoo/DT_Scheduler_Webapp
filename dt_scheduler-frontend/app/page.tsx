@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function Home() {
   // State for the "Remember me" button
@@ -9,14 +9,70 @@ export default function Home() {
   // State for the password visibility toggle
   const [showPassword, setShowPassword] = useState(false);
 
+  // State for the dummy login error
+  const [loginError, setLoginError] = useState("");
+
+  // Mount the Google Identity Services script
+  useEffect(() => {
+    // 1. Define the callback function LOCALLY
+    // @ts-ignore - Bypass strict parameter typing for this callback
+    function handleGoogleResponse(response) {
+      console.log("SUCCESS! Encoded JWT ID token: ", response.credential);
+    }
+
+    // 2. Wrap initialization in a reusable function
+    function initGoogleButton() {
+      // @ts-ignore - Tell VS Code to bypass strict window type checking
+      const google = window.google;
+      if (google) {
+        google.accounts.id.initialize({
+          // Pull the ID securely from your environment variables!
+          client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
+          callback: handleGoogleResponse, 
+        });
+
+        google.accounts.id.renderButton(
+          document.getElementById("googleSignInDiv"),
+          { 
+            theme: "outline", 
+            size: "large", 
+            shape: "pill", // Matches your rounded design
+            width: 280,
+            text: "signin_with" 
+          }
+        );
+      }
+    }
+
+    // 3. Singleton Script Loader (Prevents double-loading on Fast Refresh)
+    const scriptId = "google-gsi-script";
+    const existingScript = document.getElementById(scriptId);
+
+    if (!existingScript) {
+      const script = document.createElement("script");
+      script.id = scriptId;
+      script.src = "https://accounts.google.com/gsi/client";
+      script.async = true;
+      script.defer = true;
+      script.onload = initGoogleButton;
+      document.head.appendChild(script);
+    } else {
+      // If script is already loaded (like during a Fast Refresh), just re-render the button
+      initGoogleButton();
+    }
+    
+    // Notice we removed the cleanup function! 
+    // We want to keep the script in the document so we don't redownload it constantly.
+  }, []);
+
   return (
-    // Fallback background color added just in case 'bg-dreamtea-light' isn't in your tailwind config yet
-    <main className="h-screen w-screen flex items-center justify-center bg-[#B3E5FC] bg-dreamtea-light p-8">
+    // Background color and font are now handled globally in globals.css!
+    <main className="h-screen w-screen flex items-center justify-center p-8">
       
-      {/* Main Container - Changed to relative for absolute image layering */}
+      {/* Main Container */}
       <div className="w-full max-w-5xl h-[540px] rounded-3xl flex overflow-hidden shadow-xl relative bg-white">
         
-        {/* Background Image - Anchored right, tucked exactly 1/3 under the left panel to center the light bulb */}
+        {/* Background Image - Anchored right, tucked exactly 1/3 under the left panel */}
         <img
           src="/Background Image.png"
           alt="The inside of Dream Tea"
@@ -24,7 +80,7 @@ export default function Home() {
         />
 
         {/* LEFT PANEL: Login Form */}
-        <div className="w-[448px] h-full bg-white rounded-3xl shadow-[4px_0_24px_rgba(0,0,0,0.15)] flex flex-col items-center justify-center p-8 shrink-0 relative z-10">
+        <div className="w-full max-w-[448px] h-full bg-white rounded-3xl shadow-[var(--shadow-panel)] flex flex-col items-center justify-center p-6 sm:p-8 shrink-0 relative z-10">
           
           {/* Logo and Title Container */}
           <div className="flex flex-row items-center w-full justify-center mb-6">
@@ -33,31 +89,31 @@ export default function Home() {
               alt="Dream Tea Logo"
               className="object-contain w-8 h-8 mr-2"
             />
-            <h1 className="font-inter font-bold text-lg text-gray-800">
+            <h1 className="font-bold text-lg text-text-primary">
               Dream Tea Nexus
             </h1>
           </div>
 
           {/* Headers */}
-          <h1 className="font-inter font-bold text-[36px] text-gray-900">
+          <h1 className="font-bold text-[36px] text-text-primary">
             Welcome Back
           </h1>
-          <h2 className="font-inter font-bold text-[14px] text-gray-700 mt-2 mb-8">
+          <h2 className="font-bold text-[14px] text-text-secondary mt-2 mb-8">
             Nexus Portal Login
           </h2>
 
           {/* Login Items Container */}
           <div className="w-full flex flex-col items-center gap-4">
 
-            {/* Username Container */}
+            {/* Username Container (Using our custom CSS component!) */}
             <input
               type="text"
               placeholder="Username or Email"
-              className="w-full max-w-[280px] h-[48px] border border-gray-500 rounded-full px-5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
+              className="input-nexus"
             />
 
-            {/* Password Container */}
-            <div className="w-full max-w-[280px] h-[48px] border border-gray-500 rounded-full px-5 flex items-center bg-white focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 transition-all">
+            {/* Password Container (Using our custom CSS component!) */}
+            <div className="input-nexus-group">
               <input
                 type={showPassword ? "text" : "password"}
                 placeholder="Password"
@@ -67,7 +123,7 @@ export default function Home() {
               <button 
                 type="button" 
                 onClick={() => setShowPassword(!showPassword)}
-                className="text-gray-400 hover:text-gray-600 focus:outline-none"
+                className="text-text-tertiary hover:text-text-secondary focus:outline-none transition-colors"
               >
                 {showPassword ? (
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
@@ -86,43 +142,52 @@ export default function Home() {
             <div className="w-full max-w-[280px] flex items-center justify-between mt-2">
               
               {/* Remember me toggle */}
-              <div className="flex items-center cursor-pointer" onClick={() => setIsRemembered(!isRemembered)}>
+              <div className="flex items-center cursor-pointer group" onClick={() => setIsRemembered(!isRemembered)}>
                 <button 
                   type="button"
-                  className="w-4 h-4 rounded-full flex items-center justify-center transition-all focus:outline-none border-[1.5px] border-gray-500 bg-transparent"
+                  className="w-4 h-4 rounded-full flex items-center justify-center transition-all focus:outline-none border-[1.5px] border-gray-500 bg-transparent group-hover:border-dreamtea-blue"
                 >
                   {isRemembered && (
-                    <div className="w-2 h-2 rounded-full bg-gray-600" />
+                    <div className="w-2 h-2 rounded-full bg-text-secondary" />
                   )}
                 </button>
-                <span className="text-xs ml-2 text-gray-500 select-none">
+                <span className="text-xs ml-2 text-text-secondary select-none">
                   Remember me
                 </span>
               </div>
 
-              {/* Log In Button */}
-              <button type="button" className="bg-[#8BB9D9] hover:bg-[#7aa8c8] text-white text-sm font-semibold py-2 px-8 rounded-full transition-colors shadow-sm">
+              {/* Log In Button (Using our custom CSS component!) */}
+              <button 
+                type="button" 
+                className="btn-nexus"
+                onClick={() => setLoginError("Your username or password is incorrect.")}
+              >
                 Log In
               </button>
             </div>
 
+            {/* Error Message Display */}
+            {loginError && (
+              <span className="text-red-500 text-xs font-medium -mt-2 text-center max-w-[280px]">
+                {loginError}
+              </span>
+            )}
+
             {/* Forgot Password */}
-            <span className="text-[10px] text-gray-400 cursor-pointer hover:underline mt-1">
+            <span className="text-[10px] text-text-tertiary cursor-pointer hover:text-text-secondary hover:underline mt-1 transition-colors">
               Forgot Password?
             </span>
 
-            {/* OR Divider */}
+            {/* OR Divider (Using our custom CSS component!) */}
             <div className="w-full max-w-[280px] flex items-center gap-3 my-2">
-              <div className="flex-1 border-t border-gray-400"></div>
-              <span className="text-xs text-gray-600 font-medium">or</span>
-              <div className="flex-1 border-t border-gray-400"></div>
+              <div className="divider-nexus"></div>
+              <span className="text-xs text-text-secondary font-medium">or</span>
+              <div className="divider-nexus"></div>
             </div>
 
-            {/* Temporary Placeholder for Google Button */}
-            <div className="w-full max-w-[280px] h-[40px] border border-gray-400 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-50 transition-colors">
-              <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-4 h-4 mr-2" />
-              <span className="text-sm font-medium text-gray-700">Sign in with Google</span>
-            </div>
+            {}
+            {/* The Real Google Sign-In Button Container */}
+            <div id="googleSignInDiv" className="w-full max-w-[280px] flex justify-center mt-1 min-h-[44px]"></div>
 
           </div>
         </div>

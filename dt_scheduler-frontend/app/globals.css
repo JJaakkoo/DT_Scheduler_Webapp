@@ -1,10 +1,36 @@
-@import "tailwindcss";
+@import "tailwindcss";@theme {/* Brand Colors */--color-dreamtea-light: #B0E3F6;--color-dreamtea-dark: #9FCBEB;--color-dreamtea-white: #FDFDFE;/* Interactive Colors (Buttons & Rings) */
+--color-dreamtea-blue: #8BB9D9;
+--color-dreamtea-blue-hover: #7aa8c8;
 
-@theme {
-    --color-dreamtea-light: #B0E3F6;
-    --color-dreamtea-dark: #9FCBEB;
-    --color-dreamtea-white: #FDFDFE;
-    --color-text-primary: #1F1F1F;
+/* Text Colors */
+--color-text-primary: #1F1F1F;
+--color-text-secondary: #4B5563; 
+--color-text-tertiary: #9CA3AF; 
 
-    --font-inter: var(--font-inter), sans-serif;
+/* Typography */
+--font-inter: var(--font-inter), sans-serif;
+
+/* Custom Depth / Shadows */
+--shadow-panel: 4px 0 24px rgba(0, 0, 0, 0.15);
+}@layer base {body {/* Applies our brand background and font globally to prevent repeating classes */@apply bg-dreamtea-light text-text-primary font-inter antialiased overflow-x-hidden;}}@layer components {/* Standardized Input Field */
+.input-nexus {
+    @apply w-full max-w-[280px] h-[48px] border border-gray-500 rounded-full px-5 text-sm bg-transparent outline-none transition-all;
+    @apply focus:border-dreamtea-blue focus:ring-1 focus:ring-dreamtea-blue;
+}
+
+/* Standardized Password Container (to handle the eye icon flex layout) */
+.input-nexus-group {
+    @apply w-full max-w-[280px] h-[48px] border border-gray-500 rounded-full px-5 flex items-center bg-white transition-all;
+    @apply focus-within:border-dreamtea-blue focus-within:ring-1 focus-within:ring-dreamtea-blue;
+}
+
+/* Standardized Primary Button */
+.btn-nexus {
+    @apply bg-dreamtea-blue hover:bg-dreamtea-blue-hover text-white text-sm font-semibold py-2 px-8 rounded-full transition-colors shadow-sm;
+}
+
+/* Standardized Divider Line */
+.divider-nexus {
+    @apply flex-1 border-t border-gray-400;
+}
 }
