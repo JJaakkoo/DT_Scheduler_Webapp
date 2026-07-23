@@ -1,4 +1,5 @@
 import os
+import sys
 import json
 from flask import Flask, jsonify, request, Response
 from flask_cors import CORS
@@ -12,6 +13,9 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
+
+current_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(current_dir)
 
 # Import your existing custom functions
 from email_puller import FDprocess
