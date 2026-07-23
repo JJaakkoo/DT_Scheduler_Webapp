@@ -128,6 +128,14 @@ def download_schedule():
              
         # Parse the Excel file in memory
         shifts, start_date, end_date = process_schedule_file(file_stream, file_name=filename, name=employee_name)
+
+        # 1. If the name wasn't on the sheet at all (processor returned a string)
+        if isinstance(shifts, str):
+            return jsonify({"error": f"No shifts found for {employee_name}."}), 404
+            
+        # 2. If the name was found but they have 0 shifts (processor returned an empty list)
+        if len(shifts) == 0:
+            return jsonify({"error": f"No shifts found for {employee_name}."}), 404
         
         if not shifts:
             return jsonify({"message": f"No shifts found for {employee_name}"}), 404
