@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 export default function Home() {
   // State for the "Remember me" button
@@ -12,18 +13,23 @@ export default function Home() {
   // State for the dummy login error
   const [loginError, setLoginError] = useState("");
 
-  // Mount the Google Identity Services script
+  // Initialize the Next.js router for page navigation
+  const router = useRouter();
+
   useEffect(() => {
-    // 1. Define the callback function LOCALLY
-    // @ts-ignore - Tell VS Code to bypass strict parameter typing
-    function handleGoogleResponse(response) {
+    // 1. Define the callback function LOCALLY with proper TS typing
+    function handleGoogleResponse(response: any) {
       // TODO: Send response.credential to your backend database to verify the user!
+      
+      // Navigate to the dashboard on successful login!
+      router.push("/dashboard");
     }
 
     // 2. Wrap initialization in a reusable function
     function initGoogleButton() {
-      // @ts-ignore - Tell VS Code to bypass strict window type checking
-      const google = window.google;
+      // Safely cast window to 'any' to bypass strict TS checking for the injected google object
+      const google = (window as any).google;
+      
       if (google) {
         google.accounts.id.initialize({
           // Pull the ID securely from your environment variables!
@@ -61,12 +67,9 @@ export default function Home() {
       initGoogleButton();
     }
     
-    // Notice we removed the cleanup function! 
-    // We want to keep the script in the document so we don't redownload it constantly.
-  }, []);
+  }, [router]); // Added router to the dependency array
 
   return (
-    // Background color and font are now handled globally in globals.css!
     <main className="h-screen w-screen flex items-center justify-center p-8">
       
       {/* Main Container */}
@@ -80,7 +83,7 @@ export default function Home() {
         />
 
         {/* LEFT PANEL: Login Form */}
-        <div className="w-full max-w-[448px] h-full bg-white rounded-3xl shadow-[var(--shadow-panel)] flex flex-col items-center justify-center p-6 sm:p-8 shrink-0 relative z-10">
+        <div className="w-full max-w-[448px] h-full bg-white rounded-3xl shadow-[var(--shadow-panel)] flex flex-col items-center justify-center p-4 sm:p-8 shrink-0 relative z-10">
           
           {/* Logo and Title Container */}
           <div className="flex flex-row items-center w-full justify-center mb-6">
@@ -105,14 +108,14 @@ export default function Home() {
           {/* Login Items Container */}
           <div className="w-full flex flex-col items-center gap-4">
 
-            {/* Username Container (Using our custom CSS component!) */}
+            {/* Username Container */}
             <input
               type="text"
               placeholder="Username or Email"
               className="input-nexus"
             />
 
-            {/* Password Container (Using our custom CSS component!) */}
+            {/* Password Container */}
             <div className="input-nexus-group">
               <input
                 type={showPassword ? "text" : "password"}
@@ -156,7 +159,7 @@ export default function Home() {
                 </span>
               </div>
 
-              {/* Log In Button (Using our custom CSS component!) */}
+              {/* Log In Button */}
               <button 
                 type="button" 
                 className="btn-nexus"
@@ -178,14 +181,13 @@ export default function Home() {
               Forgot Password?
             </span>
 
-            {/* OR Divider (Using our custom CSS component!) */}
+            {/* OR Divider */}
             <div className="w-full max-w-[280px] flex items-center gap-3 my-2">
               <div className="divider-nexus"></div>
               <span className="text-xs text-text-secondary font-medium">or</span>
               <div className="divider-nexus"></div>
             </div>
 
-            {}
             {/* The Real Google Sign-In Button Container */}
             <div id="googleSignInDiv" className="w-full max-w-[280px] flex justify-center mt-1 min-h-[44px]"></div>
 
