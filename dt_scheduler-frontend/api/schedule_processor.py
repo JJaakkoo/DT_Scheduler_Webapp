@@ -1,98 +1,7 @@
-'''
-Processes the excel schedule file and returns a list of shifts in a format
-Jako Zeng
-August 19, 2025
-'''
-
 import pandas as pd
 from datetime import datetime
 
-def shift_sync_instructions(given_shifts, existing_shifts):
-    sync_instructions = []
-    for day in range(given_shifts["start_date"], given_shifts["end_date"]+1):
-        day = str(day)
-        if len(day) == 1:
-            day = "0" + day
-        #print(f"{day}: given   : {given_shifts[day]}\n{day}: existing: {existing_shifts[day]}")
-        if given_shifts[day] == None and existing_shifts[day] != None:
-            #print(f"Delete shift on {day}: {existing_shifts[day]}")
-            sync_instructions.append({
-                "instruction": "delete",
-                "event": existing_shifts[day],
-                "event_id": existing_shifts[day].split(" ")[-1][1:-1]
-            })
-        elif given_shifts[day] != None and existing_shifts[day] == None:
-            print(f"Add shift on {day}: {given_shifts[day]}")
-            sync_instructions.append({
-                "instruction": "add",
-                "event": {
-                        "summary": f"{given_shifts[day].split(': ')[-1]}",
-                        "description": f"Dream Tea Shift. This was added automatically by my schedule script.",
-                        "start": {
-                            "dateTime": given_shifts[day].split(" ")[0],
-                            "timeZone": "America/Edmonton"
-                        },
-                        "end": {
-                            "dateTime": given_shifts[day].split(" ")[2][:-1],
-                            "timeZone": "America/Edmonton"
-                        },
-                        "colorId": "11"
-                    }
-            })
-        elif given_shifts[day] != None and existing_shifts[day] != None:
-            if given_shifts[day] not in existing_shifts[day]:
-                print(f"Update shift on {day}: from {existing_shifts[day]} to {given_shifts[day]}")
-                sync_instructions.append({
-                    "instruction": "delete",
-                    "event": existing_shifts[day],
-                    "event_id": existing_shifts[day].split(" ")[-1][1:-1]
-                })
-                sync_instructions.append({
-                    "instruction": "add",
-                    "event": {
-                            "summary": f"{given_shifts[day].split(': ')[-1]}",
-                            "description": f"Dream Tea Shift. This was added automatically by my schedule script.",
-                            "start": {
-                                "dateTime": given_shifts[day].split(" ")[0],
-                                "timeZone": "America/Edmonton"
-                            },
-                            "end": {
-                                "dateTime": given_shifts[day].split(" ")[2][:-1],
-                                "timeZone": "America/Edmonton"
-                            },
-                            "colorId": "11"
-                            }
-                })
-            else:
-                print(f"No change needed for shift on day: {day}")
-                
-        else:
-            
-            print(f"No shift on day: {day}")
-        
-    print("\nSync instructions created: ")
-    if len(sync_instructions) == 0:
-        print("No changes needed, calendar is already up to date!")
-    else:
-        for instruction in sync_instructions:
-            print(instruction)
-    return sync_instructions
-
-def map_shifts (start, end, shifts):
-    mapped_shifts = {
-        "start_date": start,
-        "end_date": end
-    }
-    for i in range(start,end+1):
-        if len(str(i)) == 1:
-            mapped_shifts["0"+str(i)] = None
-        else:
-            mapped_shifts[str(i)] = None
-    for shift in shifts:
-        mapped_shifts[str(shift.split(" ")[0].split("T")[0].split("-")[-1])] = shift
-        
-    return mapped_shifts
-
+# --- Helper Functions ---
 def get_lower_bound_period(lower_bound, upper_bound):
     try:
         if type(lower_bound) != int:
@@ -106,13 +15,10 @@ def get_lower_bound_period(lower_bound, upper_bound):
             return "pm"
 
     except ValueError:
-        print("int conversion error")
+        print("DEBUG [Helper]: int conversion error in get_lower_bound_period")
         return "pm"
     
 def process_month_day(date_str=str):
-    '''
-    takes string containing month and day and returns a string in the format "day month"
-    '''
     date_str = date_str.split(" ")
     try:
         int(date_str[0])
@@ -120,14 +26,10 @@ def process_month_day(date_str=str):
     except ValueError:
         return f"{date_str[1]} {date_str[0][:3]}"
 
-
 def process_time_cell(cell):
-    #print(f"Processing cell: {cell}")
-    # clean up the cell and splits it into start and end times
     cell = str(cell).strip()
     cell_times = cell.split("-")
 
-    # get the location
     for i, cell_time in enumerate(cell_times):
         holder = 0
         location_holder = []
@@ -139,12 +41,14 @@ def process_time_cell(cell):
             holder = len(location)
         cell_times[i] = cell_times[i][holder:]
 
-    #print(f"location: {location}, cell_times: {cell_times}")
     return location, cell_times
 
-def process_schedule_file(file_path,name="jako"):
 
-    print(f"Processing schedule file for {name}...")
+# --- Main Processing Function ---
+def process_schedule_file(file_stream, file_name, name="jako"):
+    print("\n" + "="*50)
+    print(f"DEBUG: Starting schedule processing for: '{name}'")
+    print(f"DEBUG: Filename received from email: '{file_name}'")
 
     name = str(name).lower().strip()
     locations = {
@@ -153,31 +57,41 @@ def process_schedule_file(file_path,name="jako"):
         "N": "North Location",
         "DT": "Downtown"
         }
-    year = str(file_path).split(" ")[5]
+    
+    # 1. Safely extract the year
+    try:
+        year = str(file_name).split(" ")[5]
+        print(f"DEBUG: Extracted year from filename: '{year}'")
+    except IndexError:
+        year = str(datetime.now().year)
+        print(f"DEBUG: Filename split failed. Defaulting year to: '{year}'")
 
     try:
-
         shifts = []
         format_code = "%I:%M%p %d %b"
         added_shifts = False
 
-        df = pd.read_excel(file_path)
-        #print("Excel File read successfully")
+        # 2. Read the excel data directly from the memory stream
+        print("DEBUG: Loading Excel file into pandas dataframe...")
+        df = pd.read_excel(file_stream)
+        print(f"DEBUG: Excel file loaded successfully. Grid size: {df.shape}")
 
-        # Finds the coloumn my name is in
+        # 3. Find the column the target name is in
         my_col = None
-        for i,cell in enumerate(df.iloc[0]):
+        for i, cell in enumerate(df.iloc[0]):
             try:
-                if cell.lower().strip() == name:
-                    #print(f"Found {name} in column {i}: {cell.lower().strip()}")
+                if str(cell).lower().strip() == name:
                     my_col = i
+                    print(f"DEBUG: Success! Found '{name}' at column index: {i}")
                     break
             except AttributeError:
                 continue
+                
         if my_col is None:
-            return f"Could not find {name} in the schedule"
+            print(f"DEBUG: ERROR. Could not find column for '{name}'.")
+            return f"Could not find {name} in the schedule", "", ""
 
-        # Finds the range of cells that contains shifts
+        # 4. Find the range of cells that contains dates
         start_row, end_row = None, None
         for i, cell in enumerate(df.iloc[:,0]):
             if start_row is None and type(cell) == str:
@@ -185,39 +99,40 @@ def process_schedule_file(file_path,name="jako"):
             elif start_row is not None and type(cell) != str:
                 end_row = i-1
                 break
+                
+        print(f"DEBUG: Schedule date rows detected from row {start_row} to {end_row}")
 
-        # processes the individual shifts and puts it into a list
-        
-
+        # 5. Process the individual shifts
+        print(f"DEBUG: Scanning column {my_col} for shifts containing a hyphen...")
         for i, cell in enumerate(df.iloc[:,my_col]):
-            #print(df.iloc[i,0], i)
-
+            
             if "-" in str(cell).lower():
-
+                print(f"\nDEBUG: --- Analyzing cell at row {i} ---")
+                print(f"DEBUG: Raw cell data: '{cell}'")
+                print(f"DEBUG: Corresponding date column data: '{df.iloc[i,0]}'")
+                
                 location, time_bounds = process_time_cell(cell)
-                #print(f"time_bounds: {time_bounds}")
+                print(f"DEBUG: Parsed Location Code: '{location}' | Time Bounds: {time_bounds}")
+                
                 if ":" not in time_bounds[0]:
-                    #print(f"adding :00 to {time_bounds[0]}")
                     time_bounds[0] = time_bounds[0]+":00"
                 if ":" not in time_bounds[1]:
-                    #print(f"adding :00 to {time_bounds[1]}")
                     time_bounds[1] = time_bounds[1]+":00"
-                try:
                     
-                    start_time = f"{datetime.strptime(
-                                start := f"{time_bounds[0]}{get_lower_bound_period(time_bounds[0],time_bounds[1])} {process_month_day(df.iloc[i,0])} {year}", 
-                                f"{format_code} %Y"
-                                )}"
-                    end_time = f"{datetime.strptime(
-                                end := f"{time_bounds[1]}pm {process_month_day(df.iloc[i,0])} {year}", 
-                                f"{format_code} %Y"
-                                )}"
+                try:
+                    raw_start_string = f"{time_bounds[0]}{get_lower_bound_period(time_bounds[0],time_bounds[1])} {process_month_day(df.iloc[i,0])} {year}"
+                    raw_end_string = f"{time_bounds[1]}pm {process_month_day(df.iloc[i,0])} {year}"
+                    
+                    print(f"DEBUG: Attempting to convert string to datetime: '{raw_start_string}'")
+                    
+                    start_time = f"{datetime.strptime(raw_start_string, f'{format_code} %Y')}"
+                    end_time = f"{datetime.strptime(raw_end_string, f'{format_code} %Y')}"
                     
                     start_time = start_time.replace(" ", "T")
                     end_time = end_time.replace(" ", "T")
 
                     shifts.append({
-                        "summary": f"Work at {locations[location]}",
+                        "summary": f"Work at {locations.get(location, 'Unknown Location')}",
                         "description": f"Dream Tea Shift. This was added automatically by my schedule script.",
                         "start": {
                             "dateTime": start_time,
@@ -230,31 +145,22 @@ def process_schedule_file(file_path,name="jako"):
                         "colorId": "11"
                     })
                     added_shifts = True
-                    print(f"{start} to {end}")
-                    print(f"{df.iloc[i,0]} {time_bounds[0]}{get_lower_bound_period(time_bounds[0],time_bounds[1])}-{time_bounds[1]}pm ({locations[location]})")
-                except KeyError as oops:
-                    print(f"KeyError occurred: {oops}")
+                    print(f"DEBUG: Shift successfully added! ({start_time} to {end_time})")
+                    
+                except Exception as oops:
+                    # Broadened from KeyError to Exception to catch ValueError during datetime conversion
+                    print(f"DEBUG: [CRITICAL ERROR] Failed to parse shift on row {i}!")
+                    print(f"DEBUG: Error details: {oops}")
                     continue
+                    
         if not added_shifts:  
-            #print("No shifts found in the schedule for the given name")
-            return shifts, "", ""
+            print("DEBUG: Loop finished. Zero shifts were successfully parsed.")
+            return [], "", ""
         
-        # Range of the given schedule
-        #print(f"\n{df.iloc[1,0]} {df.iloc[i-1,0]}")
-
+        print(f"\nDEBUG: Processing complete. Total shifts found: {len(shifts)}")
+        print("="*50 + "\n")
         return shifts, f"{process_month_day(df.iloc[start_row,0])} {year}", f"{process_month_day(df.iloc[end_row,0])} {year}"
     
-    except FileNotFoundError:
-        print(f"couldnt find the file: {file_path}")
     except Exception as e:
-        print(f"An error occured: {e}")
-
-if __name__ == "__main__":
-    test_string = "Bobby, Kim, Hyo, Kristen, Chelsey, Jeremy, Sonja, Reane, Yujung, Tricia, Katrina, Jason, Jako, Nick, Alina, Sophia.H, Katelyn, Michael, Jessie, Emily, Phoebe, Terence, Amy, Ervin, Holly, Jacky, Rocky, Gian, Thomas, Sherry, Natalie, Rachel, Cathy".split(", ")
-    file_name = "Dream Tea Schedule Aug 16-31 2025 Final for all locationstest.xlsx"
-    if False:
-        for test_name in test_string:
-            process_schedule_file(file_name, name=test_name)
-            print("\n")
-    else:
-        process_schedule_file(file_name, name="jako")  
+        print(f"DEBUG: [FATAL ERROR] An unexpected error crashed the main processor: {e}")
+        return [], "", ""
