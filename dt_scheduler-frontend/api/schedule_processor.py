@@ -164,3 +164,120 @@ def process_schedule_file(file_stream, file_name, name="jako"):
     except Exception as e:
         print(f"DEBUG: [FATAL ERROR] An unexpected error crashed the main processor: {e}")
         return [], "", ""
+
+
+def process_full_schedule(file_stream, file_name):
+    """
+    Parses the entire Excel schedule at once, returning a master dictionary
+    containing every employee and all of their shifts.
+    """
+    print("\n" + "="*50)
+    print(f"DEBUG: Starting FULL schedule processing for EVERYONE")
+    print(f"DEBUG: Filename received from email: '{file_name}'")
+
+    locations = {
+        "H": "Heritage Square",
+        "S": "Whyte Avenue",
+        "N": "North Location",
+        "DT": "Downtown"
+        }
+    
+    # 1. Safely extract the year
+    try:
+        year = str(file_name).split(" ")[5]
+        print(f"DEBUG: Extracted year from filename: '{year}'")
+    except IndexError:
+        year = str(datetime.now().year)
+        print(f"DEBUG: Filename split failed. Defaulting year to: '{year}'")
+
+    try:
+        master_schedule_dict = {}
+        format_code = "%I:%M%p %d %b"
+
+        # 2. Read the excel data directly from the memory stream
+        print("DEBUG: Loading Excel file into pandas dataframe...")
+        df = pd.read_excel(file_stream)
+        print(f"DEBUG: Excel file loaded successfully. Grid size: {df.shape}")
+
+        # 3. Find the range of cells that contains dates
+        start_row, end_row = None, None
+        for i, cell in enumerate(df.iloc[:,0]):
+            if start_row is None and type(cell) == str:
+                start_row = i
+            elif start_row is not None and type(cell) != str:
+                end_row = i-1
+                break
+                
+        # Fallback if the dates go all the way to the very bottom row
+        if end_row is None and start_row is not None:
+            end_row = len(df) - 1
+            
+        print(f"DEBUG: Schedule date rows detected from row {start_row} to {end_row}")
+
+        # 4. Map columns to employee names
+        employees = {} # Mapping of { column_index: "employee_name" }
+        for i, cell in enumerate(df.iloc[0]):
+            # Skip column 0 (dates). If it's a valid string, we assume it's a name!
+            if i > 0 and pd.notna(cell) and type(cell) == str and cell.strip():
+                employees[i] = cell.lower().strip()
+        
+        print(f"DEBUG: Found {len(employees)} employees in the header.")
+
+        # 5. Process the individual shifts for EVERY employee
+        for col_idx, emp_name in employees.items():
+            shifts = []
+            
+            for i in range(start_row, end_row + 1):
+                cell = df.iloc[i, col_idx]
+                
+                # If there is data and it contains a hyphen, it's a shift!
+                if pd.notna(cell) and "-" in str(cell).lower():
+                    location, time_bounds = process_time_cell(cell)
+                    
+                    if ":" not in time_bounds[0]:
+                        time_bounds[0] = time_bounds[0]+":00"
+                    if ":" not in time_bounds[1]:
+                        time_bounds[1] = time_bounds[1]+":00"
+                        
+                    try:
+                        raw_start_string = f"{time_bounds[0]}{get_lower_bound_period(time_bounds[0],time_bounds[1])} {process_month_day(df.iloc[i,0])} {year}"
+                        raw_end_string = f"{time_bounds[1]}pm {process_month_day(df.iloc[i,0])} {year}"
+                        
+                        start_time = f"{datetime.strptime(raw_start_string, f'{format_code} %Y')}"
+                        end_time = f"{datetime.strptime(raw_end_string, f'{format_code} %Y')}"
+                        
+                        start_time = start_time.replace(" ", "T")
+                        end_time = end_time.replace(" ", "T")
+
+                        shifts.append({
+                            "summary": f"Work at {locations.get(location, 'Unknown Location')}",
+                            "description": f"Dream Tea Shift. This was added automatically by my schedule script.",
+                            "start": {
+                                "dateTime": start_time,
+                                "timeZone": "America/Edmonton"
+                            },
+                            "end": {
+                                "dateTime": end_time,
+                                "timeZone": "America/Edmonton"
+                            },
+                            "colorId": "11"
+                        })
+                    except Exception as oops:
+                        # We silently ignore individual shift parse errors to prevent a single typo 
+                        # in one person's schedule from breaking the entire master dictionary.
+                        continue
+            
+            # Add this person's compiled shifts to the master dictionary
+            master_schedule_dict[emp_name] = shifts
+
+        start_date = f"{process_month_day(df.iloc[start_row,0])} {year}" if start_row is not None else ""
+        end_date = f"{process_month_day(df.iloc[end_row,0])} {year}" if end_row is not None else ""
+        
+        print(f"\nDEBUG: Processing complete. Built master schedule for {len(master_schedule_dict)} employees.")
+        print("="*50 + "\n")
+        
+        return master_schedule_dict, start_date, end_date
+    
+    except Exception as e:
+        print(f"DEBUG: [FATAL ERROR] An unexpected error crashed the master processor: {e}")
+        return {}, "", ""
