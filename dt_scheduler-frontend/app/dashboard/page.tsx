@@ -8,7 +8,7 @@ export default function Dashboard() {
   const [message, setMessage] = useState("");
   
   // New state to manage the specific type of message being displayed
-  const [statusType, setStatusType] = useState<"idle" | "loading" | "success" | "error" | "info">("idle");
+  const [statusType, setStatusType] = useState<"idle" | "loading" | "success" | "error" | "warning">("idle");
 
   const handleDownload = async () => {
     if (!employeeName.trim()) return;
