@@ -146,10 +146,8 @@ def download_schedule():
         # Return it as a downloadable file
         return Response(
             ics_data,
-            mimetype='text/calendar',
-            headers={
-                "Content-Disposition": f"attachment; filename=DreamTea_Schedule_{employee_name}.ics"
-            }
+            mimetype="text/calendar",
+            headers={"Content-Disposition": f"inline; filename=schedule_{employee_name}.ics"}
         )
         
     except Exception as e:
