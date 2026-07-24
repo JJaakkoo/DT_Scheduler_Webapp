@@ -67,8 +67,9 @@ export default function Dashboard() {
     switch (statusType) {
       case "loading": return "text-blue-500";
       case "success": return "text-green-600";
-      case "info": return "text-orange-500"; // Orange for "No shifts" warning
-      case "error": return "text-red-500";   // Red for actual failures
+      case "info": return "text-orange-500"; 
+      case "warning": return "text-orange-500"; // Added 'warning' so the text is visible!
+      case "error": return "text-red-500";   
       default: return "text-transparent";
     }
   };
