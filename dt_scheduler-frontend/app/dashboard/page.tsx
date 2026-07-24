@@ -128,11 +128,11 @@ export default function Dashboard() {
   return (
     <main className="min-h-[100dvh] w-screen flex items-center justify-center p-4 sm:p-8 bg-[#B0E3F6] font-sans">
       
-      {/* Main Card Container - Restored to your original centered design */}
-      <div className="w-full max-w-[440px] bg-white rounded-[32px] shadow-[0_4px_24px_rgba(0,0,0,0.1)] flex flex-col items-center p-6 sm:p-10 relative z-10 my-auto max-h-[90dvh] overflow-hidden">
+      {/* Main Card Container */}
+      <div className="w-full max-w-[440px] bg-white rounded-[32px] shadow-[0_4px_24px_rgba(0,0,0,0.1)] flex flex-col p-6 sm:p-10 relative z-10 my-auto max-h-[90dvh] overflow-hidden">
         
-        {/* Scrollable Inner Content to prevent the card from growing taller than the screen */}
-        <div className="w-full flex flex-col items-center overflow-y-auto no-scrollbar pb-2">
+        {/* 1. FIXED TOP SECTION */}
+        <div className="w-full flex flex-col items-center shrink-0">
           
           {/* Dream Tea Logo */}
           <img
@@ -159,16 +159,18 @@ export default function Dashboard() {
               </p>
             )}
           </div>
+        </div>
 
-          {/* Shifts Display Area */}
+        {/* 2. SCROLLABLE MIDDLE SECTION (Only the shifts move!) */}
+        <div className="w-full flex-1 overflow-y-auto no-scrollbar min-h-0 relative">
           {shifts.length > 0 && !isLoading && (
-            <div className="w-full flex flex-col gap-3 mb-6 shrink-0">
+            <div className="w-full flex flex-col gap-3 pb-4">
               {shifts.map((shift, idx) => {
                 const startDate = new Date(shift.start.dateTime);
                 const endDate = new Date(shift.end.dateTime);
                 
                 return (
-                  <div key={idx} className="bg-gray-50 rounded-2xl border border-gray-100 p-4 relative overflow-hidden text-left">
+                  <div key={idx} className="bg-gray-50 rounded-2xl border border-gray-100 p-4 relative overflow-hidden text-left shrink-0">
                     <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#8BB9D9]"></div>
                     <div className="font-bold text-gray-800 text-sm mb-1 pl-2">
                       {startDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', timeZone: 'America/Edmonton' })}
@@ -181,7 +183,10 @@ export default function Dashboard() {
               })}
             </div>
           )}
+        </div>
 
+        {/* 3. FIXED BOTTOM SECTION */}
+        <div className="w-full flex flex-col shrink-0 pt-4 border-t border-gray-100 mt-2">
           {/* Metadata Area */}
           {metadata && !isLoading && (
             <div className="w-full flex flex-col items-center gap-1 mb-6 shrink-0 text-center">
@@ -229,7 +234,6 @@ export default function Dashboard() {
               {isSyncing ? "Syncing with Inbox..." : "Force Sync Update"}
             </button>
           </div>
-          
         </div>
       </div>
       
