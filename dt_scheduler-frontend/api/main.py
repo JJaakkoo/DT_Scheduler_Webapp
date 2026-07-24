@@ -128,7 +128,7 @@ def download_schedule():
             filename, file_stream = FDprocess(gmail_service) 
             
             if not file_stream:
-                 return jsonify({"error": "Could not find a recent schedule in email"}), 404
+                 return jsonify({"error": "Could not find a recent schedule in email!"}), 404
                  
             # PARSE THE ENTIRE SHEET INTO A MASTER DICTIONARY
             master_schedule_dict, start_date, end_date = process_full_schedule(file_stream, file_name=filename)
