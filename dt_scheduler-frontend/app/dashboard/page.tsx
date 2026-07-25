@@ -3,8 +3,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 
 export default function Dashboard() {
-  // Defaulting to "jako" so the auto-fetch instantly has a target on load
-  const [employeeName, setEmployeeName] = useState("jako");
+  const [employeeName, setEmployeeName] = useState("");
   const [shifts, setShifts] = useState<any[]>([]);
   const [metadata, setMetadata] = useState<any | null>(null);
   
