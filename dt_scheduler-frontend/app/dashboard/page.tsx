@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 
 export default function Dashboard() {
-  // Main Search States
   const [employeeName, setEmployeeName] = useState("");
   const [activeQuery, setActiveQuery] = useState("");
   const [shifts, setShifts] = useState<any[]>([]);
@@ -16,6 +15,9 @@ export default function Dashboard() {
   // Live Status States
   const [masterShifts, setMasterShifts] = useState<any[]>([]);
   const [currentTime, setCurrentTime] = useState(new Date());
+  
+  // Track which cards are flipped over to show "Up Next"
+  const [flippedCards, setFlippedCards] = useState<Record<string, boolean>>({});
 
   // 1. SILENT BACKGROUND FETCH FOR LIVE STATUS
   useEffect(() => {
@@ -32,41 +34,50 @@ export default function Dashboard() {
     };
     fetchMaster();
 
-    // Start the real-time clock to update the live status every 60 seconds
     const timer = setInterval(() => setCurrentTime(new Date()), 60000);
     return () => clearInterval(timer);
   }, []);
 
-  // 2. LIVE STATUS DATA ENGINE (Strictly locked to Edmonton time)
+  // 2. LIVE STATUS DATA ENGINE (Now supports future days)
   const liveLocations = useMemo(() => {
-    const locations: Record<string, { now: any[], next: any[] }> = {};
-    const edmontonNowString = currentTime.toLocaleDateString('en-US', { timeZone: 'America/Edmonton' });
+    const locations: Record<string, { now: any[], allNext: any[], next: any[] }> = {};
 
     masterShifts.forEach(shift => {
       const loc = (shift.location || shift.summary.replace("Work at ", "")).trim();
-      if (!locations[loc]) locations[loc] = { now: [], next: [] };
+      if (!locations[loc]) locations[loc] = { now: [], allNext: [], next: [] };
 
       const start = new Date(shift.start.dateTime);
       const end = new Date(shift.end.dateTime);
-      const shiftDateString = start.toLocaleDateString('en-US', { timeZone: 'America/Edmonton' });
 
-      // Completely ignore shifts that aren't happening today
-      if (shiftDateString !== edmontonNowString) return;
+      // Discard shifts that have already ended
+      if (currentTime >= end) return;
 
       if (currentTime >= start && currentTime < end) {
+        // Shift is happening right now
         locations[loc].now.push({ name: shift.employee || "Staff", end });
       } else if (currentTime < start) {
-        locations[loc].next.push({ name: shift.employee || "Staff", start });
+        // Shift is in the future
+        locations[loc].allNext.push({ name: shift.employee || "Staff", start });
       }
     });
 
-    // Sort the "Up Next" arrays so the soonest shift is listed first
     Object.keys(locations).forEach(loc => {
-      locations[loc].next.sort((a, b) => a.start.getTime() - b.start.getTime());
+      // Sort upcoming shifts chronologically
+      locations[loc].allNext.sort((a, b) => a.start.getTime() - b.start.getTime());
+
+      // Group the "Next Crew" (everyone starting within 3 hours of the very next shift)
+      if (locations[loc].allNext.length > 0) {
+        const firstNextTime = locations[loc].allNext[0].start.getTime();
+        locations[loc].next = locations[loc].allNext.filter((s: any) => s.start.getTime() - firstNextTime < 3 * 60 * 60 * 1000);
+      }
     });
 
     return locations;
   }, [masterShifts, currentTime]);
+
+  const toggleFlip = (loc: string) => {
+    setFlippedCards(prev => ({ ...prev, [loc]: !prev[loc] }));
+  };
 
 
   // 3. MAIN SEARCH FUNCTION
@@ -117,6 +128,23 @@ export default function Dashboard() {
     });
   };
 
+  const formatFutureTime = (date: Date) => {
+    const now = new Date();
+    const isToday = date.getDate() === now.getDate() && date.getMonth() === now.getMonth();
+    
+    const timeStr = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Edmonton' });
+    
+    if (isToday) return `Today at ${timeStr}`;
+    
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const isTomorrow = date.getDate() === tomorrow.getDate() && date.getMonth() === tomorrow.getMonth();
+    
+    if (isTomorrow) return `Tomorrow at ${timeStr}`;
+    
+    return `${date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} at ${timeStr}`;
+  };
+
   const handleDownloadICS = () => {
     if (!activeQuery) return;
     window.location.href = `/api/download-schedule?name=${encodeURIComponent(activeQuery)}`;
@@ -124,7 +152,6 @@ export default function Dashboard() {
     setTimeout(() => setIsDownloaded(false), 3000);
   };
 
-  // Hardcoded Location Brand Colors
   const getLocationTheme = (location: string) => {
     const loc = (location || "").toLowerCase();
     if (loc.includes("whyte")) return { bg: "bg-amber-50", text: "text-amber-700", border: "border-amber-200", icon: "text-amber-500", leftBar: "bg-amber-400" };
@@ -132,11 +159,9 @@ export default function Dashboard() {
     if (loc.includes("downtown") || loc.includes("dt")) return { bg: "bg-rose-50", text: "text-rose-700", border: "border-rose-200", icon: "text-rose-500", leftBar: "bg-rose-400" };
     if (loc.includes("north")) return { bg: "bg-purple-50", text: "text-purple-700", border: "border-purple-200", icon: "text-purple-500", leftBar: "bg-purple-400" };
     
-    // Default Fallback
     return { bg: "bg-sky-50", text: "text-[#8ab4f8]", border: "border-[#e0eff8]", icon: "text-[#8ab4f8]", leftBar: "bg-[#8ab4f8]" };
   };
 
-  // Only show the live section if there is actual data to display
   const hasLiveStatus = Object.values(liveLocations).some(data => data.now.length > 0 || data.next.length > 0);
 
   return (
@@ -147,7 +172,6 @@ export default function Dashboard() {
         {/* === MAIN SEARCH CARD === */}
         <div className="w-full bg-white rounded-[32px] shadow-[0_4px_24px_rgba(0,0,0,0.1)] flex flex-col overflow-hidden border-4 border-white max-h-[70vh] flex-shrink-0">
           
-          {/* Fixed Header */}
           <div className="px-8 pt-8 pb-4 shrink-0 bg-white z-20">
             <div className="flex justify-center mb-6">
               <img
@@ -172,9 +196,7 @@ export default function Dashboard() {
             />
           </div>
 
-          {/* Scrollable Shifts Area */}
           <div className="flex-1 overflow-y-auto px-8 pb-4 no-scrollbar">
-            
             {isLoading && (
               <div className="flex flex-col items-center justify-center h-full space-y-4 text-[#8ab4f8]">
                 <svg className="animate-spin h-8 w-8" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -222,7 +244,6 @@ export default function Dashboard() {
             )}
           </div>
 
-          {/* Fixed Footer */}
           <div className="shrink-0 bg-white px-8 pb-8 pt-4 z-20 border-t border-gray-50">
             {metadata && !isLoading && (
               <div className="flex flex-col gap-0.5 text-center mb-4">
@@ -281,7 +302,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* === LIVE STORE STATUS CARDS === */}
+        {/* === LIVE STORE STATUS CARDS (3D FLIP) === */}
         {hasLiveStatus && (
           <div className="w-full flex flex-col gap-4 pb-12 mt-2">
             <h3 className="font-bold text-[#628ebf] text-sm uppercase tracking-widest pl-2">Live Store Status</h3>
@@ -290,58 +311,100 @@ export default function Dashboard() {
               if (data.now.length === 0 && data.next.length === 0) return null;
               const theme = getLocationTheme(loc);
               
+              // If no one is working right now, automatically flip the card to show "Up Next" by default!
+              const defaultFlipped = data.now.length === 0 && data.next.length > 0;
+              const isFlipped = flippedCards[loc] !== undefined ? flippedCards[loc] : defaultFlipped;
+              
               return (
-                <div key={loc} className={`relative overflow-hidden rounded-3xl border border-white ${theme.bg} p-5 shadow-[0_4px_24px_rgba(0,0,0,0.05)] flex flex-col gap-3`}>
-                  
-                  {/* Dynamic Color Bar */}
-                  <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${theme.leftBar}`}></div>
-                  
-                  <h4 className={`font-black text-lg ${theme.text} ml-1`}>{loc}</h4>
-                  
-                  {/* On Shift Now Segment */}
-                  {data.now.length > 0 && (
-                    <div className="ml-1">
-                      <div className="text-[11px] font-bold text-gray-400 mb-1.5 flex items-center gap-1 uppercase tracking-wider">
-                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5 text-emerald-500">
-                           <path fillRule="evenodd" d="M16.403 12.652a3 3 0 000-5.304 3 3 0 00-3.75-3.751 3 3 0 00-5.305 0 3 3 0 00-3.751 3.75 3 3 0 000 5.305 3 3 0 003.75 3.751 3 3 0 005.305 0 3 3 0 003.751-3.75zm-2.546-4.46a.75.75 0 00-1.214-.883l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
-                         </svg>
-                         On Shift Now
+                <div key={loc} className="relative w-full cursor-pointer group" style={{ perspective: '1000px' }} onClick={() => toggleFlip(loc)}>
+                  <div 
+                    className="w-full transition-transform duration-500 rounded-3xl"
+                    style={{ 
+                      transformStyle: 'preserve-3d', 
+                      transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
+                      display: 'grid' 
+                    }}
+                  >
+                    
+                    {/* === FRONT FACE (WORKING NOW) === */}
+                    <div 
+                      className={`bg-white border ${theme.border} p-5 shadow-[0_4px_24px_rgba(0,0,0,0.05)] rounded-3xl flex flex-col gap-3 relative overflow-hidden`}
+                      style={{ gridArea: '1 / 1', backfaceVisibility: 'hidden' }}
+                    >
+                      <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${theme.leftBar}`}></div>
+                      
+                      <div className="flex justify-between items-start ml-1">
+                        <h4 className={`font-black text-lg ${theme.text}`}>{loc}</h4>
+                        <div className="flex items-center gap-1 text-[10px] uppercase font-bold text-gray-400 bg-gray-50 px-2 py-1 rounded-full group-hover:bg-gray-100 transition-colors">
+                           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3"><path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
+                           Flip to Next
+                        </div>
                       </div>
-                      <div className="flex flex-wrap gap-2">
-                        {data.now.map((s, i) => (
-                          <span key={i} className="bg-white px-2.5 py-1.5 rounded-lg shadow-sm text-sm font-bold text-gray-700 capitalize border border-gray-100 flex items-center gap-1.5">
-                            {s.name} 
-                            <span className="text-gray-400 font-medium text-[11px]">
-                              until {s.end.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Edmonton' })}
-                            </span>
-                          </span>
-                        ))}
+                      
+                      <div className="ml-1">
+                        <div className="text-[11px] font-bold text-gray-400 mb-1.5 flex items-center gap-1 uppercase tracking-wider">
+                           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5 text-emerald-500">
+                             <path fillRule="evenodd" d="M16.403 12.652a3 3 0 000-5.304 3 3 0 00-3.75-3.751 3 3 0 00-5.305 0 3 3 0 00-3.751 3.75 3 3 0 000 5.305 3 3 0 003.75 3.751 3 3 0 005.305 0 3 3 0 003.751-3.75zm-2.546-4.46a.75.75 0 00-1.214-.883l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
+                           </svg>
+                           On Shift Now
+                        </div>
+                        {data.now.length > 0 ? (
+                          <div className="flex flex-wrap gap-2">
+                            {data.now.map((s, i) => (
+                              <span key={i} className="bg-white px-2.5 py-1.5 rounded-lg shadow-sm text-sm font-bold text-gray-700 capitalize border border-gray-100 flex items-center gap-1.5">
+                                {s.name} 
+                                <span className="text-gray-400 font-medium text-[11px]">
+                                  until {s.end.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Edmonton' })}
+                                </span>
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-xs text-gray-400 italic">No one currently on shift.</p>
+                        )}
                       </div>
                     </div>
-                  )}
 
-                  {/* Up Next Segment */}
-                  {data.next.length > 0 && (
-                    <div className="ml-1 mt-1">
-                       <div className="text-[11px] font-bold text-gray-400 mb-1.5 flex items-center gap-1 uppercase tracking-wider">
-                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5 text-[#8ab4f8]">
-                           <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-13a.75.75 0 00-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 000-1.5h-3.25V5z" clipRule="evenodd" />
-                         </svg>
-                         Up Next
+                    {/* === BACK FACE (UP NEXT) === */}
+                    <div 
+                      className={`bg-white border ${theme.border} p-5 shadow-[0_4px_24px_rgba(0,0,0,0.05)] rounded-3xl flex flex-col gap-3 relative overflow-hidden`}
+                      style={{ gridArea: '1 / 1', backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
+                    >
+                      <div className={`absolute right-0 top-0 bottom-0 w-1.5 ${theme.leftBar}`}></div>
+                      
+                      <div className="flex justify-between items-start mr-1">
+                        <div className="flex items-center gap-1 text-[10px] uppercase font-bold text-gray-400 bg-gray-50 px-2 py-1 rounded-full group-hover:bg-gray-100 transition-colors">
+                           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3"><path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" /></svg>
+                           Back to Now
+                        </div>
+                        <h4 className={`font-black text-lg ${theme.text}`}>{loc}</h4>
                       </div>
-                      <div className="flex flex-wrap gap-2">
-                        {data.next.map((s, i) => (
-                          <span key={i} className="bg-white/60 px-2.5 py-1.5 rounded-lg border border-white text-sm font-bold text-gray-500 capitalize flex items-center gap-1.5">
-                            {s.name} 
-                            <span className="text-gray-400 font-medium text-[11px]">
-                              at {s.start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Edmonton' })}
-                            </span>
-                          </span>
-                        ))}
+                      
+                      <div className="mr-1">
+                         <div className="text-[11px] font-bold text-gray-400 mb-1.5 flex items-center gap-1 uppercase tracking-wider justify-end">
+                           Up Next
+                           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5 text-[#8ab4f8]">
+                             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-13a.75.75 0 00-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 000-1.5h-3.25V5z" clipRule="evenodd" />
+                           </svg>
+                        </div>
+                        {data.next.length > 0 ? (
+                          <div className="flex flex-wrap gap-2 justify-end">
+                            {data.next.map((s, i) => (
+                              <span key={i} className="bg-gray-50 px-2.5 py-1.5 rounded-lg border border-gray-100 text-sm font-bold text-gray-600 capitalize flex items-center gap-1.5">
+                                {s.name} 
+                                <span className="text-gray-400 font-medium text-[11px]">
+                                  {formatFutureTime(s.start)}
+                                </span>
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-xs text-gray-400 italic text-right">No upcoming shifts scheduled.</p>
+                        )}
                       </div>
                     </div>
-                  )}
 
+                  </div>
                 </div>
               );
             })}
