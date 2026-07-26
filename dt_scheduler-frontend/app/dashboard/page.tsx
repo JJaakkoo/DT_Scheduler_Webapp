@@ -6,24 +6,18 @@ export default function Dashboard() {
   const [employeeName, setEmployeeName] = useState("");
   const [shifts, setShifts] = useState<any[]>([]);
   const [metadata, setMetadata] = useState<any | null>(null);
-  
-  const [isLoading, setIsLoading] = useState(true); // Starts true for the auto-fetch
+  const [isLoading, setIsLoading] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
-  const [message, setMessage] = useState("Fetching the latest schedule...");
-  const [statusType, setStatusType] = useState<"idle" | "loading" | "success" | "error" | "info" | "warning">("loading");
+  const [error, setError] = useState<string | null>(null);
 
-  // The main fetch function, wrapped in useCallback so we can trigger it in useEffect
   const fetchSchedule = useCallback(async (forceSync = false) => {
     if (!employeeName.trim()) return;
     
+    setError(null);
     if (forceSync) {
       setIsSyncing(true);
-      setMessage("Forcing sync with Jacky's email...");
-      setStatusType("loading");
     } else {
       setIsLoading(true);
-      setMessage("Fetching the latest schedule...");
-      setStatusType("loading");
     }
 
     try {
@@ -38,68 +32,20 @@ export default function Dashboard() {
       setMetadata(data.metadata || null);
 
       if (data.shifts && data.shifts.length === 0) {
-        setStatusType("warning");
-        setMessage(`No shifts found for ${employeeName} this period.`);
-      } else {
-        setStatusType("success");
-        setMessage("Schedule loaded successfully!");
+        setError(`No shifts found for ${employeeName} this period.`);
       }
     } catch (err: any) {
-      setStatusType("error");
-      setMessage(err.message || "An unexpected error occurred.");
-      setShifts([]);
-      setMetadata(null);
+      setError(err.message || "An unexpected error occurred.");
     } finally {
       setIsLoading(false);
       setIsSyncing(false);
     }
   }, [employeeName]);
 
-  // AUTO-FETCH ON LOAD
   useEffect(() => {
     fetchSchedule(false);
   }, [fetchSchedule]);
 
-  // Your exact ICS download logic, wrapped cleanly
-  const handleDownloadICS = async () => {
-    if (!employeeName.trim()) return;
-    
-    // We don't clear the screen, just update the status text
-    setStatusType("loading");
-    setMessage("Generating calendar file...");
-
-    const apiUrl = `/api/download-schedule?name=${encodeURIComponent(employeeName.trim())}`;
-
-    try {
-      const response = await fetch(apiUrl);
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to download schedule.");
-      }
-
-      const icsText = await response.text();
-      const blob = new Blob([icsText], { type: 'text/calendar;charset=utf-8' });
-      
-      const blobUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = blobUrl;
-      link.setAttribute('download', `schedule_${employeeName.toLowerCase()}.ics`);
-      
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(blobUrl);
-
-      setStatusType("success");
-      setMessage("Calendar file downloaded!");
-    } catch (err: any) {
-      setStatusType("error");
-      setMessage(err.message || "Error generating calendar.");
-    }
-  };
-
-  // Formatter strictly locked to Edmonton time to correct the 15-hour drift
   const formatDate = (isoString: string) => {
     if (!isoString) return "Unknown";
     const date = new Date(isoString);
@@ -112,70 +58,113 @@ export default function Dashboard() {
     });
   };
 
-  // Helper function to dynamically change the text color based on the status
-  const getMessageColor = () => {
-    switch (statusType) {
-      case "loading": return "text-blue-500 animate-pulse";
-      case "success": return "text-green-600";
-      case "info": return "text-blue-500"; 
-      case "warning": return "text-orange-500"; 
-      case "error": return "text-red-500";   
-      default: return "text-transparent";
+  const handleDownloadICS = () => {
+    if (!employeeName.trim()) return;
+    window.location.href = `/api/download-schedule?name=${encodeURIComponent(employeeName.trim())}`;
+  };
+
+  const getLocationColors = (location: string) => {
+    if (!location) return "bg-gray-50 text-gray-600 border-gray-200";
+    const colors = [
+      "bg-pink-50 text-pink-600 border-pink-200",
+      "bg-purple-50 text-purple-600 border-purple-200",
+      "bg-emerald-50 text-emerald-600 border-emerald-200",
+      "bg-amber-50 text-amber-600 border-amber-200",
+      "bg-indigo-50 text-indigo-600 border-indigo-200",
+      "bg-rose-50 text-rose-600 border-rose-200",
+    ];
+    let hash = 0;
+    for (let i = 0; i < location.length; i++) {
+      hash = location.charCodeAt(i) + ((hash << 5) - hash);
     }
+    return colors[Math.abs(hash) % colors.length];
   };
 
   return (
-    <main className="min-h-[100dvh] w-screen flex items-center justify-center p-4 sm:p-8 bg-[#B0E3F6] font-sans">
+    <main className="min-h-[100dvh] w-screen flex items-center justify-center p-4 sm:p-8 bg-[#c2e2f5] font-sans fixed inset-0 overflow-hidden">
       
-      {/* Main Card Container */}
-      <div className="w-full max-w-[440px] bg-white rounded-[32px] shadow-[0_4px_24px_rgba(0,0,0,0.1)] flex flex-col p-6 sm:p-10 relative z-10 my-auto max-h-[90dvh] overflow-hidden">
+      {/* Main Card Container with Flexbox layout */}
+      <div className="w-full max-w-[400px] h-[90vh] max-h-[800px] bg-white rounded-[32px] shadow-[0_4px_24px_rgba(0,0,0,0.1)] flex flex-col relative z-10 overflow-hidden border-4 border-white">
         
-        {/* 1. FIXED TOP SECTION */}
-        <div className="w-full flex flex-col items-center shrink-0">
-          
-          {/* Dream Tea Logo */}
-          <img
-            src="/dreamtealogo.svg"
-            alt="Dream Tea Logo"
-            className="object-contain w-28 h-auto mb-6 shrink-0"
-          />
+        {/* --- 1. FIXED HEADER --- */}
+        <div className="px-8 pt-8 pb-4 shrink-0 bg-white z-20">
+          <div className="flex justify-center mb-6">
+            <img
+              src="/dreamtealogo.svg"
+              alt="Dream Tea Logo"
+              className="object-contain w-28 h-auto"
+            />
+          </div>
 
-          {/* Name Input Field */}
           <input
             type="text"
             placeholder="Enter your name.."
             value={employeeName}
             onChange={(e) => setEmployeeName(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && fetchSchedule(false)}
-            className="w-full h-[48px] shrink-0 border-[1.5px] border-gray-300 rounded-full px-5 text-[15px] text-gray-800 bg-transparent outline-none focus:border-[#8BB9D9] focus:ring-1 focus:ring-[#8BB9D9] transition-all placeholder:text-gray-400 mb-4"
+            className="w-full h-[48px] border-[1.5px] border-gray-300 rounded-full px-5 text-[15px] text-gray-700 bg-transparent outline-none focus:border-[#8ab4f8] focus:ring-1 focus:ring-[#8ab4f8] transition-all placeholder:text-gray-400 mb-2"
           />
-
-          {/* Status Message Display Container */}
-          <div className="min-h-[24px] flex items-center justify-center w-full mb-4 shrink-0">
-            {message && (
-              <p className={`text-sm text-center font-medium px-2 leading-tight ${getMessageColor()}`}>
-                {message}
-              </p>
-            )}
-          </div>
         </div>
 
-        {/* 2. SCROLLABLE MIDDLE SECTION (Only the shifts move!) */}
-        <div className="w-full flex-1 overflow-y-auto no-scrollbar min-h-0 relative">
+        {/* --- 2. SCROLLABLE SHIFTS AREA --- */}
+        <div className="flex-1 overflow-y-auto px-8 pb-4 no-scrollbar">
+          
+          {}
+          {isLoading && (
+            <div className="flex flex-col items-center justify-center h-full space-y-4 text-[#8ab4f8]">
+              <svg className="animate-spin h-8 w-8" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <p className="font-medium animate-pulse text-sm">Loading schedule...</p>
+            </div>
+          )}
+
+          {error && !isLoading && (
+            <div className="bg-orange-50 border border-orange-200 text-orange-600 p-4 rounded-2xl text-center text-sm font-medium mt-2">
+              {error}
+            </div>
+          )}
+
+          {!isLoading && shifts.length === 0 && !error && (
+            <div className="flex items-center justify-center h-full">
+              <p className="text-gray-400 text-sm text-center">Type a name and press Enter to view shifts.</p>
+            </div>
+          )}
+
+          {}
           {shifts.length > 0 && !isLoading && (
-            <div className="w-full flex flex-col gap-3 pb-4">
+            <div className="flex flex-col gap-3 pt-2">
               {shifts.map((shift, idx) => {
                 const startDate = new Date(shift.start.dateTime);
                 const endDate = new Date(shift.end.dateTime);
                 
                 return (
-                  <div key={idx} className="bg-gray-50 rounded-2xl border border-gray-100 p-4 relative overflow-hidden text-left shrink-0">
-                    <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#8BB9D9]"></div>
-                    <div className="font-bold text-gray-800 text-sm mb-1 pl-2">
-                      {startDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', timeZone: 'America/Edmonton' })}
+                  <div key={idx} className="bg-[#f4f9fd] rounded-2xl border border-[#e0eff8] p-4 shadow-sm relative overflow-hidden flex flex-col justify-between shrink-0">
+                    <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#8ab4f8]"></div>
+                    
+                    <div>
+                      <div className="font-bold text-gray-800 text-sm mb-1 pl-2">
+                        {startDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', timeZone: 'America/Edmonton' })}
+                      </div>
+                      <div className="text-[#8ab4f8] font-black text-lg mb-1 pl-2">
+                        {startDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Edmonton' })} - {endDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Edmonton' })}
+                      </div>
                     </div>
-                    <div className="text-[#8BB9D9] font-black text-lg mb-1 pl-2 tracking-tight">
-                      {startDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Edmonton' }).toLowerCase()} - {endDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Edmonton' }).toLowerCase()}
+
+                    <div className="flex items-center justify-between pl-2 mt-2">
+                      <div className="text-xs text-gray-500 font-medium flex items-center gap-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
+                          <path fillRule="evenodd" d="M9.69 18.933l.003.001C9.89 19.02 10 19 10 19s.11.02.308-.066l.002-.001.006-.003.018-.008a5.741 5.741 0 00.281-.14c.186-.096.446-.24.757-.433.62-.384 1.445-.966 2.274-1.765C15.302 14.988 17 12.493 17 9A7 7 0 103 9c0 3.492 1.698 5.988 3.355 7.584a13.731 13.731 0 002.273 1.765 11.842 11.842 0 00.976.544l.062.029.018.008.006.003zM10 11.25a2.25 2.25 0 100-4.5 2.25 2.25 0 000 4.5z" clipRule="evenodd" />
+                        </svg>
+                        {shift.summary.replace("Work at ", "")}
+                      </div>
+                      
+                      {shift.location && (
+                        <span className={`px-2 py-0.5 rounded border text-[10px] font-bold tracking-wide uppercase ${getLocationColors(shift.location)}`}>
+                          {shift.location}
+                        </span>
+                      )}
                     </div>
                   </div>
                 );
@@ -184,13 +173,14 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* 3. FIXED BOTTOM SECTION */}
-        <div className="w-full flex flex-col shrink-0 pt-4 border-t border-gray-100 mt-2">
-          {/* Metadata Area */}
+        {/* --- 3. FIXED FOOTER --- */}
+        {}
+        <div className="shrink-0 bg-white px-8 pb-8 pt-4 z-20 border-t border-gray-50">
+          
           {metadata && !isLoading && (
-            <div className="w-full flex flex-col items-center gap-1 mb-6 shrink-0 text-center">
-              <span className="text-[11px] text-gray-500 uppercase tracking-wider font-semibold">
-                Jacky Sent Attachment: <span className="font-bold text-gray-700">{formatDate(metadata.email_timestamp)}</span>
+            <div className="flex flex-col gap-0.5 text-center mb-4">
+              <span className="text-[11px] text-gray-500">
+                <span className="font-bold text-gray-700">Jacky Sent Attachment:</span> {formatDate(metadata.email_timestamp)}
               </span>
               <span className="text-[10px] text-gray-400">
                 Last Server Sync: {formatDate(metadata.last_synced_at)}
@@ -198,45 +188,42 @@ export default function Dashboard() {
             </div>
           )}
 
-          {/* Action Buttons Stack */}
-          <div className="w-full flex flex-col gap-3 shrink-0">
-            {/* Download Schedule Button */}
+          <div className="flex flex-col gap-2">
             <button 
               type="button" 
               disabled={isLoading || isSyncing}
-              className={`w-full h-[48px] flex items-center justify-center gap-2 text-white text-[15px] font-bold rounded-full transition-all shadow-[0_4px_14px_rgba(139,185,217,0.5)] focus:outline-none disabled:opacity-70 ${isLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#8BB9D9] hover:bg-[#7aa8c8]'}`}
-              onClick={handleDownloadICS}
+              className={`w-full h-[48px] text-white text-[15px] font-bold rounded-full transition-all shadow-[0_4px_14px_rgba(139,185,217,0.4)] flex items-center justify-center gap-2 focus:outline-none
+                ${(isLoading || isSyncing) ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#8ab4f8] hover:bg-blue-400'}`}
+              onClick={() => handleDownloadICS()}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
               </svg>
               Save to Calendar
             </button>
 
-            {/* Force Sync Button */}
             <button 
-              type="button" 
-              disabled={isLoading || isSyncing}
-              className="w-full h-[48px] flex items-center justify-center gap-2 text-gray-500 text-[14px] font-semibold rounded-full border-2 border-gray-200 bg-transparent transition-all hover:bg-gray-50 hover:text-gray-700 focus:outline-none disabled:opacity-50"
               onClick={() => fetchSchedule(true)}
+              disabled={isSyncing || isLoading}
+              className="w-full h-[40px] bg-white border-2 border-gray-200 text-gray-500 font-semibold rounded-full hover:bg-gray-50 hover:border-gray-300 transition-colors text-[13px] flex items-center justify-center gap-1.5 disabled:opacity-50 focus:outline-none"
             >
               {isSyncing ? (
-                 <svg className="animate-spin h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                 </svg>
+                  <svg className="animate-spin h-3.5 w-3.5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
               ) : (
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
                 </svg>
               )}
-              {isSyncing ? "Syncing with Inbox..." : "Force Sync Update"}
+              Force Sync Update
             </button>
           </div>
         </div>
       </div>
-      
-      {/* Hidden scrollbar styling for the inner card */}
+
+      {}
       <style dangerouslySetInnerHTML={{__html: `
         .no-scrollbar::-webkit-scrollbar {
           display: none;
