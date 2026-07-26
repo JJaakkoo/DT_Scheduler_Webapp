@@ -227,15 +227,12 @@ export default function Dashboard() {
                         <div className="font-bold text-gray-800 text-sm mb-1 pl-2">
                           {startDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', timeZone: 'America/Edmonton' })}
                         </div>
-                        <div className="text-[#8ab4f8] font-black text-lg mb-1 pl-2">
-                          {startDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Edmonton' })} - {endDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Edmonton' })}
+                        <div className={`flex items-center gap-1.5 text-xs font-bold text-gray-800 mt-2 pl-2`}>
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className={`w-3.5 h-3.5 ${theme.icon}`}>
+                            <path fillRule="evenodd" d="M9.69 18.933l.003.001C9.89 19.02 10 19 10 19s.11.02.308-.066l.002-.001.006-.003.018-.008a5.741 5.741 0 00.281-.14c.186-.096.446-.24.757-.433.62-.384 1.445-.966 2.274-1.765C15.302 14.988 17 12.493 17 9A7 7 0 103 9c0 3.492 1.698 5.988 3.355 7.584a13.731 13.731 0 002.273 1.765 11.842 11.842 0 00.976.544l.062.029.018.008.006.003zM10 11.25a2.25 2.25 0 100-4.5 2.25 2.25 0 000 4.5z" clipRule="evenodd" />
+                          </svg>
+                          {shift.location || shift.summary.replace("Work at ", "")}
                         </div>
-                      </div>
-                      <div className={`flex items-center gap-1.5 text-xs font-bold ${theme.text} mt-2 pl-2`}>
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className={`w-3.5 h-3.5 ${theme.icon}`}>
-                          <path fillRule="evenodd" d="M9.69 18.933l.003.001C9.89 19.02 10 19 10 19s.11.02.308-.066l.002-.001.006-.003.018-.008a5.741 5.741 0 00.281-.14c.186-.096.446-.24.757-.433.62-.384 1.445-.966 2.274-1.765C15.302 14.988 17 12.493 17 9A7 7 0 103 9c0 3.492 1.698 5.988 3.355 7.584a13.731 13.731 0 002.273 1.765 11.842 11.842 0 00.976.544l.062.029.018.008.006.003zM10 11.25a2.25 2.25 0 100-4.5 2.25 2.25 0 000 4.5z" clipRule="evenodd" />
-                        </svg>
-                        {shift.location || shift.summary.replace("Work at ", "")}
                       </div>
                     </div>
                   );
@@ -334,7 +331,7 @@ export default function Dashboard() {
                       <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${theme.leftBar}`}></div>
                       
                       <div className="flex justify-between items-start ml-1">
-                        <h4 className={`font-black text-lg ${theme.text}`}>{loc}</h4>
+                        <h4 className="font-black text-lg text-gray-800">{loc}</h4>
                         <div className="flex items-center gap-1 text-[10px] uppercase font-bold text-gray-400 bg-gray-50 px-2 py-1 rounded-full group-hover:bg-gray-100 transition-colors">
                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3"><path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
                            Flip to Next
@@ -349,11 +346,11 @@ export default function Dashboard() {
                            On Shift Now
                         </div>
                         {data.now.length > 0 ? (
-                          <div className="flex flex-wrap gap-2">
+                          <div className="flex flex-wrap gap-1.5">
                             {data.now.map((s, i) => (
-                              <span key={i} className="bg-white px-2.5 py-1.5 rounded-lg shadow-sm text-sm font-bold text-gray-700 capitalize border border-gray-100 flex items-center gap-1.5">
+                              <span key={i} className="bg-white px-2 py-1 rounded-md shadow-[0_1px_2px_rgba(0,0,0,0.05)] text-[13px] font-bold text-gray-700 capitalize border border-gray-100 flex items-center gap-1 whitespace-nowrap">
                                 {s.name} 
-                                <span className="text-gray-400 font-medium text-[11px]">
+                                <span className="text-gray-400 font-medium text-[10px]">
                                   until {s.end.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Edmonton' })}
                                 </span>
                               </span>
@@ -377,7 +374,7 @@ export default function Dashboard() {
                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3"><path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" /></svg>
                            Back to Now
                         </div>
-                        <h4 className={`font-black text-lg ${theme.text}`}>{loc}</h4>
+                        <h4 className="font-black text-lg text-gray-800">{loc}</h4>
                       </div>
                       
                       <div className="mr-1">
@@ -388,11 +385,11 @@ export default function Dashboard() {
                            </svg>
                         </div>
                         {data.next.length > 0 ? (
-                          <div className="flex flex-wrap gap-2 justify-end">
+                          <div className="flex flex-wrap gap-1.5 justify-end">
                             {data.next.map((s, i) => (
-                              <span key={i} className="bg-gray-50 px-2.5 py-1.5 rounded-lg border border-gray-100 text-sm font-bold text-gray-600 capitalize flex items-center gap-1.5">
+                              <span key={i} className="bg-gray-50 px-2 py-1 rounded-md border border-gray-100 text-[13px] font-bold text-gray-700 capitalize flex items-center gap-1 whitespace-nowrap shadow-sm">
                                 {s.name} 
-                                <span className="text-gray-400 font-medium text-[11px]">
+                                <span className="text-gray-400 font-medium text-[10px]">
                                   {formatFutureTime(s.start)}
                                 </span>
                               </span>
