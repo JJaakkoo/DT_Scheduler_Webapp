@@ -1,19 +1,29 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState } from "react";
 
 export default function Dashboard() {
+  // employeeName is STRICTLY for the text input box now
   const [employeeName, setEmployeeName] = useState("");
+  
+  // activeQuery locks in the name only AFTER they press Enter, preventing UI glitches
+  const [activeQuery, setActiveQuery] = useState("");
+  
   const [shifts, setShifts] = useState<any[]>([]);
   const [metadata, setMetadata] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchSchedule = useCallback(async (forceSync = false) => {
-    if (!employeeName.trim()) return;
+  // Notice we removed useCallback and useEffect! This ONLY runs when called manually.
+  const executeSearch = async (nameToSearch: string, forceSync = false) => {
+    const query = nameToSearch.trim();
+    if (!query) return;
     
+    // Lock in the name so our error messages don't change while typing
+    setActiveQuery(query);
     setError(null);
+    
     if (forceSync) {
       setIsSyncing(true);
     } else {
@@ -21,7 +31,7 @@ export default function Dashboard() {
     }
 
     try {
-      const response = await fetch(`/api/schedule?name=${encodeURIComponent(employeeName.trim())}&force_sync=${forceSync}`);
+      const response = await fetch(`/api/schedule?name=${encodeURIComponent(query)}&force_sync=${forceSync}`);
       const data = await response.json();
 
       if (!response.ok) {
@@ -32,7 +42,7 @@ export default function Dashboard() {
       setMetadata(data.metadata || null);
 
       if (data.shifts && data.shifts.length === 0) {
-        setError(`No shifts found for ${employeeName} this period.`);
+        setError(`No shifts found for ${query} this period.`);
       }
     } catch (err: any) {
       setError(err.message || "An unexpected error occurred.");
@@ -40,11 +50,7 @@ export default function Dashboard() {
       setIsLoading(false);
       setIsSyncing(false);
     }
-  }, [employeeName]);
-
-  useEffect(() => {
-    fetchSchedule(false);
-  }, [fetchSchedule]);
+  };
 
   const formatDate = (isoString: string) => {
     if (!isoString) return "Unknown";
@@ -59,34 +65,37 @@ export default function Dashboard() {
   };
 
   const handleDownloadICS = () => {
-    if (!employeeName.trim()) return;
-    window.location.href = `/api/download-schedule?name=${encodeURIComponent(employeeName.trim())}`;
+    if (!activeQuery) return;
+    window.location.href = `/api/download-schedule?name=${encodeURIComponent(activeQuery)}`;
   };
 
-  const getLocationColors = (location: string) => {
-    if (!location) return "bg-gray-50 text-gray-600 border-gray-200";
-    const colors = [
-      "bg-pink-50 text-pink-600 border-pink-200",
-      "bg-purple-50 text-purple-600 border-purple-200",
-      "bg-emerald-50 text-emerald-600 border-emerald-200",
-      "bg-amber-50 text-amber-600 border-amber-200",
-      "bg-indigo-50 text-indigo-600 border-indigo-200",
-      "bg-rose-50 text-rose-600 border-rose-200",
-    ];
-    let hash = 0;
-    for (let i = 0; i < location.length; i++) {
-      hash = location.charCodeAt(i) + ((hash << 5) - hash);
+  const getLocationTheme = (location: string) => {
+    const loc = (location || "").toLowerCase();
+    
+    // Hardcoded themes for your specific store branches
+    if (loc.includes("whyte")) {
+      return { bg: "bg-amber-50", text: "text-amber-600", border: "border-amber-200", icon: "text-amber-500", leftBar: "bg-amber-400" };
     }
-    return colors[Math.abs(hash) % colors.length];
+    if (loc.includes("heritage")) {
+      return { bg: "bg-emerald-50", text: "text-emerald-600", border: "border-emerald-200", icon: "text-emerald-500", leftBar: "bg-emerald-400" };
+    }
+    if (loc.includes("downtown") || loc.includes("dt")) {
+      return { bg: "bg-rose-50", text: "text-rose-600", border: "border-rose-200", icon: "text-rose-500", leftBar: "bg-rose-400" };
+    }
+    if (loc.includes("north")) {
+      return { bg: "bg-purple-50", text: "text-purple-600", border: "border-purple-200", icon: "text-purple-500", leftBar: "bg-purple-400" };
+    }
+    
+    // Default fallback colors if it's an unknown location
+    return { bg: "bg-sky-50", text: "text-[#8ab4f8]", border: "border-[#e0eff8]", icon: "text-[#8ab4f8]", leftBar: "bg-[#8ab4f8]" };
   };
 
   return (
     <main className="min-h-[100dvh] w-screen flex items-center justify-center p-4 sm:p-8 bg-[#c2e2f5] font-sans fixed inset-0 overflow-hidden">
       
-      {/* Main Card Container with Flexbox layout */}
       <div className="w-full max-w-[400px] h-[90vh] max-h-[800px] bg-white rounded-[32px] shadow-[0_4px_24px_rgba(0,0,0,0.1)] flex flex-col relative z-10 overflow-hidden border-4 border-white">
         
-        {/* --- 1. FIXED HEADER --- */}
+        {/* --- FIXED HEADER --- */}
         <div className="px-8 pt-8 pb-4 shrink-0 bg-white z-20">
           <div className="flex justify-center mb-6">
             <img
@@ -101,15 +110,20 @@ export default function Dashboard() {
             placeholder="Enter your name.."
             value={employeeName}
             onChange={(e) => setEmployeeName(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && fetchSchedule(false)}
+            // ONLY triggers the search when the Enter key is pressed!
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                executeSearch(employeeName, false);
+              }
+            }}
             className="w-full h-[48px] border-[1.5px] border-gray-300 rounded-full px-5 text-[15px] text-gray-700 bg-transparent outline-none focus:border-[#8ab4f8] focus:ring-1 focus:ring-[#8ab4f8] transition-all placeholder:text-gray-400 mb-2"
           />
         </div>
 
-        {/* --- 2. SCROLLABLE SHIFTS AREA --- */}
+        {/* --- SCROLLABLE SHIFTS AREA --- */}
         <div className="flex-1 overflow-y-auto px-8 pb-4 no-scrollbar">
           
-          {}
           {isLoading && (
             <div className="flex flex-col items-center justify-center h-full space-y-4 text-[#8ab4f8]">
               <svg className="animate-spin h-8 w-8" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -120,6 +134,7 @@ export default function Dashboard() {
             </div>
           )}
 
+          {/* Error Message strictly uses activeQuery so it doesn't change while typing */}
           {error && !isLoading && (
             <div className="bg-orange-50 border border-orange-200 text-orange-600 p-4 rounded-2xl text-center text-sm font-medium mt-2">
               {error}
@@ -139,9 +154,14 @@ export default function Dashboard() {
                 const startDate = new Date(shift.start.dateTime);
                 const endDate = new Date(shift.end.dateTime);
                 
+                // Get the unique color theme for this specific shift's location
+                const theme = getLocationTheme(shift.location || shift.summary);
+                
                 return (
-                  <div key={idx} className="bg-[#f4f9fd] rounded-2xl border border-[#e0eff8] p-4 shadow-sm relative overflow-hidden flex flex-col justify-between shrink-0">
-                    <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#8ab4f8]"></div>
+                  <div key={idx} className={`bg-white rounded-2xl border ${theme.border} p-4 shadow-sm relative overflow-hidden flex flex-col justify-between shrink-0`}>
+                    
+                    {/* Dynamic Colored Left Bar */}
+                    <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${theme.leftBar}`}></div>
                     
                     <div>
                       <div className="font-bold text-gray-800 text-sm mb-1 pl-2">
@@ -152,19 +172,12 @@ export default function Dashboard() {
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between pl-2 mt-2">
-                      <div className="text-xs text-gray-500 font-medium flex items-center gap-1">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
-                          <path fillRule="evenodd" d="M9.69 18.933l.003.001C9.89 19.02 10 19 10 19s.11.02.308-.066l.002-.001.006-.003.018-.008a5.741 5.741 0 00.281-.14c.186-.096.446-.24.757-.433.62-.384 1.445-.966 2.274-1.765C15.302 14.988 17 12.493 17 9A7 7 0 103 9c0 3.492 1.698 5.988 3.355 7.584a13.731 13.731 0 002.273 1.765 11.842 11.842 0 00.976.544l.062.029.018.008.006.003zM10 11.25a2.25 2.25 0 100-4.5 2.25 2.25 0 000 4.5z" clipRule="evenodd" />
-                        </svg>
-                        {shift.summary.replace("Work at ", "")}
-                      </div>
-                      
-                      {shift.location && (
-                        <span className={`px-2 py-0.5 rounded border text-[10px] font-bold tracking-wide uppercase ${getLocationColors(shift.location)}`}>
-                          {shift.location}
-                        </span>
-                      )}
+                    {/* Location Footer with Map Pin */}
+                    <div className={`flex items-center gap-1.5 text-xs font-bold ${theme.text} mt-2 pl-2`}>
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className={`w-3.5 h-3.5 ${theme.icon}`}>
+                        <path fillRule="evenodd" d="M9.69 18.933l.003.001C9.89 19.02 10 19 10 19s.11.02.308-.066l.002-.001.006-.003.018-.008a5.741 5.741 0 00.281-.14c.186-.096.446-.24.757-.433.62-.384 1.445-.966 2.274-1.765C15.302 14.988 17 12.493 17 9A7 7 0 103 9c0 3.492 1.698 5.988 3.355 7.584a13.731 13.731 0 002.273 1.765 11.842 11.842 0 00.976.544l.062.029.018.008.006.003zM10 11.25a2.25 2.25 0 100-4.5 2.25 2.25 0 000 4.5z" clipRule="evenodd" />
+                      </svg>
+                      {shift.location || shift.summary.replace("Work at ", "")}
                     </div>
                   </div>
                 );
@@ -173,7 +186,7 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* --- 3. FIXED FOOTER --- */}
+        {/* --- FIXED FOOTER --- */}
         {}
         <div className="shrink-0 bg-white px-8 pb-8 pt-4 z-20 border-t border-gray-50">
           
@@ -191,9 +204,9 @@ export default function Dashboard() {
           <div className="flex flex-col gap-2">
             <button 
               type="button" 
-              disabled={isLoading || isSyncing}
+              disabled={isLoading || isSyncing || !activeQuery}
               className={`w-full h-[48px] text-white text-[15px] font-bold rounded-full transition-all shadow-[0_4px_14px_rgba(139,185,217,0.4)] flex items-center justify-center gap-2 focus:outline-none
-                ${(isLoading || isSyncing) ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#8ab4f8] hover:bg-blue-400'}`}
+                ${(isLoading || isSyncing || !activeQuery) ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#8ab4f8] hover:bg-blue-400'}`}
               onClick={() => handleDownloadICS()}
             >
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
@@ -203,8 +216,8 @@ export default function Dashboard() {
             </button>
 
             <button 
-              onClick={() => fetchSchedule(true)}
-              disabled={isSyncing || isLoading}
+              onClick={() => executeSearch(activeQuery, true)}
+              disabled={isSyncing || isLoading || !activeQuery}
               className="w-full h-[40px] bg-white border-2 border-gray-200 text-gray-500 font-semibold rounded-full hover:bg-gray-50 hover:border-gray-300 transition-colors text-[13px] flex items-center justify-center gap-1.5 disabled:opacity-50 focus:outline-none"
             >
               {isSyncing ? (
@@ -223,7 +236,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {}
       <style dangerouslySetInnerHTML={{__html: `
         .no-scrollbar::-webkit-scrollbar {
           display: none;
