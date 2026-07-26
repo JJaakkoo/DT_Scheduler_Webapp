@@ -20,7 +20,6 @@ from googleapiclient.discovery import build
 current_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(current_dir)
 
-# Import the master schedule processor we built together!
 from schedule_processor import process_full_schedule 
 
 # Load local environment variables (ignored in Vercel production)
@@ -201,7 +200,19 @@ def get_schedule_data(employee_name, force_sync=False):
         if not db_record:
              return None, None, "Database is completely empty and no emails found."
              
-        shifts = db_record.get('schedule_data', {}).get(employee_key, [])
+        if employee_key == "master":
+            # If the frontend asks for the MASTER schedule, flatten the dictionary
+            # and inject the employee's name into every single shift!
+            shifts = []
+            for emp, emp_shifts in db_record.get('schedule_data', {}).items():
+                for shift in emp_shifts:
+                    shift_with_name = shift.copy()
+                    shift_with_name['employee'] = emp
+                    shifts.append(shift_with_name)
+        else:
+            # Otherwise, just return the specific user's array
+            shifts = db_record.get('schedule_data', {}).get(employee_key, [])
+            
         return shifts, db_record, None
 
     except Exception as e:
