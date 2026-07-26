@@ -14,6 +14,9 @@ export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Track if the file was just downloaded to show a success message
+  const [isDownloaded, setIsDownloaded] = useState(false);
 
   // Notice we removed useCallback and useEffect! This ONLY runs when called manually.
   const executeSearch = async (nameToSearch: string, forceSync = false) => {
@@ -67,6 +70,10 @@ export default function Dashboard() {
   const handleDownloadICS = () => {
     if (!activeQuery) return;
     window.location.href = `/api/download-schedule?name=${encodeURIComponent(activeQuery)}`;
+    
+    // Trigger the success state, then reset it after 3 seconds
+    setIsDownloaded(true);
+    setTimeout(() => setIsDownloaded(false), 3000);
   };
 
   const getLocationTheme = (location: string) => {
@@ -141,12 +148,6 @@ export default function Dashboard() {
             </div>
           )}
 
-          {!isLoading && shifts.length === 0 && !error && (
-            <div className="flex items-center justify-center h-full">
-              <p className="text-gray-400 text-sm text-center">Type a name and press Enter to view shifts.</p>
-            </div>
-          )}
-
           {}
           {shifts.length > 0 && !isLoading && (
             <div className="flex flex-col gap-3 pt-2">
@@ -206,13 +207,24 @@ export default function Dashboard() {
               type="button" 
               disabled={isLoading || isSyncing || !activeQuery}
               className={`w-full h-[48px] text-white text-[15px] font-bold rounded-full transition-all shadow-[0_4px_14px_rgba(139,185,217,0.4)] flex items-center justify-center gap-2 focus:outline-none
-                ${(isLoading || isSyncing || !activeQuery) ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#8ab4f8] hover:bg-blue-400'}`}
+                ${(isLoading || isSyncing || !activeQuery) ? 'bg-gray-400 cursor-not-allowed' : (isDownloaded ? 'bg-emerald-400 hover:bg-emerald-500' : 'bg-[#8ab4f8] hover:bg-blue-400')}`}
               onClick={() => handleDownloadICS()}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
-              </svg>
-              Save to Calendar
+              {isDownloaded ? (
+                <>
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                  </svg>
+                  Downloaded!
+                </>
+              ) : (
+                <>
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                  </svg>
+                  Save to Calendar
+                </>
+              )}
             </button>
 
             <button 
