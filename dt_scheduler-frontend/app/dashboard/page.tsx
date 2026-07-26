@@ -100,7 +100,7 @@ export default function Dashboard() {
   return (
     <main className="min-h-[100dvh] w-screen flex items-center justify-center p-4 sm:p-8 bg-[#c2e2f5] font-sans fixed inset-0 overflow-hidden">
       
-      <div className="w-full max-w-[400px] h-[90vh] max-h-[800px] bg-white rounded-[32px] shadow-[0_4px_24px_rgba(0,0,0,0.1)] flex flex-col relative z-10 overflow-hidden border-4 border-white">
+      <div className="w-full max-w-[400px] max-h-[90vh] sm:max-h-[800px] bg-white rounded-[32px] shadow-[0_4px_24px_rgba(0,0,0,0.1)] flex flex-col relative z-10 overflow-hidden border-4 border-white">
         
         {/* --- FIXED HEADER --- */}
         <div className="px-8 pt-8 pb-4 shrink-0 bg-white z-20">
