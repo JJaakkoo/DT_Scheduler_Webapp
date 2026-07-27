@@ -296,6 +296,7 @@ export default function Dashboard() {
                 <div className="flex flex-col gap-3 pt-2">
                   {shifts.map((shift, idx) => {
                     const startDate = new Date(shift.start.dateTime);
+                    const endDate = new Date(shift.end.dateTime);
                     const theme = getLocationTheme(shift.location || shift.summary);
                     
                     return (
@@ -305,7 +306,10 @@ export default function Dashboard() {
                           <div className="font-bold text-gray-800 text-sm mb-1 pl-2">
                             {startDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', timeZone: 'America/Edmonton' })}
                           </div>
-                          <div className={`flex items-center gap-1.5 text-xs font-bold text-gray-800 mt-2 pl-2`}>
+                          <div className={`font-black text-lg mb-1 pl-2 ${theme.text}`}>
+                            {startDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Edmonton' })} - {endDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Edmonton' })}
+                          </div>
+                          <div className="text-xs text-gray-500 font-medium flex items-center gap-1.5 mt-1 pl-2">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className={`w-3.5 h-3.5 ${theme.icon}`}>
                               <path fillRule="evenodd" d="M9.69 18.933l.003.001C9.89 19.02 10 19 10 19s.11.02.308-.066l.002-.001.006-.003.018-.008a5.741 5.741 0 00.281-.14c.186-.096.446-.24.757-.433.62-.384 1.445-.966 2.274-1.765C15.302 14.988 17 12.493 17 9A7 7 0 103 9c0 3.492 1.698 5.988 3.355 7.584a13.731 13.731 0 002.273 1.765 11.842 11.842 0 00.976.544l.062.029.018.008.006.003zM10 11.25a2.25 2.25 0 100-4.5 2.25 2.25 0 000 4.5z" clipRule="evenodd" />
                             </svg>
