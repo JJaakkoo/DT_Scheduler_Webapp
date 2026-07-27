@@ -222,11 +222,11 @@ export default function Dashboard() {
 
   const getLocationTheme = (location: string) => {
     const loc = (location || "").toLowerCase();
-    if (loc.includes("whyte")) return { text: "text-amber-700", border: "border-amber-400", icon: "text-amber-500", leftBar: "bg-amber-400", fill: "bg-amber-400" };
-    if (loc.includes("heritage")) return { text: "text-emerald-700", border: "border-emerald-400", icon: "text-emerald-500", leftBar: "bg-emerald-400", fill: "bg-emerald-400" };
-    if (loc.includes("downtown") || loc.includes("dt")) return { text: "text-rose-700", border: "border-rose-400", icon: "text-rose-500", leftBar: "bg-rose-400", fill: "bg-rose-400" };
-    if (loc.includes("north")) return { text: "text-purple-700", border: "border-purple-400", icon: "text-purple-500", leftBar: "bg-purple-400", fill: "bg-purple-400" };
-    return { text: "text-[#8ab4f8]", border: "border-[#8ab4f8]", icon: "text-[#8ab4f8]", leftBar: "bg-[#8ab4f8]", fill: "bg-[#8ab4f8]" };
+    if (loc.includes("whyte")) return { text: "text-amber-500", border: "border-amber-200", icon: "text-amber-300", leftBar: "bg-amber-300", fill: "bg-amber-300" };
+    if (loc.includes("heritage")) return { text: "text-teal-500", border: "border-teal-200", icon: "text-teal-300", leftBar: "bg-teal-300", fill: "bg-teal-300" };
+    if (loc.includes("downtown") || loc.includes("dt")) return { text: "text-rose-500", border: "border-rose-200", icon: "text-rose-300", leftBar: "bg-rose-300", fill: "bg-rose-300" };
+    if (loc.includes("north")) return { text: "text-purple-500", border: "border-purple-200", icon: "text-purple-300", leftBar: "bg-purple-300", fill: "bg-purple-300" };
+    return { text: "text-sky-500", border: "border-sky-200", icon: "text-sky-300", leftBar: "bg-[#8ab4f8]", fill: "bg-[#8ab4f8]" };
   };
 
   const hasLiveStatus = Object.values(liveLocations).some(data => data.now.length > 0 || data.next.length > 0);
@@ -234,11 +234,11 @@ export default function Dashboard() {
   if (!role) return null; // Prevent hydration flash
 
   return (
-    <main className="min-h-[100dvh] w-screen flex flex-col items-center py-6 px-4 sm:px-8 bg-[#c2e2f5] font-sans overflow-y-auto">
+    <main className="min-h-[100dvh] w-screen flex flex-col items-center justify-center py-6 px-4 sm:px-8 bg-[#c2e2f5] font-sans overflow-y-auto">
       
       {/* === MAIN LAYOUT WRAPPER === */}
       {/* Uses flex-col for mobile (stacked), and md:flex-row for desktop (side-by-side) */}
-      <div className="w-full max-w-[850px] flex flex-col md:flex-row items-center md:items-start justify-center gap-8 md:gap-10 relative z-10">
+      <div className="w-full max-w-[850px] flex flex-col md:flex-row items-center md:items-center justify-center gap-8 md:gap-10 relative z-10 my-auto">
         
         {/* === LEFT COLUMN: SCHEDULE & SEARCH === */}
         {/* Gap changed to match the right column perfectly */}
