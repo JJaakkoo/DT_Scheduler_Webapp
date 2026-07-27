@@ -20,6 +20,7 @@ from googleapiclient.discovery import build
 current_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(current_dir)
 
+# Import the master schedule processor we built together!
 from schedule_processor import process_full_schedule 
 
 # Load local environment variables (ignored in Vercel production)
@@ -36,35 +37,22 @@ else:
     print("WARNING: Supabase credentials are missing!")
     supabase = None
 
-SCOPES = ['https://www.googleapis.com/auth/gmail.readonly']
 
-def get_gmail_service():
-    """Authenticates the user and returns the Gmail API service object."""
-    creds = None
-    token_json = os.environ.get("GOOGLE_TOKEN")
-    
-    if token_json:
-        creds = Credentials.from_authorized_user_info(json.loads(token_json), SCOPES)
-    elif os.path.exists('token.json'):
-        creds = Credentials.from_authorized_user_file('token.json', SCOPES)
-    
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
-            creds = flow.run_local_server(port=0)
-            
+def get_gmail_service(access_token):
+    """Authenticates using the crowd-sourced token passed from the frontend."""
+    # We no longer use local token.json. We trust the Google access_token from the browser!
+    creds = Credentials(token=access_token)
     return build('gmail', 'v1', credentials=creds)
+
 
 def fetch_latest_schedule_email(service):
     """
-    Replaces email_puller.py. Grabs the latest email with an attachment,
-    extracts the exact Sent Date metadata, and returns the Excel file stream.
+    Grabs the latest email with an attachment, strictly from Jacky's email to prevent spoofing.
     """
     try:
-        # 1. Search for the newest email with an excel attachment
-        results = service.users().messages().list(userId='me', q='has:attachment filename:xlsx', maxResults=1).execute()
+        # SECURITY PATCH: Hardcoded to ONLY accept emails from Jacky's known address.
+        query = 'from:dreamteahousejacky@gmail.com has:attachment filename:xlsx'
+        results = service.users().messages().list(userId='me', q=query, maxResults=1).execute()
         messages = results.get('messages', [])
         
         if not messages:
@@ -108,15 +96,16 @@ def fetch_latest_schedule_email(service):
         print(f"Error fetching email: {e}")
         return None, None, None
 
-def get_schedule_data(employee_name, force_sync=False):
+
+def get_schedule_data(employee_name, force_sync=False, access_token=None):
     """
-    Core Logic: Implements the 24-hour TTL Cache and the Timestamp Gatekeeper.
-    Returns: (shifts_list, metadata_dict, error_message)
+    Core Logic: Implements the 24-hour TTL Cache and Crowd-Sourced Sync.
+    Returns: (shifts_list, metadata_dict, sync_status, error_message)
     """
     employee_key = employee_name.strip().lower()
     
     if not supabase:
-        return None, None, "Database connection failed."
+        return None, None, "ERROR", "Database connection failed."
 
     try:
         # 1. FETCH LATEST CACHE FROM DATABASE
@@ -125,84 +114,82 @@ def get_schedule_data(employee_name, force_sync=False):
 
         current_time = datetime.now(timezone.utc)
         needs_sync = True
+        sync_status = "OK"
 
         if db_record and db_record.get('last_synced_at'):
             last_synced = datetime.fromisoformat(db_record['last_synced_at'].replace('Z', '+00:00'))
-            # If the cache is less than 24 hours old, and the user didn't hit Force Sync, we skip Gmail!
             if not force_sync and (current_time - last_synced) < timedelta(hours=24):
                 needs_sync = False
                 print(f"CACHE HIT: TTL active. Skipping Gmail for {employee_name}.")
 
-        # 2. THE GATEKEEPER (If cache is stale or user forced a sync)
+        # 2. CROWD-SOURCED SYNC ENGINE
         if needs_sync:
-            print(f"SYNC TRIGGERED (Force: {force_sync}). Checking Gmail...")
-            gmail_service = get_gmail_service()
-            filename, file_stream, email_date = fetch_latest_schedule_email(gmail_service)
-            
-            if not file_stream:
-                # Fallback to cache if no emails exist
-                if db_record:
-                    return db_record.get('schedule_data', {}).get(employee_key, []), db_record, None
-                return None, None, "No schedule found in email or database."
-
-            db_email_time = None
-            if db_record and db_record.get('email_timestamp'):
-                db_email_time = datetime.fromisoformat(db_record['email_timestamp'].replace('Z', '+00:00'))
-
-            # COMPARE TIMESTAMPS: Is this email actually newer than our database?
-            if db_record and db_email_time and email_date <= db_email_time:
-                print("GATEKEEPER: Email is stale (older or same). Ignoring attachment. Resetting TTL clock.")
-                # We just update last_synced_at so the 24 hour timer starts over
-                supabase.table('schedules').update({
-                    "last_synced_at": current_time.isoformat()
-                }).eq('id', db_record['id']).execute()
-                
-                # Fetch fresh record metadata
-                db_record['last_synced_at'] = current_time.isoformat()
+            print(f"SYNC TRIGGERED (Force: {force_sync}).")
+            if not access_token:
+                print("SYNC BLOCKED: No Google access token provided by the client.")
+                sync_status = "TOKEN_REQUIRED"
             else:
-                print("GATEKEEPER: Brand new email detected! Parsing Excel and updating database...")
-                # 3. NEW SCHEDULE FOUND! Parse everyone's data.
-                master_schedule_dict, start_date, end_date = process_full_schedule(file_stream, file_name=filename)
-                
-                if master_schedule_dict:
-                    # Find the first shift to determine the month/period
-                    first_shift_dt = None
-                    for emp, emp_shifts in master_schedule_dict.items():
-                        if emp_shifts and len(emp_shifts) > 0:
-                            first_shift_dt = datetime.strptime(emp_shifts[0]['start']['dateTime'], "%Y-%m-%dT%H:%M:%S")
-                            break
+                try:
+                    print("SYNC AUTHORIZED: Access token provided. Checking inbox...")
+                    gmail_service = get_gmail_service(access_token)
+                    filename, file_stream, email_date = fetch_latest_schedule_email(gmail_service)
                     
-                    if first_shift_dt:
-                        year = first_shift_dt.year
-                        month = first_shift_dt.month
-                        period = 1 if first_shift_dt.day <= 15 else 2
+                    if not file_stream:
+                        print("SYNC FAILED: Could not find schedule email from Jacky in this inbox.")
+                        sync_status = "EMAIL_NOT_FOUND"
+                    else:
+                        db_email_time = None
+                        if db_record and db_record.get('email_timestamp'):
+                            db_email_time = datetime.fromisoformat(db_record['email_timestamp'].replace('Z', '+00:00'))
 
-                        new_record_data = {
-                            "year": year,
-                            "month": month,
-                            "period": period,
-                            "email_timestamp": email_date.isoformat(),
-                            "last_synced_at": current_time.isoformat(),
-                            "schedule_data": master_schedule_dict
-                        }
-
-                        # Upsert the new schedule
-                        period_check = supabase.table('schedules').select('*').eq('year', year).eq('month', month).eq('period', period).execute()
-                        if len(period_check.data) > 0:
-                            supabase.table('schedules').update(new_record_data).eq('id', period_check.data[0]['id']).execute()
+                        # COMPARE TIMESTAMPS
+                        if db_record and db_email_time and email_date <= db_email_time:
+                            print("GATEKEEPER: Email is stale (older or same). Ignoring attachment. Resetting TTL clock.")
+                            supabase.table('schedules').update({
+                                "last_synced_at": current_time.isoformat()
+                            }).eq('id', db_record['id']).execute()
+                            db_record['last_synced_at'] = current_time.isoformat()
                         else:
-                            supabase.table('schedules').insert(new_record_data).execute()
+                            print("GATEKEEPER: Brand new email detected! Parsing Excel and updating database...")
+                            master_schedule_dict, start_date, end_date = process_full_schedule(file_stream, file_name=filename)
+                            
+                            if master_schedule_dict:
+                                first_shift_dt = None
+                                for emp, emp_shifts in master_schedule_dict.items():
+                                    if emp_shifts and len(emp_shifts) > 0:
+                                        first_shift_dt = datetime.strptime(emp_shifts[0]['start']['dateTime'], "%Y-%m-%dT%H:%M:%S")
+                                        break
+                                
+                                if first_shift_dt:
+                                    year = first_shift_dt.year
+                                    month = first_shift_dt.month
+                                    period = 1 if first_shift_dt.day <= 15 else 2
 
-                        # Update our local db_record so we can return the fresh data
-                        db_record = new_record_data
+                                    new_record_data = {
+                                        "year": year,
+                                        "month": month,
+                                        "period": period,
+                                        "email_timestamp": email_date.isoformat(),
+                                        "last_synced_at": current_time.isoformat(),
+                                        "schedule_data": master_schedule_dict
+                                    }
 
-        # 4. RETURN THE DATA
+                                    period_check = supabase.table('schedules').select('*').eq('year', year).eq('month', month).eq('period', period).execute()
+                                    if len(period_check.data) > 0:
+                                        supabase.table('schedules').update(new_record_data).eq('id', period_check.data[0]['id']).execute()
+                                    else:
+                                        supabase.table('schedules').insert(new_record_data).execute()
+
+                                    db_record = new_record_data
+                except Exception as e:
+                    print(f"SYNC FAILED: Token error or Gmail API rejected request: {e}")
+                    sync_status = "TOKEN_EXPIRED"
+
+        # 4. RETURN THE DATA (Even if sync failed, we return the stale cache if we have it)
         if not db_record:
-             return None, None, "Database is completely empty and no emails found."
+             return None, None, sync_status, "Database is completely empty and no emails found."
              
         if employee_key == "master":
-            # If the frontend asks for the MASTER schedule, flatten the dictionary
-            # and inject the employee's name into every single shift!
             shifts = []
             for emp, emp_shifts in db_record.get('schedule_data', {}).items():
                 for shift in emp_shifts:
@@ -210,15 +197,14 @@ def get_schedule_data(employee_name, force_sync=False):
                     shift_with_name['employee'] = emp
                     shifts.append(shift_with_name)
         else:
-            # Otherwise, just return the specific user's array
             shifts = db_record.get('schedule_data', {}).get(employee_key, [])
             
-        return shifts, db_record, None
+        return shifts, db_record, sync_status, None
 
     except Exception as e:
         import traceback
         traceback.print_exc()
-        return None, None, str(e)
+        return None, None, "ERROR", str(e)
 
 
 def generate_ics_from_shifts(shifts, employee_name):
@@ -242,48 +228,61 @@ def generate_ics_from_shifts(shifts, employee_name):
     return cal.to_ical()
 
 
+def get_token_from_header():
+    """Extracts the Bearer token from the incoming request headers."""
+    auth_header = request.headers.get('Authorization')
+    if auth_header and auth_header.startswith('Bearer '):
+        return auth_header.split(' ')[1]
+    return None
+
+
 @app.route('/api/status', methods=['GET'])
 def status_check():
-    return jsonify({"status": "online", "service": "Dream Tea Nexus API", "version": "3.0-Cache"})
+    return jsonify({"status": "online", "service": "Dream Tea Nexus API", "version": "4.0-Crowdsourced"})
+
 
 @app.route('/api/schedule', methods=['GET'])
 def get_schedule_json():
-    """NEW JSON ENDPOINT: Used by the React Dashboard to display the schedule visually."""
+    """JSON ENDPOINT: Used by the React Dashboard to display the schedule visually."""
     employee_name = request.args.get('name')
     force_sync = request.args.get('force_sync', 'false').lower() == 'true'
+    access_token = get_token_from_header()
     
     if not employee_name:
         return jsonify({"error": "Name parameter is required"}), 400
 
-    shifts, metadata, error = get_schedule_data(employee_name, force_sync)
+    shifts, metadata, sync_status, error = get_schedule_data(employee_name, force_sync, access_token)
     
-    if error:
-        return jsonify({"error": error}), 500
+    if error and not shifts:
+        return jsonify({"error": error, "sync_status": sync_status}), 500
         
     return jsonify({
         "employee": employee_name,
         "shifts": shifts,
+        "sync_status": sync_status,
         "metadata": {
-            "email_timestamp": metadata.get('email_timestamp'),
-            "last_synced_at": metadata.get('last_synced_at'),
-            "year": metadata.get('year'),
-            "month": metadata.get('month'),
-            "period": metadata.get('period')
+            "email_timestamp": metadata.get('email_timestamp') if metadata else None,
+            "last_synced_at": metadata.get('last_synced_at') if metadata else None,
+            "year": metadata.get('year') if metadata else None,
+            "month": metadata.get('month') if metadata else None,
+            "period": metadata.get('period') if metadata else None
         }
     })
 
+
 @app.route('/api/download-schedule', methods=['GET'])
 def download_schedule():
-    """LEGACY ICS ENDPOINT: Still works identically, but now routes through the cache!"""
+    """ICS ENDPOINT: Still works identically, routing through the cache."""
     employee_name = request.args.get('name')
     force_sync = request.args.get('force_sync', 'false').lower() == 'true'
+    access_token = get_token_from_header()
     
     if not employee_name:
         return jsonify({"error": "Name parameter is required"}), 400
 
-    shifts, metadata, error = get_schedule_data(employee_name, force_sync)
+    shifts, metadata, sync_status, error = get_schedule_data(employee_name, force_sync, access_token)
 
-    if error:
+    if error and not shifts:
         return jsonify({"error": error}), 500
     if not shifts or len(shifts) == 0:
         return jsonify({"error": f"No shifts found for {employee_name}."}), 404
@@ -295,6 +294,7 @@ def download_schedule():
         mimetype='text/calendar',
         headers={"Content-Disposition": f"inline; filename=schedule_{employee_name.title()}.ics"}
     )
+
 
 if __name__ == '__main__':
     app.run(port=5328)
