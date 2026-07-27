@@ -236,17 +236,20 @@ export default function Dashboard() {
   return (
     <main className="min-h-[100dvh] w-screen flex flex-col items-center py-6 px-4 sm:px-8 bg-[#c2e2f5] font-sans overflow-y-auto">
       
-      <div className="w-full max-w-[400px] flex flex-col gap-6 relative z-10">
+      {/* === MAIN LAYOUT WRAPPER === */}
+      {/* Uses flex-col for mobile (stacked), and md:flex-row for desktop (side-by-side) */}
+      <div className="w-full max-w-[850px] flex flex-col md:flex-row items-center md:items-start justify-center gap-8 md:gap-10 relative z-10">
         
-        {/* === CONDITIONAL RENDERING: STAFF VS GUEST === */}
-        {role === "guest" ? (
-           <div className="w-full flex flex-col items-center justify-center mb-2 pt-4 shrink-0">
-             <img src="/dreamtealogo.svg" alt="Dream Tea Logo" className="object-contain w-20 h-auto mb-3" />
-             <h2 className="text-gray-800 font-bold text-xl">Guest View</h2>
-             <p className="text-gray-600 text-xs text-center max-w-[280px] mt-1 font-medium">Search and download features are restricted to staff accounts.</p>
-             <button onClick={() => router.push("/")} className="mt-4 text-xs font-bold text-[#628ebf] hover:underline">Log in as Staff</button>
-           </div>
-        ) : (
+        {/* === LEFT COLUMN: SCHEDULE & SEARCH === */}
+        <div className="w-full max-w-[400px] flex flex-col gap-6 shrink-0">
+          
+          {/* === CONDITIONAL RENDERING: STAFF VS GUEST === */}
+          {role === "guest" ? (
+             <div className="w-full flex flex-col items-center justify-center mb-2 pt-8 shrink-0">
+                <img src="/dreamtealogo.svg" alt="Dream Tea Logo" className="object-contain w-40 h-auto drop-shadow-sm opacity-90" />
+                <h2 className="text-[#628ebf] font-bold text-xl mt-6 tracking-wide">Nexus Live Status</h2>
+             </div>
+          ) : (
           <div className="w-full bg-white rounded-[32px] shadow-[0_4px_24px_rgba(0,0,0,0.1)] flex flex-col overflow-hidden border-4 border-white max-h-[70vh] flex-shrink-0">
             
             <div className="px-8 pt-8 pb-4 shrink-0 bg-white z-20">
@@ -380,11 +383,12 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
-        )}
+          )}
+        </div>
 
-        {/* === LIVE STORE STATUS CARDS (3D FLIP) === */}
+        {/* === RIGHT COLUMN: LIVE STORE STATUS CARDS (3D FLIP) === */}
         {hasLiveStatus && (
-          <div className="w-full flex flex-col gap-4 pb-12 mt-2">
+          <div className="w-full max-w-[400px] flex flex-col gap-4 pb-12 md:pb-0 shrink-0">
             <h3 className="font-bold text-[#628ebf] text-sm uppercase tracking-widest pl-2">Live Store Status</h3>
             
             {Object.entries(liveLocations).map(([loc, data]) => {
