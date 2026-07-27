@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { supabase } from "../utils/supabase/client";
 
 export default function Home() {
   const [email, setEmail] = useState("");
@@ -72,8 +73,15 @@ export default function Home() {
     setIsLoading(true);
 
     try {
-      // TODO: Connect to Supabase Auth here to verify the password
-      console.log("Simulating Login for:", email);
+      // THE REAL SUPABASE LOGIN!
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email,
+        password: password,
+      });
+
+      if (error) {
+        throw error;
+      }
       
       // They logged in manually, so clear any old Google tokens to prevent expired token errors
       localStorage.removeItem("google_access_token"); 
@@ -131,7 +139,7 @@ export default function Home() {
 
             <input
               type="text"
-              placeholder="Username or Email"
+              placeholder="Email address"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="input-nexus"
@@ -181,7 +189,6 @@ export default function Home() {
               <div className="divider-nexus"></div>
             </div>
 
-            {/* Custom Google Sync Button */}
             <button 
               type="button"
               onClick={handleGoogleLogin}
