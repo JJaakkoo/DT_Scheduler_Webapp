@@ -22,6 +22,7 @@ export default function Dashboard() {
 
   // Live Status States
   const [masterShifts, setMasterShifts] = useState<any[]>([]);
+  const [isMasterLoading, setIsMasterLoading] = useState(true); // PREVENTS LAYOUT SHIFT!
   const [currentTime, setCurrentTime] = useState(new Date());
   const [flippedCards, setFlippedCards] = useState<Record<string, boolean>>({});
 
@@ -87,6 +88,9 @@ export default function Dashboard() {
       }
     } catch (e) {
       console.error("Failed to load master schedule", e);
+    } finally {
+      // Guaranteed to clear loading state whether it succeeds or fails
+      setIsMasterLoading(false);
     }
   }, []);
 
@@ -238,7 +242,7 @@ export default function Dashboard() {
       
       {/* === MAIN LAYOUT WRAPPER === */}
       {/* Uses flex-col for mobile (stacked), and md:flex-row for desktop (side-by-side) */}
-      <div className="w-full max-w-[850px] flex flex-col md:flex-row items-center md:items-center justify-center gap-8 md:gap-10 relative z-10 my-auto">
+      <div className="w-full max-w-[850px] flex flex-col md:flex-row items-center md:items-start justify-center gap-8 md:gap-10 relative z-10 my-auto">
         
         {/* === LEFT COLUMN: SCHEDULE & SEARCH === */}
         {/* Gap changed to match the right column perfectly */}
@@ -331,6 +335,7 @@ export default function Dashboard() {
                 )}
               </div>
 
+              {}
               <div className="shrink-0 bg-white px-8 pb-8 pt-4 z-20 border-t border-gray-50">
                 {metadata && !isLoading && (
                   <div className="flex flex-col gap-0.5 text-center mb-4">
@@ -392,111 +397,123 @@ export default function Dashboard() {
           )}
         </div>
 
+        {}
         {/* === RIGHT COLUMN: LIVE STORE STATUS CARDS (3D FLIP) === */}
-        {hasLiveStatus && (
+        {(isMasterLoading || hasLiveStatus) && (
           <div className="w-full max-w-[400px] flex flex-col gap-4 pb-12 md:pb-0 shrink-0">
             <h3 className="font-bold text-[#628ebf] text-sm uppercase tracking-widest pl-2">Live Store Status</h3>
             
-            {Object.entries(liveLocations).map(([loc, data]) => {
-              if (data.now.length === 0 && data.next.length === 0) return null;
-              const theme = getLocationTheme(loc);
-              
-              const defaultFlipped = data.now.length === 0 && data.next.length > 0;
-              const isFlipped = flippedCards[loc] !== undefined ? flippedCards[loc] : defaultFlipped;
-              
-              return (
-                <div key={loc} className="relative w-full cursor-pointer group" style={{ perspective: '1000px' }} onClick={() => toggleFlip(loc)}>
-                  <div 
-                    className="w-full transition-transform duration-500 rounded-3xl"
-                    style={{ 
-                      transformStyle: 'preserve-3d', 
-                      transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
-                      display: 'grid' 
-                    }}
-                  >
-                    
-                    {/* === FRONT FACE (WORKING NOW) === */}
+            {/* Added Spinner logic based on the new isMasterLoading state! */}
+            {isMasterLoading ? (
+              <div className="bg-white/60 border-2 border-white/60 backdrop-blur-sm p-8 shadow-sm rounded-3xl flex flex-col items-center justify-center gap-3 min-h-[160px]">
+                <svg className="animate-spin h-8 w-8 text-[#8ab4f8]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <p className="font-semibold text-sm text-[#8ab4f8] animate-pulse">Fetching live store status...</p>
+              </div>
+            ) : (
+              Object.entries(liveLocations).map(([loc, data]) => {
+                if (data.now.length === 0 && data.next.length === 0) return null;
+                const theme = getLocationTheme(loc);
+                
+                const defaultFlipped = data.now.length === 0 && data.next.length > 0;
+                const isFlipped = flippedCards[loc] !== undefined ? flippedCards[loc] : defaultFlipped;
+                
+                return (
+                  <div key={loc} className="relative w-full cursor-pointer group" style={{ perspective: '1000px' }} onClick={() => toggleFlip(loc)}>
                     <div 
-                      className={`bg-white border-2 border-transparent p-5 shadow-[0_4px_24px_rgba(0,0,0,0.05)] rounded-3xl flex flex-col gap-3 relative overflow-hidden`}
-                      style={{ gridArea: '1 / 1', backfaceVisibility: 'hidden' }}
+                      className="w-full transition-transform duration-500 rounded-3xl"
+                      style={{ 
+                        transformStyle: 'preserve-3d', 
+                        transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
+                        display: 'grid' 
+                      }}
                     >
-                      <div className={`absolute left-0 top-0 bottom-0 w-2 ${theme.leftBar}`}></div>
                       
-                      <div className="flex justify-between items-start ml-2">
-                        <h4 className="font-black text-lg text-gray-800">{loc}</h4>
-                        <div className="flex items-center gap-1 text-[10px] uppercase font-bold text-gray-400 bg-gray-50 px-2 py-1 rounded-full group-hover:bg-gray-100 transition-colors">
-                           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3"><path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
-                           Flip to Next
-                        </div>
-                      </div>
-                      
-                      <div className="ml-2">
-                        <div className="text-[11px] font-bold text-gray-400 mb-2 flex items-center gap-1.5 uppercase tracking-wider">
-                           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5 text-emerald-500">
-                             <path fillRule="evenodd" d="M16.403 12.652a3 3 0 000-5.304 3 3 0 00-3.75-3.751 3 3 0 00-5.305 0 3 3 0 00-3.751 3.75 3 3 0 000 5.305 3 3 0 003.75 3.751 3 3 0 005.305 0 3 3 0 003.751-3.75zm-2.546-4.46a.75.75 0 00-1.214-.883l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
-                           </svg>
-                           On Shift Now
-                        </div>
-                        {data.now.length > 0 ? (
-                          <div className="flex flex-wrap gap-2">
-                            {data.now.map((s, i) => (
-                              <span key={i} className="bg-white px-3 py-1.5 rounded-lg shadow-[0_2px_8px_rgba(0,0,0,0.04)] text-[13px] font-bold text-gray-800 capitalize border border-gray-100 flex items-center gap-1.5 whitespace-nowrap">
-                                {s.name} 
-                                <span className="text-gray-400 font-medium text-[10px]">
-                                  Until {s.end.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Edmonton' })}
-                                </span>
-                              </span>
-                            ))}
+                      {/* === FRONT FACE (WORKING NOW) === */}
+                      <div 
+                        className={`bg-white border-2 border-transparent p-5 shadow-[0_4px_24px_rgba(0,0,0,0.05)] rounded-3xl flex flex-col gap-3 relative overflow-hidden`}
+                        style={{ gridArea: '1 / 1', backfaceVisibility: 'hidden' }}
+                      >
+                        <div className={`absolute left-0 top-0 bottom-0 w-2 ${theme.leftBar}`}></div>
+                        
+                        <div className="flex justify-between items-start ml-2">
+                          <h4 className="font-black text-lg text-gray-800">{loc}</h4>
+                          <div className="flex items-center gap-1 text-[10px] uppercase font-bold text-gray-400 bg-gray-50 px-2 py-1 rounded-full group-hover:bg-gray-100 transition-colors">
+                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3"><path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
+                             Flip to Next
                           </div>
-                        ) : (
-                          <p className="text-xs text-gray-400 italic">No one currently on shift.</p>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* === BACK FACE (UP NEXT) === */}
-                    <div 
-                      className={`bg-white border-2 border-transparent p-5 shadow-[0_4px_24px_rgba(0,0,0,0.05)] rounded-3xl flex flex-col gap-3 relative overflow-hidden`}
-                      style={{ gridArea: '1 / 1', backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
-                    >
-                      <div className={`absolute right-0 top-0 bottom-0 w-2 ${theme.leftBar}`}></div>
-                      
-                      <div className="flex justify-between items-start mr-2">
-                        <div className="flex items-center gap-1 text-[10px] uppercase font-bold text-gray-400 bg-gray-50 px-2 py-1 rounded-full group-hover:bg-gray-100 transition-colors">
-                           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3"><path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" /></svg>
-                           Back to Now
                         </div>
-                        <h4 className="font-black text-lg text-gray-800">{loc}</h4>
-                      </div>
-                      
-                      <div className="mr-2">
-                         <div className="text-[11px] font-bold text-gray-400 mb-2 flex items-center gap-1.5 uppercase tracking-wider justify-end">
-                           Up Next
-                           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5 text-[#8ab4f8]">
-                             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-13a.75.75 0 00-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 000-1.5h-3.25V5z" clipRule="evenodd" />
-                           </svg>
-                        </div>
-                        {data.next.length > 0 ? (
-                          <div className="flex flex-wrap gap-2 justify-end">
-                            {data.next.map((s, i) => (
-                              <span key={i} className="bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100 text-[13px] font-bold text-gray-800 capitalize flex items-center gap-1.5 whitespace-nowrap shadow-sm">
-                                {s.name} 
-                                <span className="text-gray-400 font-medium text-[10px]">
-                                  {formatFutureTime(s.start)}
-                                </span>
-                              </span>
-                            ))}
+                        
+                        <div className="ml-2">
+                          <div className="text-[11px] font-bold text-gray-400 mb-2 flex items-center gap-1.5 uppercase tracking-wider">
+                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5 text-emerald-500">
+                               <path fillRule="evenodd" d="M16.403 12.652a3 3 0 000-5.304 3 3 0 00-3.75-3.751 3 3 0 00-5.305 0 3 3 0 00-3.751 3.75 3 3 0 000 5.305 3 3 0 003.75 3.751 3 3 0 005.305 0 3 3 0 003.751-3.75zm-2.546-4.46a.75.75 0 00-1.214-.883l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
+                             </svg>
+                             On Shift Now
                           </div>
-                        ) : (
-                          <p className="text-xs text-gray-400 italic text-right">No upcoming shifts scheduled.</p>
-                        )}
+                          {data.now.length > 0 ? (
+                            <div className="flex flex-wrap gap-2">
+                              {data.now.map((s, i) => (
+                                <span key={i} className="bg-white px-3 py-1.5 rounded-lg shadow-[0_2px_8px_rgba(0,0,0,0.04)] text-[13px] font-bold text-gray-800 capitalize border border-gray-100 flex items-center gap-1.5 whitespace-nowrap">
+                                  {s.name} 
+                                  <span className="text-gray-400 font-medium text-[10px]">
+                                    Until {s.end.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Edmonton' })}
+                                  </span>
+                                </span>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-xs text-gray-400 italic">No one currently on shift.</p>
+                          )}
+                        </div>
                       </div>
-                    </div>
 
+                      {/* === BACK FACE (UP NEXT) === */}
+                      <div 
+                        className={`bg-white border-2 border-transparent p-5 shadow-[0_4px_24px_rgba(0,0,0,0.05)] rounded-3xl flex flex-col gap-3 relative overflow-hidden`}
+                        style={{ gridArea: '1 / 1', backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
+                      >
+                        <div className={`absolute right-0 top-0 bottom-0 w-2 ${theme.leftBar}`}></div>
+                        
+                        <div className="flex justify-between items-start mr-2">
+                          <div className="flex items-center gap-1 text-[10px] uppercase font-bold text-gray-400 bg-gray-50 px-2 py-1 rounded-full group-hover:bg-gray-100 transition-colors">
+                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3"><path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" /></svg>
+                             Back to Now
+                          </div>
+                          <h4 className="font-black text-lg text-gray-800">{loc}</h4>
+                        </div>
+                        
+                        <div className="mr-2">
+                           <div className="text-[11px] font-bold text-gray-400 mb-2 flex items-center gap-1.5 uppercase tracking-wider justify-end">
+                             Up Next
+                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5 text-[#8ab4f8]">
+                               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-13a.75.75 0 00-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 000-1.5h-3.25V5z" clipRule="evenodd" />
+                             </svg>
+                          </div>
+                          {data.next.length > 0 ? (
+                            <div className="flex flex-wrap gap-2 justify-end">
+                              {data.next.map((s, i) => (
+                                <span key={i} className="bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100 text-[13px] font-bold text-gray-800 capitalize flex items-center gap-1.5 whitespace-nowrap shadow-sm">
+                                  {s.name} 
+                                  <span className="text-gray-400 font-medium text-[10px]">
+                                    {formatFutureTime(s.start)}
+                                  </span>
+                                </span>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-xs text-gray-400 italic text-right">No upcoming shifts scheduled.</p>
+                          )}
+                        </div>
+                      </div>
+
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
         )}
 
