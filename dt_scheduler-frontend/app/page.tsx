@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "../utils/supabase/client";
 
-export default function Home() {
+function HomeContent() {
   const supabase = createClient();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -16,52 +16,16 @@ export default function Home() {
   const [isSignUp, setIsSignUp] = useState(false);
 
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
-    // 1. Initialize the Google Token Client (OAuth 2.0)
-    function initGoogleClient() {
-      const google = (window as any).google;
-      
-      if (google) {
-        const client = google.accounts.oauth2.initTokenClient({
-          client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "YOUR_CLIENT_ID",
-          scope: "https://www.googleapis.com/auth/gmail.readonly",
-          callback: (tokenResponse: any) => {
-            if (tokenResponse.error) {
-              setLoginError("Google Sign-In failed or was cancelled.");
-              return;
-            }
-            // Success! We have the token that can read their Gmail.
-            console.log("Google Token Received!");
-            
-            // Store the token so the Dashboard can use it to sync the schedule later
-            localStorage.setItem("google_access_token", tokenResponse.access_token);
-            localStorage.setItem("nexus_role", "staff");
-            
-            router.push("/dashboard");
-          },
-        });
-
-        // Attach the client to the window so our button can trigger it
-        (window as any).googleTokenClient = client;
-      }
+    const errorParam = searchParams.get('error');
+    if (errorParam === 'not-whitelisted') {
+      setLoginError("This Google account is not authorized to access the portal.");
+    } else if (errorParam === 'auth-failed') {
+      setLoginError("Google Sign-In failed or was cancelled.");
     }
-
-    const scriptId = "google-gsi-script";
-    const existingScript = document.getElementById(scriptId);
-
-    if (!existingScript) {
-      const script = document.createElement("script");
-      script.id = scriptId;
-      script.src = "https://accounts.google.com/gsi/client";
-      script.async = true;
-      script.defer = true;
-      script.onload = initGoogleClient;
-      document.head.appendChild(script);
-    } else {
-      initGoogleClient();
-    }
-  }, [router]);
+  }, [searchParams]);
 
   // --- STAFF EMAIL/PASS LOGIN HANDLER ---
   const handleStaffLogin = async (e: React.FormEvent) => {
@@ -168,15 +132,31 @@ export default function Home() {
 
 
   // --- GOOGLE LOGIN TRIGGER ---
-  const handleGoogleLogin = () => {
+  const handleGoogleLogin = async () => {
     setLoginError("");
     setSuccessMessage("");
-    const client = (window as any).googleTokenClient;
-    if (client) {
-      // This pops up the Google Auth window asking for Gmail permissions
-      client.requestAccessToken();
-    } else {
-      setLoginError("Google Login is still loading. Please try again in a moment.");
+    setIsLoading(true);
+    
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+          scopes: 'https://www.googleapis.com/auth/gmail.readonly',
+        },
+      });
+
+      if (error) throw error;
+    } catch (err: any) {
+      let msg = err?.message || err?.error_description || err?.msg || "Google Sign-In failed.";
+      if (typeof msg === 'object') {
+        msg = msg.message || JSON.stringify(msg);
+      }
+      if (msg === '{}' || msg === '"{}"') {
+        msg = "Google Sign-In failed.";
+      }
+      setLoginError(String(msg));
+      setIsLoading(false);
     }
   };
 
@@ -336,5 +316,13 @@ export default function Home() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={<div className="h-screen w-screen flex items-center justify-center p-8 bg-dreamtea-light">Loading...</div>}>
+      <HomeContent />
+    </Suspense>
   );
 }
