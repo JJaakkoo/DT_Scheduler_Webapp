@@ -94,6 +94,7 @@ export default function Dashboard() {
       const data = await response.json();
       if (response.ok) {
         setMasterShifts(data.shifts || []);
+        if (data.metadata) setMetadata(data.metadata);
       }
     } catch (e) {
       console.error("Failed to load master schedule", e);
@@ -108,6 +109,21 @@ export default function Dashboard() {
     const timer = setInterval(() => setCurrentTime(new Date()), 60000);
     return () => clearInterval(timer);
   }, [fetchMaster]);
+
+  // DEBOUNCED AUTO-SEARCH
+  useEffect(() => {
+    const query = employeeName.trim();
+    if (!query) return;
+
+    const timeoutId = setTimeout(() => {
+      // Only execute if they stopped typing and it's a new query
+      if (query !== activeQuery) {
+        executeSearch(query, false);
+      }
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [employeeName, activeQuery]);
 
   // 2. LIVE STATUS DATA ENGINE 
   const liveLocations = useMemo(() => {
@@ -147,6 +163,7 @@ export default function Dashboard() {
   const executeSearch = async (nameToSearch: string, forceSync = false) => {
     const query = nameToSearch.trim();
     if (!query) return;
+    if (query === activeQuery && !forceSync) return;
     
     setActiveQuery(query);
     setError(null);
@@ -367,7 +384,7 @@ export default function Dashboard() {
 
               {}
               <div className="shrink-0 bg-white px-8 pb-8 pt-4 z-20 border-t border-gray-50">
-                {metadata && !isLoading && (
+                {metadata && (
                   <div className="flex flex-col gap-0.5 text-center mb-4">
                     <span className="text-[11px] text-gray-500">
                       <span className="font-bold text-gray-700">Jacky Sent Attachment:</span> {formatDate(metadata.email_timestamp)}
