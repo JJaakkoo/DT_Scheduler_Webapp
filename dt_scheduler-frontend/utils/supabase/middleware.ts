@@ -27,8 +27,26 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
-  // refreshing the auth token
-  await supabase.auth.getUser()
+  // refreshing the auth token and fetching the user
+  const { data: { user }, error } = await supabase.auth.getUser()
+
+  const isProtectedPath = request.nextUrl.pathname.startsWith('/dashboard')
+  const isAuthPage = request.nextUrl.pathname === '/' || request.nextUrl.pathname.startsWith('/auth/callback')
+
+  // Redirect unauthenticated users trying to access protected routes
+  if (isProtectedPath && (!user || error)) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/'
+    // Optional: Keep the search params or set an error state
+    return NextResponse.redirect(url)
+  }
+
+  // Redirect authenticated users away from the login page
+  if (request.nextUrl.pathname === '/' && user && !error) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/dashboard'
+    return NextResponse.redirect(url)
+  }
 
   return supabaseResponse
 }
