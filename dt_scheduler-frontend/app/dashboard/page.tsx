@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "../utils/supabase/client";
+import { createClient } from "../../utils/supabase/client";
 
 export default function Dashboard() {
   const supabase = createClient();
