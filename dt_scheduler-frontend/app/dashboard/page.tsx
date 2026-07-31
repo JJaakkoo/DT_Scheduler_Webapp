@@ -29,6 +29,13 @@ export default function Dashboard() {
   const [flippedCards, setFlippedCards] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
+    // 0. Extract Google OAuth provider token if available
+    supabase.auth.getSession().then(({ data }) => {
+      if (data?.session?.provider_token) {
+        localStorage.setItem("google_access_token", data.session.provider_token);
+      }
+    });
+
     // 1. Check user role
     const currentRole = localStorage.getItem("nexus_role");
     if (!currentRole) {
