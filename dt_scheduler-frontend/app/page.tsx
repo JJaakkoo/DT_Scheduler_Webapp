@@ -144,15 +144,13 @@ export default function Home() {
         throw error;
       }
       
-      setSuccessMessage("Sign up successful! Redirecting to dashboard...");
+      // Bypass Supabase email enumeration protection:
+      // If a user already exists and tries to sign up again, Supabase returns success but with an empty identities array.
+      if (data?.user?.identities && data.user.identities.length === 0) {
+        throw new Error("Account already exists. Please log in.");
+      }
       
-      // Auto-login configuration
-      localStorage.removeItem("google_access_token"); 
-      localStorage.setItem("nexus_role", "staff");
-
-      setTimeout(() => {
-        router.push("/dashboard");
-      }, 1500);
+      setSuccessMessage("Sign up successful! Please check your email to confirm your account.");
 
     } catch (err: any) {
       let msg = err?.message || err?.error_description || err?.msg || "An error occurred during sign up.";
