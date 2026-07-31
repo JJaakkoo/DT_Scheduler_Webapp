@@ -2,15 +2,18 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "../utils/supabase/client";
+import { createClient } from "../utils/supabase/client";
 
 export default function Home() {
+  const supabase = createClient();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isRemembered, setIsRemembered] = useState(false);
   const [loginError, setLoginError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false);
 
   const router = useRouter();
 
@@ -64,6 +67,7 @@ export default function Home() {
   const handleStaffLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError("");
+    setSuccessMessage("");
     
     if (!email || !password) {
       setLoginError("Please enter both email and password.");
@@ -95,9 +99,66 @@ export default function Home() {
     }
   };
 
+  // --- STAFF SIGN UP HANDLER ---
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginError("");
+    setSuccessMessage("");
+    
+    if (!email || !password) {
+      setLoginError("Please enter both email and password.");
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      // Check whitelist first
+      const { data: whitelistData, error: whitelistError } = await supabase
+        .from('whitelisted_emails')
+        .select('email')
+        .eq('email', email)
+        .maybeSingle();
+
+      if (whitelistError || !whitelistData) {
+        throw new Error("Email is not whitelisted. Please contact Jako to get whitelisted.");
+      }
+
+      // Proceed with signup
+      const { data, error } = await supabase.auth.signUp({
+        email: email,
+        password: password,
+      });
+
+      if (error) {
+        if (error.code === 'user_already_exists' || error.message.toLowerCase().includes('already registered') || error.message.toLowerCase().includes('already exists')) {
+          throw new Error("Account already exists.");
+        }
+        throw error;
+      }
+      
+      setSuccessMessage("Sign up successful! Redirecting to dashboard...");
+      
+      // Auto-login configuration
+      localStorage.removeItem("google_access_token"); 
+      localStorage.setItem("nexus_role", "staff");
+
+      setTimeout(() => {
+        router.push("/dashboard");
+      }, 1500);
+
+    } catch (err: any) {
+      setLoginError(err.message || "An error occurred during sign up.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+
   // --- GOOGLE LOGIN TRIGGER ---
   const handleGoogleLogin = () => {
     setLoginError("");
+    setSuccessMessage("");
     const client = (window as any).googleTokenClient;
     if (client) {
       // This pops up the Google Auth window asking for Gmail permissions
@@ -117,7 +178,7 @@ export default function Home() {
   return (
     <main className="h-screen w-screen flex items-center justify-center p-8">
       
-      <div className="w-full max-w-5xl h-[540px] rounded-3xl flex overflow-hidden shadow-xl relative bg-white">
+      <div className="w-full max-w-5xl h-[600px] rounded-3xl flex overflow-hidden shadow-xl relative bg-white">
         
         <img
           src="/Background Image.png"
@@ -132,10 +193,11 @@ export default function Home() {
             <h1 className="font-bold text-lg text-text-primary">Dream Tea Nexus</h1>
           </div>
 
-          <h1 className="font-bold text-[36px] text-text-primary">Welcome Back</h1>
-          <h2 className="font-bold text-[14px] text-text-secondary mt-2 mb-6">Nexus Portal Login</h2>
+          <div key={isSignUp ? 'signup' : 'login'} className="w-full flex flex-col items-center transition-all duration-500 ease-in-out opacity-100 starting:opacity-0">
+            <h1 className="font-bold text-[36px] text-text-primary">{isSignUp ? "Create Account" : "Welcome Back"}</h1>
+            <h2 className="font-bold text-[14px] text-text-secondary mt-2 mb-6">{isSignUp ? "Nexus Portal Registration" : "Nexus Portal Login"}</h2>
 
-          <form onSubmit={handleStaffLogin} className="w-full flex flex-col items-center gap-4">
+          <form onSubmit={isSignUp ? handleSignUp : handleStaffLogin} className="w-full flex flex-col items-center gap-4">
 
             <input
               type="text"
@@ -174,46 +236,90 @@ export default function Home() {
                 <span className="text-xs ml-2 text-text-secondary select-none font-medium">Remember me</span>
               </div>
               <button type="submit" disabled={isLoading} className="btn-nexus disabled:opacity-50">
-                {isLoading ? "Wait..." : "Log In"}
+                {isLoading ? "Wait..." : (isSignUp ? "Sign Up" : "Log In")}
               </button>
             </div>
 
-            {loginError && <span className="text-red-500 text-xs font-medium -mt-2 text-center max-w-[280px]">{loginError}</span>}
+            {(loginError || successMessage) && (
+              <div className="w-full max-w-[280px] flex items-center justify-center mt-2 transition-all animate-in fade-in duration-300">
+                {loginError && <span className="text-red-500 text-xs font-medium text-center">{loginError}</span>}
+                {successMessage && <span className="text-emerald-500 text-xs font-medium text-center">{successMessage}</span>}
+              </div>
+            )}
           </form>
 
           <div className="w-full flex flex-col items-center mt-4">
             
-            <div className="w-full max-w-[280px] flex items-center gap-3 mb-4">
-              <div className="divider-nexus"></div>
-              <span className="text-[11px] text-text-secondary font-bold uppercase tracking-wider">or</span>
-              <div className="divider-nexus"></div>
+            {!isSignUp && (
+              <>
+                <div className="w-full max-w-[280px] flex items-center gap-3 mb-4">
+                  <div className="divider-nexus"></div>
+                  <span className="text-[11px] text-text-secondary font-bold uppercase tracking-wider">or</span>
+                  <div className="divider-nexus"></div>
+                </div>
+
+                <button 
+                  type="button"
+                  onClick={handleGoogleLogin}
+                  className="w-full max-w-[280px] h-[48px] bg-white border border-gray-300 text-gray-700 font-medium text-[14px] rounded-full hover:bg-gray-50 hover:shadow-sm transition-all flex items-center justify-center gap-3 mb-3"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" className="w-5 h-5">
+                    <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+                    <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+                    <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+                    <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+                  </svg>
+                  Sign in with Google
+                </button>
+
+                <button 
+                  type="button"
+                  onClick={handleGuestLogin}
+                  className="w-full max-w-[280px] h-[48px] bg-white border-2 border-gray-200 text-gray-600 font-bold text-[14px] rounded-full hover:bg-gray-50 hover:border-gray-300 transition-colors flex items-center justify-center gap-2 mb-3"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4 text-dreamtea-blue">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+                  </svg>
+                  Continue as Guest
+                </button>
+              </>
+            )}
+
+            <div className="text-xs text-text-secondary mt-1 font-medium">
+              {isSignUp ? (
+                <>
+                  Already have an account?{" "}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsSignUp(false);
+                      setLoginError("");
+                      setSuccessMessage("");
+                    }}
+                    className="text-dreamtea-blue font-bold hover:underline cursor-pointer bg-transparent border-none p-0"
+                  >
+                    Log In
+                  </button>
+                </>
+              ) : (
+                <>
+                  Don't have an account?{" "}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsSignUp(true);
+                      setLoginError("");
+                      setSuccessMessage("");
+                    }}
+                    className="text-dreamtea-blue font-bold hover:underline cursor-pointer bg-transparent border-none p-0"
+                  >
+                    Sign Up
+                  </button>
+                </>
+              )}
             </div>
 
-            <button 
-              type="button"
-              onClick={handleGoogleLogin}
-              className="w-full max-w-[280px] h-[48px] bg-white border border-gray-300 text-gray-700 font-medium text-[14px] rounded-full hover:bg-gray-50 hover:shadow-sm transition-all flex items-center justify-center gap-3 mb-3"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" className="w-5 h-5">
-                <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-                <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-                <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-                <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-              </svg>
-              Sign in with Google
-            </button>
-
-            <button 
-              type="button"
-              onClick={handleGuestLogin}
-              className="w-full max-w-[280px] h-[48px] bg-white border-2 border-gray-200 text-gray-600 font-bold text-[14px] rounded-full hover:bg-gray-50 hover:border-gray-300 transition-colors flex items-center justify-center gap-2"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4 text-dreamtea-blue">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
-              </svg>
-              Continue as Guest
-            </button>
-
+          </div>
           </div>
         </div>
       </div>
