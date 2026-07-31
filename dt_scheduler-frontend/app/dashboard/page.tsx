@@ -2,8 +2,10 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import { createClient } from "../utils/supabase/client";
 
 export default function Dashboard() {
+  const supabase = createClient();
   const router = useRouter();
 
   // Role & Auth State
@@ -237,9 +239,30 @@ export default function Dashboard() {
 
   if (!role) return null; // Prevent hydration flash
 
+  const handleLogOut = async () => {
+    setIsLoading(true);
+    await supabase.auth.signOut();
+    localStorage.removeItem("nexus_role");
+    localStorage.removeItem("google_access_token");
+    router.push("/");
+    router.refresh();
+  };
+
   return (
-    <main className="min-h-[100dvh] w-screen flex flex-col items-center justify-center py-6 px-4 sm:px-8 bg-[#c2e2f5] font-sans overflow-y-auto">
+    <main className="min-h-[100dvh] w-screen flex flex-col items-center justify-center py-6 px-4 sm:px-8 bg-[#c2e2f5] font-sans overflow-y-auto relative">
       
+      <button 
+        onClick={handleLogOut} 
+        disabled={isLoading}
+        className="absolute top-4 right-4 sm:top-6 sm:right-6 px-4 py-2 bg-white/80 hover:bg-white text-gray-700 font-medium rounded-full shadow-sm hover:shadow transition-all text-sm flex items-center gap-2 z-50 backdrop-blur-sm disabled:opacity-50"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+          <path fillRule="evenodd" d="M10 12.5a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v2a.5.5 0 0 0 1 0v-2A1.5 1.5 0 0 0 9.5 2h-8A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h8a1.5 1.5 0 0 0 1.5-1.5v-2a.5.5 0 0 0-1 0v2z"/>
+          <path fillRule="evenodd" d="M15.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 0 0-.708.708L14.293 7.5H5.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3z"/>
+        </svg>
+        {isLoading ? "Logging out..." : "Log Out"}
+      </button>
+
       {/* === MAIN LAYOUT WRAPPER === */}
       {/* Uses flex-col for mobile (stacked), and md:flex-row for desktop (side-by-side) */}
       <div className="w-full max-w-[850px] flex flex-col md:flex-row items-center md:items-start justify-center gap-8 md:gap-10 relative z-10 my-auto">
