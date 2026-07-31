@@ -93,7 +93,14 @@ export default function Home() {
       
       router.push("/dashboard");
     } catch (err: any) {
-      setLoginError(err.message || "Invalid email or password.");
+      let msg = err?.message || err?.error_description || err?.msg || "Invalid email or password.";
+      if (typeof msg === 'object') {
+        msg = msg.message || JSON.stringify(msg);
+      }
+      if (msg === '{}' || msg === '"{}"') {
+        msg = "Invalid email or password.";
+      }
+      setLoginError(String(msg));
     } finally {
       setIsLoading(false);
     }
@@ -148,7 +155,14 @@ export default function Home() {
       }, 1500);
 
     } catch (err: any) {
-      setLoginError(err.message || "An error occurred during sign up.");
+      let msg = err?.message || err?.error_description || err?.msg || "An error occurred during sign up.";
+      if (typeof msg === 'object') {
+        msg = msg.message || JSON.stringify(msg);
+      }
+      if (msg === '{}' || msg === '"{}"') {
+        msg = "An error occurred during sign up.";
+      }
+      setLoginError(String(msg));
     } finally {
       setIsLoading(false);
     }
