@@ -27,6 +27,17 @@ function HomeContent() {
     }
   }, [searchParams]);
 
+  // Fix BFCache stuck loading state when user hits the back button during Google Auth
+  useEffect(() => {
+    const handlePageShow = (e: PageTransitionEvent) => {
+      if (e.persisted) {
+        setIsLoading(false);
+      }
+    };
+    window.addEventListener('pageshow', handlePageShow);
+    return () => window.removeEventListener('pageshow', handlePageShow);
+  }, []);
+
   // --- STAFF EMAIL/PASS LOGIN HANDLER ---
   const handleStaffLogin = async (e: React.FormEvent) => {
     e.preventDefault();
