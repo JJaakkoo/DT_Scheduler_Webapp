@@ -125,28 +125,47 @@ export default function Dashboard() {
     return () => clearTimeout(timeoutId);
   }, [employeeName, activeQuery]);
 
-  // 2. LIVE STATUS DATA ENGINE 
   const liveLocations = useMemo(() => {
-    const locations: Record<string, { now: any[], allNext: any[], next: any[] }> = {};
+    const locations: Record<string, { now: any[], allNext: any[], next: any[], lastCompleted: any[] }> = {};
 
     masterShifts.forEach(shift => {
       const loc = (shift.location || shift.summary.replace("Work at ", "")).trim();
-      if (!locations[loc]) locations[loc] = { now: [], allNext: [], next: [] };
-
-      const start = new Date(shift.start.dateTime);
-      const end = new Date(shift.end.dateTime);
-
-      if (currentTime >= end) return;
-
-      if (currentTime >= start && currentTime < end) {
-        locations[loc].now.push({ name: shift.employee || "Staff", end });
-      } else if (currentTime < start) {
-        locations[loc].allNext.push({ name: shift.employee || "Staff", start });
-      }
+      if (!locations[loc]) locations[loc] = { now: [], allNext: [], next: [], lastCompleted: [] };
     });
 
     Object.keys(locations).forEach(loc => {
+      const locShifts = masterShifts.filter(s => (s.location || s.summary.replace("Work at ", "")).trim() === loc);
+      
+      const nowShifts = locShifts.filter(s => {
+        const start = new Date(s.start.dateTime);
+        const end = new Date(s.end.dateTime);
+        return currentTime >= start && currentTime < end;
+      });
+
+      const pastShifts = locShifts.filter(s => {
+        const end = new Date(s.end.dateTime);
+        return end <= currentTime;
+      });
+
+      const futureShifts = locShifts.filter(s => {
+        const start = new Date(s.start.dateTime);
+        return start > currentTime;
+      });
+
+      // Find 'now' shifts
+      locations[loc].now = nowShifts.map(s => ({ name: s.employee || "Staff", end: new Date(s.end.dateTime) }));
+
+      // Find 'lastCompleted' shifts (most recent end time)
+      if (pastShifts.length > 0) {
+        pastShifts.sort((a, b) => new Date(b.end.dateTime).getTime() - new Date(a.end.dateTime).getTime());
+        const lastEndTime = new Date(pastShifts[0].end.dateTime).getTime();
+        const lastCompletedShifts = pastShifts.filter(s => new Date(s.end.dateTime).getTime() === lastEndTime);
+        locations[loc].lastCompleted = lastCompletedShifts.map(s => ({ name: s.employee || "Staff", end: new Date(s.end.dateTime) }));
+      }
+
+      locations[loc].allNext = futureShifts.map(s => ({ name: s.employee || "Staff", start: new Date(s.start.dateTime) }));
       locations[loc].allNext.sort((a, b) => a.start.getTime() - b.start.getTime());
+
       if (locations[loc].allNext.length > 0) {
         const firstNextTime = locations[loc].allNext[0].start.getTime();
         locations[loc].next = locations[loc].allNext.filter((s: any) => s.start.getTime() - firstNextTime < 3 * 60 * 60 * 1000);
@@ -259,7 +278,7 @@ export default function Dashboard() {
     return { text: "text-sky-500", border: "border-sky-200", icon: "text-sky-300", leftBar: "bg-[#8ab4f8]", fill: "bg-[#8ab4f8]" };
   };
 
-  const hasLiveStatus = Object.values(liveLocations).some(data => data.now.length > 0 || data.next.length > 0);
+  const hasLiveStatus = Object.values(liveLocations).some(data => data.now.length > 0 || data.next.length > 0 || data.lastCompleted.length > 0);
 
   if (!role) return null; // Prevent hydration flash
 
@@ -461,10 +480,10 @@ export default function Dashboard() {
               </div>
             ) : (
               Object.entries(liveLocations).map(([loc, data]) => {
-                if (data.now.length === 0 && data.next.length === 0) return null;
+                if (data.now.length === 0 && data.next.length === 0 && data.lastCompleted.length === 0) return null;
                 const theme = getLocationTheme(loc);
                 
-                const defaultFlipped = data.now.length === 0 && data.next.length > 0;
+                const defaultFlipped = data.now.length === 0 && data.next.length > 0 && data.lastCompleted.length === 0;
                 const isFlipped = flippedCards[loc] !== undefined ? flippedCards[loc] : defaultFlipped;
                 
                 return (
@@ -495,10 +514,10 @@ export default function Dashboard() {
                         
                         <div className="ml-2">
                           <div className="text-[11px] font-bold text-gray-400 mb-2 flex items-center gap-1.5 uppercase tracking-wider">
-                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5 text-emerald-500">
+                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className={`w-3.5 h-3.5 ${data.now.length > 0 ? 'text-emerald-500' : 'text-gray-400'}`}>
                                <path fillRule="evenodd" d="M16.403 12.652a3 3 0 000-5.304 3 3 0 00-3.75-3.751 3 3 0 00-5.305 0 3 3 0 00-3.751 3.75 3 3 0 000 5.305 3 3 0 003.75 3.751 3 3 0 005.305 0 3 3 0 003.751-3.75zm-2.546-4.46a.75.75 0 00-1.214-.883l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
                              </svg>
-                             On Shift Now
+                             {data.now.length > 0 ? "On Shift Now" : "Closed By"}
                           </div>
                           {data.now.length > 0 ? (
                             <div className="flex flex-wrap gap-2">
@@ -508,6 +527,14 @@ export default function Dashboard() {
                                   <span className="text-gray-400 font-medium text-[10px]">
                                     Until {s.end.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Edmonton' })}
                                   </span>
+                                </span>
+                              ))}
+                            </div>
+                          ) : data.lastCompleted.length > 0 ? (
+                            <div className="flex flex-wrap gap-2">
+                              {data.lastCompleted.map((s, i) => (
+                                <span key={i} className="bg-gray-50 px-3 py-1.5 rounded-lg shadow-[0_2px_8px_rgba(0,0,0,0.04)] text-[13px] font-bold text-gray-600 capitalize border border-gray-200 flex items-center gap-1.5 whitespace-nowrap opacity-80">
+                                  {s.name}
                                 </span>
                               ))}
                             </div>
