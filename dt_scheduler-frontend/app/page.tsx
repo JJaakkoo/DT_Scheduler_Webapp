@@ -267,7 +267,7 @@ function HomeContent() {
               </div>
             )}
 
-            <div className={`w-full max-w-[280px] flex items-center mt-2 ${!isForgotPassword ? 'justify-between' : 'justify-end'}`}>
+            <div className={`w-full max-w-[280px] flex items-center mt-2 ${!isForgotPassword ? 'justify-between' : 'justify-center'}`}>
               {!isForgotPassword && (
                 <div className="flex items-center cursor-pointer group" onClick={() => setIsRemembered(!isRemembered)}>
                   <button type="button" className="w-4 h-4 rounded-full flex items-center justify-center transition-all focus:outline-none border-[1.5px] border-gray-500 bg-transparent group-hover:border-dreamtea-blue">
