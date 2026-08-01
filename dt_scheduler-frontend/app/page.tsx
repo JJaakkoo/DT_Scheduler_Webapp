@@ -133,7 +133,11 @@ function HomeContent() {
         msg = msg.message || JSON.stringify(msg);
       }
       if (msg === '{}' || msg === '"{}"') {
-        msg = "An error occurred during sign up.";
+        if (err?.name === 'AuthRetryableFetchError' || err?.status === 500) {
+          msg = "Email sending failed. Please check Supabase SMTP limits or disable email confirmations.";
+        } else {
+          msg = "An error occurred during sign up.";
+        }
       }
       setLoginError(String(msg));
     } finally {
