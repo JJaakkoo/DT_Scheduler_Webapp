@@ -289,10 +289,33 @@ def download_schedule():
 
     ics_data = generate_ics_from_shifts(shifts, employee_name)
     
+    filename = f"{employee_name.title()} schedule.ics"
+    if metadata and metadata.get('month') and metadata.get('period'):
+        import calendar
+        from datetime import datetime
+        import pytz
+        
+        month_name = calendar.month_name[metadata['month']]
+        day_range = "1-15" if metadata['period'] == 1 else "16-31"
+        
+        date_suffix = ""
+        email_timestamp_str = metadata.get('email_timestamp')
+        if email_timestamp_str:
+            try:
+                dt = datetime.fromisoformat(email_timestamp_str.replace('Z', '+00:00'))
+                edmonton_tz = pytz.timezone('America/Edmonton')
+                dt_edmonton = dt.astimezone(edmonton_tz)
+                # Using %H:%M as requested (browsers like Chrome may automatically sanitize the colon to an underscore for Windows file systems)
+                date_suffix = f" ({dt_edmonton.strftime('%d-%m-%Y %H:%M')})"
+            except Exception:
+                pass
+                
+        filename = f"{employee_name.title()} {month_name} {day_range} schedule{date_suffix}.ics"
+    
     return Response(
         ics_data,
         mimetype='text/calendar',
-        headers={"Content-Disposition": f"inline; filename=schedule_{employee_name.title()}.ics"}
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'}
     )
 
 
