@@ -209,6 +209,7 @@ function HomeContent() {
   const handleGuestLogin = () => {
     localStorage.removeItem("google_access_token"); 
     localStorage.setItem("nexus_role", "guest");
+    document.cookie = "nexus_role=guest; path=/; max-age=86400";
     router.push("/dashboard");
   };
 

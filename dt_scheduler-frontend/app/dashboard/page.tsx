@@ -287,6 +287,7 @@ export default function Dashboard() {
     await supabase.auth.signOut();
     localStorage.removeItem("nexus_role");
     localStorage.removeItem("google_access_token");
+    document.cookie = "nexus_role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
     router.push("/");
     router.refresh();
   };
