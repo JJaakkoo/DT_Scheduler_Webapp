@@ -4,6 +4,87 @@ import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "../../utils/supabase/client";
 
+function useOverlappingShifts(searchedShifts: any[], masterShifts: any[], searchIdentifier: string) {
+  return useMemo(() => {
+    if (!searchedShifts || searchedShifts.length === 0) return [];
+
+    return searchedShifts.map(userShift => {
+      const userStart = new Date(userShift.start.dateTime);
+      const userEnd = new Date(userShift.end.dateTime);
+      const userLocation = (userShift.location || userShift.summary.replace("Work at ", "")).trim();
+      const userDay = userStart.toDateString();
+
+      const overlappingCoworkers = masterShifts.filter(coworkerShift => {
+        const coworkerStart = new Date(coworkerShift.start.dateTime);
+        const coworkerEnd = new Date(coworkerShift.end.dateTime);
+        const coworkerLocation = (coworkerShift.location || coworkerShift.summary.replace("Work at ", "")).trim();
+        const coworkerDay = coworkerStart.toDateString();
+
+        if (coworkerDay !== userDay || coworkerLocation !== userLocation) return false;
+        if (coworkerShift.employee?.toLowerCase() === searchIdentifier.toLowerCase()) return false;
+        if (coworkerStart >= userEnd) return false;
+        if (coworkerEnd <= userStart) return false;
+
+        return true;
+      });
+
+      overlappingCoworkers.sort((a, b) => new Date(a.start.dateTime).getTime() - new Date(b.start.dateTime).getTime());
+
+      return { userShift, coworkers: overlappingCoworkers };
+    });
+  }, [searchedShifts, masterShifts, searchIdentifier]);
+}
+
+const ShiftTimeline = ({ searchedShifts, masterShifts, searchIdentifier }: { searchedShifts: any[], masterShifts: any[], searchIdentifier: string }) => {
+  const timelines = useOverlappingShifts(searchedShifts, masterShifts, searchIdentifier);
+
+  if (!searchedShifts || searchedShifts.length === 0) return null;
+
+  return (
+    <div className="w-full max-w-[850px] mx-auto mt-8 bg-white/60 backdrop-blur-sm border-2 border-white/60 p-6 md:p-8 rounded-3xl shadow-sm relative z-10">
+      <h3 className="font-bold text-[#628ebf] text-sm uppercase tracking-widest mb-6 pl-2">
+        Shift Timeline & Coworkers
+      </h3>
+      
+      <div className="flex flex-col gap-8">
+        {timelines.map((timeline, idx) => (
+          <div key={idx} className="flex flex-col">
+            <h4 className="font-bold text-gray-700 text-sm mb-4 border-b border-white pb-2 pl-2">
+              {new Date(timeline.userShift.start.dateTime).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })} @ {timeline.userShift.location || timeline.userShift.summary.replace("Work at ", "")}
+            </h4>
+            
+            <div className="flex flex-col md:flex-row gap-4 overflow-x-auto pb-2 no-scrollbar">
+              <div className="flex-shrink-0 bg-blue-50 border-2 border-blue-200 rounded-2xl p-4 md:min-w-[200px]">
+                <p className="text-[10px] text-blue-500 font-bold uppercase tracking-wider mb-1">Your Shift</p>
+                <p className="font-black text-blue-900 text-lg">
+                  {new Date(timeline.userShift.start.dateTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })} - 
+                  {new Date(timeline.userShift.end.dateTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                </p>
+                <p className="text-xs font-medium text-blue-700 mt-1 capitalize">{searchIdentifier}</p>
+              </div>
+
+              {timeline.coworkers.length > 0 ? timeline.coworkers.map((coworker: any, cIdx: number) => (
+                <div key={cIdx} className="flex-shrink-0 bg-white border border-gray-200 rounded-2xl p-4 md:min-w-[200px] shadow-sm">
+                  <p className="text-[10px] text-emerald-500 font-bold uppercase tracking-wider mb-1">Coworker</p>
+                  <p className="font-bold text-gray-800 text-md">
+                    {new Date(coworker.start.dateTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })} - 
+                    {new Date(coworker.end.dateTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                  </p>
+                  <p className="text-xs font-bold text-gray-500 mt-1 capitalize">{coworker.employee}</p>
+                </div>
+              )) : (
+                <div className="flex items-center justify-center bg-white/50 border border-dashed border-gray-300 rounded-2xl p-4 md:min-w-[200px] text-xs font-medium text-gray-400 italic">
+                  No overlapping coworkers
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 export default function Dashboard() {
   const supabase = createClient();
   const router = useRouter();
@@ -612,6 +693,12 @@ export default function Dashboard() {
 
       </div>
       
+      <ShiftTimeline 
+        searchedShifts={shifts} 
+        masterShifts={masterShifts} 
+        searchIdentifier={activeQuery} 
+      />
+
       <style dangerouslySetInnerHTML={{__html: `
         .no-scrollbar::-webkit-scrollbar {
           display: none;
