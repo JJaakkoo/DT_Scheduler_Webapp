@@ -40,6 +40,14 @@ const ShiftTimeline = ({ searchedShifts, masterShifts, searchIdentifier }: { sea
 
   if (!searchedShifts || searchedShifts.length === 0) return null;
 
+  const formatShiftTime = (date: Date) => {
+    const minutes = date.getMinutes();
+    if (minutes === 0) {
+      return date.toLocaleTimeString('en-US', { hour: 'numeric' });
+    }
+    return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  };
+
   return (
     <div className="w-full max-w-[850px] mx-auto mt-8 bg-white rounded-[32px] border-4 border-white p-6 md:p-8 shadow-[0_4px_24px_rgba(0,0,0,0.1)] relative z-10">
       <h3 className="font-bold text-[#628ebf] text-sm uppercase tracking-widest mb-6 pl-2">
@@ -53,28 +61,26 @@ const ShiftTimeline = ({ searchedShifts, masterShifts, searchIdentifier }: { sea
               {new Date(timeline.userShift.start.dateTime).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })} @ {timeline.userShift.location || timeline.userShift.summary.replace("Work at ", "")}
             </h4>
             
-            <div className="flex flex-col md:flex-row gap-4 overflow-x-auto pb-2 no-scrollbar">
-              <div className="flex-shrink-0 bg-blue-50 border border-blue-200 rounded-2xl p-4 md:min-w-[200px]">
+            <div className="flex flex-row flex-wrap gap-3">
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 min-w-[140px]">
                 <p className="text-[10px] text-blue-500 font-bold uppercase tracking-wider mb-1">Your Shift</p>
-                <p className="font-medium text-blue-900 text-base">
-                  {new Date(timeline.userShift.start.dateTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })} - 
-                  {new Date(timeline.userShift.end.dateTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                <p className="font-medium text-blue-900 text-sm">
+                  {formatShiftTime(new Date(timeline.userShift.start.dateTime))} - {formatShiftTime(new Date(timeline.userShift.end.dateTime))}
                 </p>
                 <p className="text-xs font-medium text-blue-700 mt-1 capitalize">{searchIdentifier}</p>
               </div>
 
               {timeline.coworkers.length > 0 ? timeline.coworkers.map((coworker: any, cIdx: number) => (
-                <div key={cIdx} className="flex-shrink-0 bg-gray-50 border border-gray-200 rounded-2xl p-4 md:min-w-[200px]">
+                <div key={cIdx} className="bg-gray-50 border border-gray-200 rounded-xl p-3 min-w-[140px]">
                   <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider mb-1">Coworker</p>
-                  <p className="font-medium text-gray-800 text-base">
-                    {new Date(coworker.start.dateTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })} - 
-                    {new Date(coworker.end.dateTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                  <p className="font-medium text-gray-800 text-sm">
+                    {formatShiftTime(new Date(coworker.start.dateTime))} - {formatShiftTime(new Date(coworker.end.dateTime))}
                   </p>
                   <p className="text-xs font-bold text-gray-600 mt-1 capitalize">{coworker.employee}</p>
                 </div>
               )) : (
-                <div className="flex items-center justify-center bg-gray-50 border border-dashed border-gray-200 rounded-2xl p-4 md:min-w-[200px] text-xs font-medium text-gray-400 italic">
-                  No overlapping coworkers
+                <div className="flex items-center justify-center bg-gray-50 border border-dashed border-gray-200 rounded-xl p-3 min-w-[140px] text-xs font-medium text-gray-400 italic">
+                  No coworkers
                 </div>
               )}
             </div>
