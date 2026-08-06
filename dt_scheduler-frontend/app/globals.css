@@ -34,3 +34,27 @@
     @apply flex-1 border-t border-gray-400;
 }
 }
+
+@layer utilities {
+  .skeleton-shimmer {
+    @apply relative overflow-hidden bg-gray-200/80;
+  }
+  
+  .skeleton-shimmer::after {
+    content: "";
+    @apply absolute inset-0 -translate-x-full;
+    background-image: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.7),
+      transparent
+    );
+    animation: shimmer 2s infinite linear;
+  }
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}

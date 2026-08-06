@@ -350,12 +350,17 @@ export default function Dashboard() {
 
               <div className="flex-1 overflow-y-auto px-8 pb-4 no-scrollbar">
                 {isLoading && (
-                  <div className="flex flex-col items-center justify-center h-full space-y-4 text-[#8ab4f8]">
-                    <svg className="animate-spin h-8 w-8" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    <p className="font-medium animate-pulse text-sm">Loading schedule...</p>
+                  <div className="flex flex-col gap-3 pt-2 h-full">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm relative overflow-hidden flex flex-col justify-between shrink-0">
+                        <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-gray-200"></div>
+                        <div className="ml-2">
+                          <div className="h-4 w-32 skeleton-shimmer rounded-md mb-2"></div>
+                          <div className="h-6 w-48 skeleton-shimmer rounded-md mb-2"></div>
+                          <div className="h-3 w-24 skeleton-shimmer rounded-md mt-2"></div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
 
@@ -472,12 +477,25 @@ export default function Dashboard() {
             
             {/* Added Spinner logic based on the new isMasterLoading state! */}
             {isMasterLoading ? (
-              <div className="bg-white/60 border-2 border-white/60 backdrop-blur-sm p-8 shadow-sm rounded-3xl flex flex-col items-center justify-center gap-3 min-h-[160px]">
-                <svg className="animate-spin h-8 w-8 text-[#8ab4f8]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <p className="font-semibold text-sm text-[#8ab4f8] animate-pulse">Fetching live store status...</p>
+              <div className="flex flex-col gap-4">
+                {[1, 2].map((i) => (
+                  <div key={i} className="bg-white border-2 border-transparent p-5 shadow-[0_4px_24px_rgba(0,0,0,0.05)] rounded-3xl flex flex-col gap-4 relative overflow-hidden">
+                    <div className="absolute left-0 top-0 bottom-0 w-2 bg-gray-200"></div>
+                    
+                    <div className="flex justify-between items-start ml-2">
+                      <div className="h-6 w-24 skeleton-shimmer rounded-md"></div>
+                      <div className="h-5 w-20 skeleton-shimmer rounded-full"></div>
+                    </div>
+                    
+                    <div className="ml-2">
+                      <div className="h-3 w-28 skeleton-shimmer rounded-md mb-3"></div>
+                      <div className="flex flex-wrap gap-2">
+                        <div className="h-8 w-32 skeleton-shimmer rounded-lg"></div>
+                        <div className="h-8 w-24 skeleton-shimmer rounded-lg"></div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : (
               Object.entries(liveLocations).map(([loc, data]) => {
