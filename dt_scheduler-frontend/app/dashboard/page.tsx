@@ -471,7 +471,7 @@ export default function Dashboard() {
                             <div className="font-bold text-gray-800 text-sm mb-1 pl-2">
                               {startDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', timeZone: 'America/Edmonton' })}
                             </div>
-                            <div className={`font-black text-lg mb-1 pl-2 ${theme.text}`}>
+                            <div className={`font-medium text-lg mb-1 pl-2 ${theme.text}`}>
                               {startDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Edmonton' })} - {endDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Edmonton' })}
                             </div>
                             <div className="text-xs text-gray-500 font-medium flex items-center gap-1.5 mt-1 pl-2">
@@ -605,7 +605,7 @@ export default function Dashboard() {
                         <div className={`absolute left-0 top-0 bottom-0 w-2 ${theme.leftBar}`}></div>
                         
                         <div className="flex justify-between items-start ml-2">
-                          <h4 className="font-black text-lg text-gray-800">{loc}</h4>
+                          <h4 className="font-semibold text-lg text-gray-800">{loc}</h4>
                           <div className="flex items-center gap-1 text-[10px] uppercase font-bold text-gray-400 bg-gray-50 px-2 py-1 rounded-full group-hover:bg-gray-100 transition-colors">
                              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3"><path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
                              Flip to Next
@@ -656,7 +656,7 @@ export default function Dashboard() {
                              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3"><path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" /></svg>
                              Back to Now
                           </div>
-                          <h4 className="font-black text-lg text-gray-800">{loc}</h4>
+                          <h4 className="font-semibold text-lg text-gray-800">{loc}</h4>
                         </div>
                         
                         <div className="mr-2">
