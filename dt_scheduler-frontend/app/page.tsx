@@ -49,6 +49,11 @@ function HomeContent() {
       setLoginError("Please enter both email and password.");
       return;
     }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setLoginError("Please enter a valid email format.");
+      return;
+    }
 
     setIsLoading(true);
 
@@ -90,6 +95,15 @@ function HomeContent() {
     
     if (!email || !password) {
       setLoginError("Please enter both email and password.");
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setLoginError("Please enter a valid email format.");
+      return;
+    }
+    if (password.length < 8) {
+      setLoginError("Password must be at least 8 characters long.");
       return;
     }
 
@@ -155,6 +169,11 @@ function HomeContent() {
     
     if (!email) {
       setLoginError("Please enter your email address.");
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setLoginError("Please enter a valid email format.");
       return;
     }
 
