@@ -4,6 +4,15 @@ import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "../../utils/supabase/client";
 
+const getLocationTheme = (location: string) => {
+  const loc = (location || "").toLowerCase();
+  if (loc.includes("whyte")) return { text: "text-[#CAB1E3]", border: "border-[#CAB1E3]", icon: "text-[#CAB1E3]", leftBar: "bg-[#CAB1E3]", fill: "bg-[#CAB1E3]" };
+  if (loc.includes("heritage")) return { text: "text-[#ED9BB4]", border: "border-[#ED9BB4]", icon: "text-[#ED9BB4]", leftBar: "bg-[#ED9BB4]", fill: "bg-[#ED9BB4]" };
+  if (loc.includes("downtown") || loc.includes("dt")) return { text: "text-[#A0B99B]", border: "border-[#A0B99B]", icon: "text-[#A0B99B]", leftBar: "bg-[#A0B99B]", fill: "bg-[#A0B99B]" };
+  if (loc.includes("north")) return { text: "text-purple-500", border: "border-purple-200", icon: "text-purple-300", leftBar: "bg-purple-300", fill: "bg-purple-300" };
+  return { text: "text-sky-500", border: "border-sky-200", icon: "text-sky-300", leftBar: "bg-[#8ab4f8]", fill: "bg-[#8ab4f8]" };
+};
+
 function useOverlappingShifts(searchedShifts: any[], masterShifts: any[], searchIdentifier: string) {
   return useMemo(() => {
     if (!searchedShifts || searchedShifts.length === 0) return [];
@@ -51,32 +60,32 @@ const ShiftTimeline = ({ searchedShifts, masterShifts, searchIdentifier }: { sea
   return (
     <div className="w-full max-w-[850px] mx-auto mt-8 bg-white rounded-[32px] border-4 border-white p-6 md:p-8 shadow-[0_4px_24px_rgba(0,0,0,0.1)] relative z-10">
       <h3 className="font-bold text-[#628ebf] text-sm uppercase tracking-widest mb-6 pl-2">
-        Shift Timeline & Coworkers
+        Who you are working with
       </h3>
       
       <div className="flex flex-col gap-8">
-        {timelines.map((timeline, idx) => (
+        {timelines.map((timeline, idx) => {
+          const locTheme = getLocationTheme(timeline.userShift.location || timeline.userShift.summary.replace("Work at ", ""));
+          return (
           <div key={idx} className="flex flex-col">
             <h4 className="font-bold text-gray-700 text-sm mb-4 border-b border-gray-100 pb-2 pl-2">
               {new Date(timeline.userShift.start.dateTime).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })} @ {timeline.userShift.location || timeline.userShift.summary.replace("Work at ", "")}
             </h4>
             
             <div className="flex flex-row flex-wrap gap-3">
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 min-w-[140px]">
-                <p className="text-[10px] text-blue-500 font-bold uppercase tracking-wider mb-1">Your Shift</p>
-                <p className="font-medium text-blue-900 text-sm">
+              <div className={`bg-white border-2 ${locTheme.border} rounded-xl p-3 min-w-[140px] shadow-sm`}>
+                <p className="font-medium text-black text-sm">
                   {formatShiftTime(new Date(timeline.userShift.start.dateTime))} - {formatShiftTime(new Date(timeline.userShift.end.dateTime))}
                 </p>
-                <p className="text-xs font-medium text-blue-700 mt-1 capitalize">{searchIdentifier}</p>
+                <p className="text-xs font-bold text-black mt-1 capitalize">You</p>
               </div>
 
               {timeline.coworkers.length > 0 ? timeline.coworkers.map((coworker: any, cIdx: number) => (
-                <div key={cIdx} className="bg-gray-50 border border-gray-200 rounded-xl p-3 min-w-[140px]">
-                  <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider mb-1">Coworker</p>
-                  <p className="font-medium text-gray-800 text-sm">
+                <div key={cIdx} className={`bg-white border-2 ${locTheme.border} rounded-xl p-3 min-w-[140px] shadow-sm`}>
+                  <p className="font-medium text-black text-sm">
                     {formatShiftTime(new Date(coworker.start.dateTime))} - {formatShiftTime(new Date(coworker.end.dateTime))}
                   </p>
-                  <p className="text-xs font-bold text-gray-600 mt-1 capitalize">{coworker.employee}</p>
+                  <p className="text-xs font-bold text-black mt-1 capitalize">{coworker.employee}</p>
                 </div>
               )) : (
                 <div className="flex items-center justify-center bg-gray-50 border border-dashed border-gray-200 rounded-xl p-3 min-w-[140px] text-xs font-medium text-gray-400 italic">
@@ -85,7 +94,7 @@ const ShiftTimeline = ({ searchedShifts, masterShifts, searchIdentifier }: { sea
               )}
             </div>
           </div>
-        ))}
+        )})}
       </div>
     </div>
   );
@@ -354,15 +363,6 @@ export default function Dashboard() {
     window.location.href = `/api/download-schedule?name=${encodeURIComponent(activeQuery)}`;
     setIsDownloaded(true);
     setTimeout(() => setIsDownloaded(false), 3000);
-  };
-
-  const getLocationTheme = (location: string) => {
-    const loc = (location || "").toLowerCase();
-    if (loc.includes("whyte")) return { text: "text-amber-500", border: "border-amber-200", icon: "text-amber-300", leftBar: "bg-amber-300", fill: "bg-amber-300" };
-    if (loc.includes("heritage")) return { text: "text-teal-500", border: "border-teal-200", icon: "text-teal-300", leftBar: "bg-teal-300", fill: "bg-teal-300" };
-    if (loc.includes("downtown") || loc.includes("dt")) return { text: "text-rose-500", border: "border-rose-200", icon: "text-rose-300", leftBar: "bg-rose-300", fill: "bg-rose-300" };
-    if (loc.includes("north")) return { text: "text-purple-500", border: "border-purple-200", icon: "text-purple-300", leftBar: "bg-purple-300", fill: "bg-purple-300" };
-    return { text: "text-sky-500", border: "border-sky-200", icon: "text-sky-300", leftBar: "bg-[#8ab4f8]", fill: "bg-[#8ab4f8]" };
   };
 
   const hasLiveStatus = Object.values(liveLocations).some(data => data.now.length > 0 || data.next.length > 0 || data.lastCompleted.length > 0);
