@@ -73,10 +73,7 @@ const ShiftTimeline = ({ searchedShifts, masterShifts, searchIdentifier }: { sea
             </h4>
             
             <div className="flex flex-row flex-wrap gap-3">
-              <div 
-                className={`bg-gray-50 border-2 ${locTheme.border} rounded-xl p-3 min-w-[140px] shadow-sm`}
-                style={new Date(timeline.userShift.end.dateTime) < new Date() ? { backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.04) 10px, rgba(0,0,0,0.04) 20px)' } : {}}
-              >
+              <div className={`bg-gray-50 border-2 ${locTheme.border} rounded-xl p-3 min-w-[140px] shadow-sm`}>
                 <p className="font-medium text-black text-sm">
                   {formatShiftTime(new Date(timeline.userShift.start.dateTime))} - {formatShiftTime(new Date(timeline.userShift.end.dateTime))}
                 </p>
@@ -84,11 +81,7 @@ const ShiftTimeline = ({ searchedShifts, masterShifts, searchIdentifier }: { sea
               </div>
 
               {timeline.coworkers.length > 0 ? timeline.coworkers.map((coworker: any, cIdx: number) => (
-                <div 
-                  key={cIdx} 
-                  className={`bg-white border-2 ${locTheme.border} rounded-xl p-3 min-w-[140px] shadow-sm`}
-                  style={new Date(coworker.end.dateTime) < new Date() ? { backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.04) 10px, rgba(0,0,0,0.04) 20px)' } : {}}
-                >
+                <div key={cIdx} className={`bg-white border-2 ${locTheme.border} rounded-xl p-3 min-w-[140px] shadow-sm`}>
                   <p className="font-medium text-black text-sm">
                     {formatShiftTime(new Date(coworker.start.dateTime))} - {formatShiftTime(new Date(coworker.end.dateTime))}
                   </p>
