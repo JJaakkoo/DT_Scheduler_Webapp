@@ -73,7 +73,10 @@ const ShiftTimeline = ({ searchedShifts, masterShifts, searchIdentifier }: { sea
             </h4>
             
             <div className="flex flex-row flex-wrap gap-3">
-              <div className={`bg-gray-200 border-2 ${locTheme.border} rounded-xl p-3 min-w-[140px] shadow-sm`}>
+              <div 
+                className={`bg-gray-50 border-2 ${locTheme.border} rounded-xl p-3 min-w-[140px] shadow-sm`}
+                style={new Date(timeline.userShift.end.dateTime) < new Date() ? { backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.04) 10px, rgba(0,0,0,0.04) 20px)' } : {}}
+              >
                 <p className="font-medium text-black text-sm">
                   {formatShiftTime(new Date(timeline.userShift.start.dateTime))} - {formatShiftTime(new Date(timeline.userShift.end.dateTime))}
                 </p>
@@ -81,7 +84,11 @@ const ShiftTimeline = ({ searchedShifts, masterShifts, searchIdentifier }: { sea
               </div>
 
               {timeline.coworkers.length > 0 ? timeline.coworkers.map((coworker: any, cIdx: number) => (
-                <div key={cIdx} className={`bg-white border-2 ${locTheme.border} rounded-xl p-3 min-w-[140px] shadow-sm`}>
+                <div 
+                  key={cIdx} 
+                  className={`bg-white border-2 ${locTheme.border} rounded-xl p-3 min-w-[140px] shadow-sm`}
+                  style={new Date(coworker.end.dateTime) < new Date() ? { backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.04) 10px, rgba(0,0,0,0.04) 20px)' } : {}}
+                >
                   <p className="font-medium text-black text-sm">
                     {formatShiftTime(new Date(coworker.start.dateTime))} - {formatShiftTime(new Date(coworker.end.dateTime))}
                   </p>
@@ -512,7 +519,12 @@ export default function Dashboard() {
                       const theme = getLocationTheme(shift.location || shift.summary);
                       
                       return (
-                        <div key={idx} id={`shift-${idx}`} className={`bg-white rounded-2xl border ${theme.border} p-4 shadow-sm relative overflow-hidden flex flex-col justify-between shrink-0`}>
+                        <div 
+                          key={idx} 
+                          id={`shift-${idx}`} 
+                          className={`bg-white rounded-2xl border ${theme.border} p-4 shadow-sm relative overflow-hidden flex flex-col justify-between shrink-0`}
+                          style={endDate < new Date() ? { backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.04) 10px, rgba(0,0,0,0.04) 20px)' } : {}}
+                        >
                           <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${theme.leftBar}`}></div>
                           <div>
                             <div className="font-bold text-gray-800 text-sm mb-1 pl-2">
