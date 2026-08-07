@@ -291,6 +291,20 @@ export default function Dashboard() {
     return locations;
   }, [masterShifts, currentTime]);
 
+  // SCROLL TO UPCOMING SHIFT
+  useEffect(() => {
+    if (shifts.length > 0 && !isLoading) {
+      const now = new Date();
+      const targetIdx = shifts.findIndex(shift => new Date(shift.end.dateTime) >= now);
+      
+      if (targetIdx !== -1) {
+        setTimeout(() => {
+          document.getElementById(`shift-${targetIdx}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
+      }
+    }
+  }, [shifts, isLoading]);
+
   const toggleFlip = (loc: string) => {
     setFlippedCards(prev => ({ ...prev, [loc]: !prev[loc] }));
   };
@@ -498,7 +512,7 @@ export default function Dashboard() {
                       const theme = getLocationTheme(shift.location || shift.summary);
                       
                       return (
-                        <div key={idx} className={`bg-white rounded-2xl border ${theme.border} p-4 shadow-sm relative overflow-hidden flex flex-col justify-between shrink-0`}>
+                        <div key={idx} id={`shift-${idx}`} className={`bg-white rounded-2xl border ${theme.border} p-4 shadow-sm relative overflow-hidden flex flex-col justify-between shrink-0`}>
                           <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${theme.leftBar}`}></div>
                           <div>
                             <div className="font-bold text-gray-800 text-sm mb-1 pl-2">
