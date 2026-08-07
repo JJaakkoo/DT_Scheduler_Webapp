@@ -73,7 +73,7 @@ const ShiftTimeline = ({ searchedShifts, masterShifts, searchIdentifier }: { sea
             </h4>
             
             <div className="flex flex-row flex-wrap gap-3">
-              <div className={`bg-white border-2 ${locTheme.border} rounded-xl p-3 min-w-[140px] shadow-sm`}>
+              <div className={`bg-gray-200 border-2 ${locTheme.border} rounded-xl p-3 min-w-[140px] shadow-sm`}>
                 <p className="font-medium text-black text-sm">
                   {formatShiftTime(new Date(timeline.userShift.start.dateTime))} - {formatShiftTime(new Date(timeline.userShift.end.dateTime))}
                 </p>
@@ -106,6 +106,7 @@ export default function Dashboard() {
 
   // Role & Auth State
   const [role, setRole] = useState<string | null>(null);
+  const [email, setEmail] = useState<string | null>(null);
   const [authError, setAuthError] = useState<string | null>(null);
 
   // Search States
@@ -129,6 +130,9 @@ export default function Dashboard() {
     supabase.auth.getSession().then(({ data }) => {
       if (data?.session?.provider_token) {
         localStorage.setItem("google_access_token", data.session.provider_token);
+      }
+      if (data?.session?.user?.email) {
+        setEmail(data.session.user.email);
       }
     });
 
@@ -382,6 +386,12 @@ export default function Dashboard() {
   return (
     <main className="min-h-[100dvh] w-screen flex flex-col items-center justify-center py-6 px-4 sm:px-8 bg-[#c2e2f5] font-sans overflow-y-auto relative">
       
+      {email && (
+        <div className="absolute top-4 left-4 sm:top-6 sm:left-6 px-4 py-2 bg-white/80 text-gray-700 font-medium rounded-full shadow-sm text-sm flex items-center z-50 backdrop-blur-sm">
+          {email}
+        </div>
+      )}
+
       <button 
         onClick={handleLogOut} 
         disabled={isLoading}
