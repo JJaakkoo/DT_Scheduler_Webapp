@@ -128,6 +128,22 @@ export default function Dashboard() {
   useEffect(() => {
     // 0. Extract Google OAuth provider token if available
     supabase.auth.getSession().then(({ data }) => {
+      const loginTime = localStorage.getItem("nexus_login_time");
+      const now = Date.now();
+      if (!loginTime) {
+        localStorage.setItem("nexus_login_time", now.toString());
+      } else if (now - parseInt(loginTime, 10) > 48 * 60 * 60 * 1000) {
+        supabase.auth.signOut().then(() => {
+          localStorage.removeItem("nexus_role");
+          localStorage.removeItem("google_access_token");
+          localStorage.removeItem("nexus_login_time");
+          document.cookie = "nexus_role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+          router.push("/");
+          router.refresh();
+        });
+        return;
+      }
+
       if (data?.session?.provider_token) {
         localStorage.setItem("google_access_token", data.session.provider_token);
       }
@@ -313,7 +329,7 @@ export default function Dashboard() {
            client.requestAccessToken(); // Pops open the Google Window!
         }
       } else if (data.sync_status === "EMAIL_NOT_FOUND") {
-        setError("We checked your linked email, but couldn't find a schedule from Jacky.");
+        setError("Your Google login has expired, please log in again.");
       }
 
       setShifts(data.shifts || []);
@@ -378,6 +394,7 @@ export default function Dashboard() {
     await supabase.auth.signOut();
     localStorage.removeItem("nexus_role");
     localStorage.removeItem("google_access_token");
+    localStorage.removeItem("nexus_login_time");
     document.cookie = "nexus_role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
     router.push("/");
     router.refresh();
