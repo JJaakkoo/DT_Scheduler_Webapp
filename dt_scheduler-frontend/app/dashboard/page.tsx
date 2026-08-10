@@ -100,6 +100,170 @@ const ShiftTimeline = ({ searchedShifts, masterShifts, searchIdentifier }: { sea
   );
 };
 
+const LocationCalendar = ({ masterShifts, searchedShifts }: { masterShifts: any[], searchedShifts: any[] }) => {
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [selectedLocation, setSelectedLocation] = useState<string>("All Locations");
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+
+  const locations = useMemo(() => {
+    const locs = new Set<string>();
+    masterShifts.forEach(s => {
+      const loc = (s.location || s.summary.replace("Work at ", "")).trim();
+      if (loc) locs.add(loc);
+    });
+    return ["All Locations", ...Array.from(locs).sort()];
+  }, [masterShifts]);
+
+  const daysInMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate();
+  const firstDayOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1).getDay();
+
+  const days = Array.from({ length: daysInMonth }, (_, i) => new Date(currentMonth.getFullYear(), currentMonth.getMonth(), i + 1));
+
+  const getShiftsForDay = (date: Date) => {
+    return masterShifts.filter(s => {
+      if (!s.start || (!s.start.dateTime && !s.start.date)) return false;
+      const shiftDate = new Date(s.start.dateTime || s.start.date);
+      if (shiftDate.getDate() !== date.getDate() || shiftDate.getMonth() !== date.getMonth() || shiftDate.getFullYear() !== date.getFullYear()) {
+        return false;
+      }
+      if (selectedLocation !== "All Locations") {
+        const loc = (s.location || s.summary.replace("Work at ", "")).trim();
+        if (loc !== selectedLocation) return false;
+      }
+      return true;
+    });
+  };
+
+  const nextMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
+  const prevMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
+  
+  const formatShiftTime = (date: Date) => {
+    const minutes = date.getMinutes();
+    if (minutes === 0) {
+      return date.toLocaleTimeString('en-US', { hour: 'numeric' });
+    }
+    return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  };
+
+  return (
+    <div className="w-full max-w-[850px] mx-auto mt-8 bg-white rounded-[32px] border-4 border-white p-6 md:p-8 shadow-[0_4px_24px_rgba(0,0,0,0.1)] relative z-10 mb-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+        <h3 className="font-bold text-[#628ebf] text-sm uppercase tracking-widest pl-2">
+          Location Calendar
+        </h3>
+        <select 
+          value={selectedLocation}
+          onChange={(e) => setSelectedLocation(e.target.value)}
+          className="bg-gray-50 border-2 border-gray-100 rounded-xl px-4 py-2 text-sm font-medium outline-none focus:border-blue-500 transition-colors cursor-pointer"
+        >
+          {locations.map(loc => (
+            <option key={loc} value={loc}>{loc}</option>
+          ))}
+        </select>
+      </div>
+
+      <div className="flex justify-between items-center mb-4 px-2">
+        <button onClick={prevMonth} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 text-gray-600"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" /></svg>
+        </button>
+        <h4 className="font-bold text-gray-800 text-lg">
+          {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+        </h4>
+        <button onClick={nextMonth} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 text-gray-600"><path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" /></svg>
+        </button>
+      </div>
+
+      <div className="grid grid-cols-7 gap-1 sm:gap-2 mb-6">
+        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+          <div key={day} className="text-center text-xs font-bold text-gray-400 py-2">
+            {day}
+          </div>
+        ))}
+        {Array.from({ length: firstDayOfMonth }).map((_, i) => (
+          <div key={`empty-${i}`} className="p-2"></div>
+        ))}
+        {days.map(day => {
+          const personShiftsThisDay = searchedShifts.filter(s => {
+            if (!s.start || (!s.start.dateTime && !s.start.date)) return false;
+            const shiftDate = new Date(s.start.dateTime || s.start.date);
+            if (shiftDate.getDate() !== day.getDate() || shiftDate.getMonth() !== day.getMonth() || shiftDate.getFullYear() !== day.getFullYear()) {
+              return false;
+            }
+            if (selectedLocation !== "All Locations") {
+              const loc = (s.location || s.summary.replace("Work at ", "")).trim();
+              if (loc !== selectedLocation) return false;
+            }
+            return true;
+          });
+
+          const hasShifts = personShiftsThisDay.length > 0;
+          const isSelected = selectedDate?.toDateString() === day.toDateString();
+          const isToday = new Date().toDateString() === day.toDateString();
+
+          return (
+            <button
+              key={day.toISOString()}
+              onClick={() => setSelectedDate(day)}
+              className={`
+                aspect-square p-1 sm:p-2 rounded-xl flex flex-col items-center justify-center relative transition-all cursor-pointer
+                ${isSelected ? 'bg-blue-500 text-white shadow-md' : 'hover:bg-gray-50 text-gray-700'}
+                ${isToday && !isSelected ? 'ring-2 ring-blue-500/50 font-bold' : ''}
+              `}
+            >
+              <span className="text-sm font-medium">{day.getDate()}</span>
+              {hasShifts && (
+                <div className="flex gap-1 mt-1 justify-center flex-wrap">
+                  {personShiftsThisDay.map((ps, idx) => {
+                    const loc = (ps.location || ps.summary.replace("Work at ", "")).trim();
+                    const theme = getLocationTheme(loc);
+                    return <div key={idx} className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-white' : theme.fill}`}></div>
+                  })}
+                </div>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {selectedDate && (
+        <div className="mt-6 border-t border-gray-100 pt-6">
+          <h4 className="font-bold text-gray-800 mb-4 pl-2">
+            Shifts for {selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+          </h4>
+          <div className="flex flex-col gap-3">
+            {getShiftsForDay(selectedDate).length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                {getShiftsForDay(selectedDate).map((shift, idx) => {
+                  const loc = (shift.location || shift.summary.replace("Work at ", "")).trim();
+                  const locTheme = getLocationTheme(loc);
+                  return (
+                    <div key={idx} className={`bg-white border-2 ${locTheme.border} rounded-xl p-3 shadow-sm`}>
+                      <div className="flex justify-between items-start mb-1">
+                        <p className="font-bold text-black capitalize truncate">{shift.employee || 'Unknown'}</p>
+                      </div>
+                      <p className="font-medium text-gray-600 text-sm mb-2">
+                        {formatShiftTime(new Date(shift.start.dateTime || shift.start.date))} - {formatShiftTime(new Date(shift.end.dateTime || shift.end.date))}
+                      </p>
+                      <span className={`text-xs font-bold px-2 py-1 rounded-md border ${locTheme.border} ${locTheme.text}`}>
+                        {loc}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500 text-sm italic bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                No shifts scheduled for this location on this date.
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 export default function Dashboard() {
   const supabase = createClient();
   const router = useRouter();
@@ -772,6 +936,8 @@ export default function Dashboard() {
         masterShifts={masterShifts} 
         searchIdentifier={activeQuery} 
       />
+
+      <LocationCalendar masterShifts={masterShifts} searchedShifts={shifts} />
 
       </div>
 
