@@ -97,7 +97,7 @@ def fetch_latest_schedule_email(service):
         return None, None, None
 
 
-def get_schedule_data(employee_name, force_sync=False, access_token=None):
+def get_schedule_data(employee_name, force_sync=False, access_token=None, req_month=None, req_year=None):
     """
     Core Logic: Implements the 24-hour TTL Cache and Crowd-Sourced Sync.
     Returns: (shifts_list, metadata_dict, sync_status, error_message)
@@ -108,15 +108,26 @@ def get_schedule_data(employee_name, force_sync=False, access_token=None):
         return None, None, "ERROR", "Database connection failed."
 
     try:
-        # 1. FETCH LATEST CACHE FROM DATABASE
-        response = supabase.table('schedules').select('*').order('year', desc=True).order('month', desc=True).order('period', desc=True).limit(1).execute()
-        db_record = response.data[0] if len(response.data) > 0 else None
+        # 1. FETCH CACHE FROM DATABASE
+        is_historical = req_month is not None and req_year is not None
+        
+        if is_historical:
+            response = supabase.table('schedules').select('*').eq('year', int(req_year)).eq('month', int(req_month)).order('period', desc=True).execute()
+            db_records = response.data
+            db_record = db_records[0] if len(db_records) > 0 else None
+        else:
+            response = supabase.table('schedules').select('*').order('year', desc=True).order('month', desc=True).order('period', desc=True).limit(1).execute()
+            db_records = response.data
+            db_record = db_records[0] if len(db_records) > 0 else None
 
         current_time = datetime.now(timezone.utc)
         needs_sync = True
         sync_status = "OK"
 
-        if db_record and db_record.get('last_synced_at'):
+        if is_historical:
+            needs_sync = False
+            print(f"HISTORICAL FETCH: Month {req_month}, Year {req_year}. Skipping Sync.")
+        elif db_record and db_record.get('last_synced_at'):
             last_synced = datetime.fromisoformat(db_record['last_synced_at'].replace('Z', '+00:00'))
             if not force_sync and (current_time - last_synced) < timedelta(hours=24):
                 needs_sync = False
@@ -181,23 +192,25 @@ def get_schedule_data(employee_name, force_sync=False, access_token=None):
                                         supabase.table('schedules').insert(new_record_data).execute()
 
                                     db_record = new_record_data
+                                    db_records = [new_record_data]
                 except Exception as e:
                     print(f"SYNC FAILED: Token error or Gmail API rejected request: {e}")
                     sync_status = "TOKEN_EXPIRED"
 
         # 4. RETURN THE DATA (Even if sync failed, we return the stale cache if we have it)
-        if not db_record:
-             return None, None, sync_status, "Database is completely empty and no emails found."
+        if not db_records:
+             return None, None, sync_status, "Database is completely empty and no emails found for this period."
              
-        if employee_key == "master":
-            shifts = []
-            for emp, emp_shifts in db_record.get('schedule_data', {}).items():
-                for shift in emp_shifts:
-                    shift_with_name = shift.copy()
-                    shift_with_name['employee'] = emp
-                    shifts.append(shift_with_name)
-        else:
-            shifts = db_record.get('schedule_data', {}).get(employee_key, [])
+        shifts = []
+        for record in db_records:
+            if employee_key == "master":
+                for emp, emp_shifts in record.get('schedule_data', {}).items():
+                    for shift in emp_shifts:
+                        shift_with_name = shift.copy()
+                        shift_with_name['employee'] = emp
+                        shifts.append(shift_with_name)
+            else:
+                shifts.extend(record.get('schedule_data', {}).get(employee_key, []))
             
         return shifts, db_record, sync_status, None
 
@@ -246,12 +259,14 @@ def get_schedule_json():
     """JSON ENDPOINT: Used by the React Dashboard to display the schedule visually."""
     employee_name = request.args.get('name')
     force_sync = request.args.get('force_sync', 'false').lower() == 'true'
+    req_month = request.args.get('month')
+    req_year = request.args.get('year')
     access_token = get_token_from_header()
     
     if not employee_name:
         return jsonify({"error": "Name parameter is required"}), 400
 
-    shifts, metadata, sync_status, error = get_schedule_data(employee_name, force_sync, access_token)
+    shifts, metadata, sync_status, error = get_schedule_data(employee_name, force_sync, access_token, req_month, req_year)
     
     if error and not shifts:
         return jsonify({"error": error, "sync_status": sync_status}), 500
@@ -275,12 +290,14 @@ def download_schedule():
     """ICS ENDPOINT: Still works identically, routing through the cache."""
     employee_name = request.args.get('name')
     force_sync = request.args.get('force_sync', 'false').lower() == 'true'
+    req_month = request.args.get('month')
+    req_year = request.args.get('year')
     access_token = get_token_from_header()
     
     if not employee_name:
         return jsonify({"error": "Name parameter is required"}), 400
 
-    shifts, metadata, sync_status, error = get_schedule_data(employee_name, force_sync, access_token)
+    shifts, metadata, sync_status, error = get_schedule_data(employee_name, force_sync, access_token, req_month, req_year)
 
     if error and not shifts:
         return jsonify({"error": error}), 500

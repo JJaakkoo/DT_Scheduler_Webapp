@@ -100,11 +100,55 @@ const ShiftTimeline = ({ searchedShifts, masterShifts, searchIdentifier }: { sea
   );
 };
 
-const LocationCalendar = ({ masterShifts, searchedShifts }: { masterShifts: any[], searchedShifts: any[] }) => {
+const LocationCalendar = ({ activeQuery, masterShifts: initialMasterShifts, searchedShifts: initialSearchedShifts }: { activeQuery: string, masterShifts: any[], searchedShifts: any[] }) => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [masterShifts, setMasterShifts] = useState(initialMasterShifts);
+  const [searchedShifts, setSearchedShifts] = useState(initialSearchedShifts);
+  const [isLoadingMonth, setIsLoadingMonth] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<string>("All Locations");
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const detailsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const now = new Date();
+    if (currentMonth.getMonth() === now.getMonth() && currentMonth.getFullYear() === now.getFullYear()) {
+      setMasterShifts(initialMasterShifts);
+      setSearchedShifts(initialSearchedShifts);
+    }
+  }, [initialMasterShifts, initialSearchedShifts, currentMonth]);
+
+  useEffect(() => {
+    const fetchMonthData = async () => {
+      const now = new Date();
+      if (currentMonth.getMonth() === now.getMonth() && currentMonth.getFullYear() === now.getFullYear()) {
+        return;
+      }
+      setIsLoadingMonth(true);
+      try {
+        const token = localStorage.getItem("google_access_token");
+        const headers: HeadersInit = {};
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const month = currentMonth.getMonth() + 1;
+        const year = currentMonth.getFullYear();
+        
+        const masterRes = await fetch(`/api/schedule?name=MASTER&month=${month}&year=${year}`, { headers });
+        const masterData = await masterRes.json();
+        if (masterRes.ok) setMasterShifts(masterData.shifts || []);
+
+        if (activeQuery) {
+          const searchRes = await fetch(`/api/schedule?name=${encodeURIComponent(activeQuery)}&month=${month}&year=${year}`, { headers });
+          const searchData = await searchRes.json();
+          if (searchRes.ok) setSearchedShifts(searchData.shifts || []);
+        }
+      } catch (e) {
+        console.error("Failed to load historical schedule", e);
+      } finally {
+        setIsLoadingMonth(false);
+      }
+    };
+    fetchMonthData();
+  }, [currentMonth, activeQuery]);
 
   useEffect(() => {
     if (selectedDate && detailsRef.current) {
@@ -213,10 +257,12 @@ const LocationCalendar = ({ masterShifts, searchedShifts }: { masterShifts: any[
           return (
             <button
               key={day.toISOString()}
-              onClick={() => setSelectedDate(day)}
+              onClick={() => hasShifts && setSelectedDate(day)}
+              disabled={!hasShifts}
               className={`
-                aspect-square p-1 sm:p-2 rounded-xl flex flex-col items-center justify-center relative transition-all cursor-pointer
-                ${isSelected ? 'bg-blue-500 text-white shadow-md' : 'hover:bg-gray-50 text-gray-700'}
+                aspect-square p-1 sm:p-2 rounded-xl flex flex-col items-center justify-center relative transition-all 
+                ${hasShifts ? 'cursor-pointer' : 'cursor-not-allowed opacity-40'}
+                ${isSelected ? 'bg-blue-500 text-white shadow-md' : (hasShifts ? 'hover:bg-gray-50 text-gray-700' : 'text-gray-400')}
                 ${isToday && !isSelected ? 'ring-2 ring-blue-500/50 font-bold' : ''}
               `}
             >
@@ -971,7 +1017,7 @@ export default function Dashboard() {
         searchIdentifier={activeQuery} 
       />
 
-      <LocationCalendar masterShifts={masterShifts} searchedShifts={shifts} />
+      <LocationCalendar activeQuery={activeQuery} masterShifts={masterShifts} searchedShifts={shifts} />
 
       </div>
 
