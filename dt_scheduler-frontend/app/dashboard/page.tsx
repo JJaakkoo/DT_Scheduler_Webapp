@@ -274,7 +274,7 @@ const LocationCalendar = ({ activeQuery, masterShifts: initialMasterShifts, sear
             >
               <span className="text-sm font-medium">{day.getDate()}</span>
               {hasPersonalShifts && (
-                <div className="flex gap-1 mt-1 justify-center flex-wrap">
+                <div className="absolute bottom-1 sm:bottom-1.5 left-0 right-0 flex gap-1 justify-center flex-wrap">
                   {personShiftsThisDay.map((ps, idx) => {
                     const loc = (ps.location || ps.summary.replace("Work at ", "")).trim();
                     const theme = getLocationTheme(loc);
