@@ -127,7 +127,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     // 0. Extract Google OAuth provider token if available
-    supabase.auth.getSession().then(({ data }) => {
+    supabase.auth.getSession().then(({ data }: any) => {
       const loginTime = localStorage.getItem("nexus_login_time");
       const now = Date.now();
       if (!loginTime) {
@@ -315,6 +315,7 @@ export default function Dashboard() {
     if (query === activeQuery && !forceSync) return;
     
     setActiveQuery(query);
+    localStorage.setItem("nexus_default_search_name", query);
     setError(null);
     setAuthError(null);
     
@@ -390,6 +391,15 @@ export default function Dashboard() {
     if (isTomorrow) return `Tomorrow at ${timeStr}`;
     return `${date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} at ${timeStr}`;
   };
+
+  useEffect(() => {
+    const defaultSearchName = localStorage.getItem("nexus_default_search_name");
+    if (defaultSearchName && !activeQuery) {
+      setEmployeeName(defaultSearchName);
+      executeSearch(defaultSearchName, false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleDownloadICS = () => {
     if (!activeQuery) return;
