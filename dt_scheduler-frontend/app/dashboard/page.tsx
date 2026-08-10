@@ -44,7 +44,7 @@ function useOverlappingShifts(searchedShifts: any[], masterShifts: any[], search
   }, [searchedShifts, masterShifts, searchIdentifier]);
 }
 
-const ShiftTimeline = ({ searchedShifts, masterShifts, searchIdentifier }: { searchedShifts: any[], masterShifts: any[], searchIdentifier: string }) => {
+const ShiftTimeline = ({ searchedShifts, masterShifts, searchIdentifier, isLoadingMaster }: { searchedShifts: any[], masterShifts: any[], searchIdentifier: string, isLoadingMaster?: boolean }) => {
   const timelines = useOverlappingShifts(searchedShifts, masterShifts, searchIdentifier);
 
   if (!searchedShifts || searchedShifts.length === 0) return null;
@@ -59,8 +59,16 @@ const ShiftTimeline = ({ searchedShifts, masterShifts, searchIdentifier }: { sea
 
   return (
     <div className="w-full max-w-[850px] mx-auto mt-8 bg-white rounded-[32px] border-4 border-white p-6 md:p-8 shadow-[0_4px_24px_rgba(0,0,0,0.1)] relative z-10">
-      <h3 className="font-bold text-[#628ebf] text-sm uppercase tracking-widest mb-6 pl-2">
+      <h3 className="font-bold text-[#628ebf] text-sm uppercase tracking-widest mb-6 pl-2 flex items-center">
         Who you are working with
+        {isLoadingMaster && (
+          <div className="ml-2 flex items-center justify-center">
+            <svg className="animate-spin h-4 w-4 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+          </div>
+        )}
       </h3>
       
       <div className="flex flex-col gap-8">
@@ -451,6 +459,7 @@ export default function Dashboard() {
 
   // 1. SILENT BACKGROUND FETCH FOR LIVE STATUS
   const fetchMaster = useCallback(async () => {
+    setIsMasterLoading(true);
     try {
       const token = localStorage.getItem("google_access_token");
       const headers: HeadersInit = {};
@@ -471,7 +480,10 @@ export default function Dashboard() {
   }, []);
 
   useEffect(() => {
-    fetchMaster();
+    const defaultSearchName = localStorage.getItem("nexus_default_search_name");
+    if (!defaultSearchName) {
+      fetchMaster();
+    }
     const timer = setInterval(() => setCurrentTime(new Date()), 60000);
     return () => clearInterval(timer);
   }, [fetchMaster]);
@@ -724,7 +736,17 @@ export default function Dashboard() {
           ) : (
           <>
             {/* Added matched header for perfect horizontal alignment! */}
-            <h3 className="font-bold text-[#628ebf] text-sm uppercase tracking-widest pl-2">Schedule Lookup</h3>
+            <h3 className="font-bold text-[#628ebf] text-sm uppercase tracking-widest pl-2 flex items-center">
+              Schedule Lookup
+              {isLoading && (
+                <div className="ml-2 flex items-center justify-center">
+                  <svg className="animate-spin h-4 w-4 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                </div>
+              )}
+            </h3>
             
             <div className="w-full bg-white rounded-[32px] shadow-[0_4px_24px_rgba(0,0,0,0.1)] flex flex-col overflow-hidden border-4 border-white max-h-[70vh] flex-shrink-0">
               
@@ -1021,6 +1043,7 @@ export default function Dashboard() {
         searchedShifts={shifts} 
         masterShifts={masterShifts} 
         searchIdentifier={activeQuery} 
+        isLoadingMaster={isMasterLoading}
       />
 
       <LocationCalendar activeQuery={activeQuery} masterShifts={masterShifts} searchedShifts={shifts} />
