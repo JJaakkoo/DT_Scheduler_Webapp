@@ -200,10 +200,7 @@ const LocationCalendar = ({ activeQuery, masterShifts: initialMasterShifts, sear
 
   return (
     <div className="w-full max-w-[850px] mx-auto mt-8 bg-white rounded-[32px] border-4 border-white p-6 md:p-8 shadow-[0_4px_24px_rgba(0,0,0,0.1)] relative z-10 mb-8">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-        <h3 className="font-bold text-[#628ebf] text-sm uppercase tracking-widest pl-2">
-          Location Calendar
-        </h3>
+      <div className="flex flex-col sm:flex-row justify-end items-start sm:items-center mb-6 gap-4">
         <select 
           value={selectedLocation}
           onChange={(e) => setSelectedLocation(e.target.value)}
