@@ -418,11 +418,19 @@ export default function Dashboard() {
     <main className="min-h-[100dvh] w-screen flex flex-col bg-[#c2e2f5] font-sans overflow-x-hidden overflow-y-auto">
       
       <div className="w-full bg-white/90 backdrop-blur-md shadow-sm z-50 px-4 py-3 sm:px-8 flex justify-between items-center shrink-0">
-        {email ? (
-          <div className="text-gray-700 font-medium text-sm">
-            {email}
+        <div className="flex items-center gap-3">
+          {email && (
+            <div className="text-gray-700 font-medium text-sm hidden sm:block">
+              {email}
+            </div>
+          )}
+          <div className="text-gray-600 font-medium text-sm bg-gray-100/80 px-3 py-1.5 rounded-full flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-gray-500">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+            </svg>
+            {currentTime.toLocaleString('en-US', { month: 'long', day: 'numeric' })}, {currentTime.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit' })}
           </div>
-        ) : <div />}
+        </div>
 
         <button 
           onClick={handleLogOut} 
