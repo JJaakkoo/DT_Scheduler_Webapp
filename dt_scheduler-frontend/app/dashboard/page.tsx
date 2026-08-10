@@ -250,24 +250,25 @@ const LocationCalendar = ({ activeQuery, masterShifts: initialMasterShifts, sear
             return true;
           });
 
-          const hasShifts = personShiftsThisDay.length > 0;
+          const hasPersonalShifts = personShiftsThisDay.length > 0;
+          const isDayInteractable = getShiftsForDay(day).length > 0;
           const isSelected = selectedDate?.toDateString() === day.toDateString();
           const isToday = new Date().toDateString() === day.toDateString();
 
           return (
             <button
               key={day.toISOString()}
-              onClick={() => hasShifts && setSelectedDate(day)}
-              disabled={!hasShifts}
+              onClick={() => isDayInteractable && setSelectedDate(day)}
+              disabled={!isDayInteractable}
               className={`
                 aspect-square p-1 sm:p-2 rounded-xl flex flex-col items-center justify-center relative transition-all 
-                ${hasShifts ? 'cursor-pointer' : 'cursor-not-allowed opacity-40'}
-                ${isSelected ? 'bg-blue-500 text-white shadow-md' : (hasShifts ? 'hover:bg-gray-50 text-gray-700' : 'text-gray-400')}
+                ${isDayInteractable ? 'cursor-pointer' : 'cursor-not-allowed opacity-40'}
+                ${isSelected ? 'bg-blue-500 text-white shadow-md' : (isDayInteractable ? 'hover:bg-gray-50 text-gray-700' : 'text-gray-400')}
                 ${isToday && !isSelected ? 'ring-2 ring-blue-500/50 font-bold' : ''}
               `}
             >
               <span className="text-sm font-medium">{day.getDate()}</span>
-              {hasShifts && (
+              {hasPersonalShifts && (
                 <div className="flex gap-1 mt-1 justify-center flex-wrap">
                   {personShiftsThisDay.map((ps, idx) => {
                     const loc = (ps.location || ps.summary.replace("Work at ", "")).trim();
