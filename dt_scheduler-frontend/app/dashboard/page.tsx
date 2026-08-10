@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "../../utils/supabase/client";
 
@@ -104,6 +104,15 @@ const LocationCalendar = ({ masterShifts, searchedShifts }: { masterShifts: any[
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedLocation, setSelectedLocation] = useState<string>("All Locations");
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const detailsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (selectedDate && detailsRef.current) {
+      setTimeout(() => {
+        detailsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 50);
+    }
+  }, [selectedDate]);
 
   const locations = useMemo(() => {
     const locs = new Set<string>();
@@ -227,36 +236,61 @@ const LocationCalendar = ({ masterShifts, searchedShifts }: { masterShifts: any[
       </div>
 
       {selectedDate && (
-        <div className="mt-6 border-t border-gray-100 pt-6">
+        <div ref={detailsRef} className="mt-6 border-t border-gray-100 pt-6">
           <h4 className="font-bold text-gray-800 mb-4 pl-2">
             Shifts for {selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
           </h4>
           <div className="flex flex-col gap-3">
-            {getShiftsForDay(selectedDate).length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                {getShiftsForDay(selectedDate).map((shift, idx) => {
-                  const loc = (shift.location || shift.summary.replace("Work at ", "")).trim();
+            {(() => {
+              const dayShifts = getShiftsForDay(selectedDate);
+              if (dayShifts.length === 0) {
+                return (
+                  <div className="text-center py-8 text-gray-500 text-sm italic bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                    No shifts scheduled for this location on this date.
+                  </div>
+                );
+              }
+
+              // Sort by start time
+              const sortedShifts = [...dayShifts].sort((a, b) => {
+                return new Date(a.start.dateTime || a.start.date).getTime() - new Date(b.start.dateTime || b.start.date).getTime();
+              });
+
+              // Group by location
+              const groupedShifts = sortedShifts.reduce((acc, shift) => {
+                const loc = (shift.location || shift.summary.replace("Work at ", "")).trim();
+                if (!acc[loc]) acc[loc] = [];
+                acc[loc].push(shift);
+                return acc;
+              }, {} as Record<string, any[]>);
+
+              // Render groups
+              return Object.entries(groupedShifts)
+                .sort(([locA], [locB]) => locA.localeCompare(locB))
+                .map(([loc, shifts]: [string, any], gIdx) => {
                   const locTheme = getLocationTheme(loc);
                   return (
-                    <div key={idx} className={`bg-white border-2 ${locTheme.border} rounded-xl p-3 shadow-sm`}>
-                      <div className="flex justify-between items-start mb-1">
-                        <p className="font-bold text-black capitalize truncate">{shift.employee || 'Unknown'}</p>
+                    <div key={gIdx} className="mb-4 last:mb-0">
+                      <h5 className={`font-bold text-sm mb-3 pl-1 ${locTheme.text}`}>{loc}</h5>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                        {shifts.map((shift: any, idx: number) => (
+                          <div key={idx} className={`bg-white border-2 ${locTheme.border} rounded-xl p-3 shadow-sm`}>
+                            <div className="flex justify-between items-start mb-1">
+                              <p className="font-bold text-black capitalize truncate">{shift.employee || 'Unknown'}</p>
+                            </div>
+                            <p className="font-medium text-gray-600 text-sm mb-2">
+                              {formatShiftTime(new Date(shift.start.dateTime || shift.start.date))} - {formatShiftTime(new Date(shift.end.dateTime || shift.end.date))}
+                            </p>
+                            <span className={`text-xs font-bold px-2 py-1 rounded-md border ${locTheme.border} ${locTheme.text}`}>
+                              {loc}
+                            </span>
+                          </div>
+                        ))}
                       </div>
-                      <p className="font-medium text-gray-600 text-sm mb-2">
-                        {formatShiftTime(new Date(shift.start.dateTime || shift.start.date))} - {formatShiftTime(new Date(shift.end.dateTime || shift.end.date))}
-                      </p>
-                      <span className={`text-xs font-bold px-2 py-1 rounded-md border ${locTheme.border} ${locTheme.text}`}>
-                        {loc}
-                      </span>
                     </div>
                   );
-                })}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-gray-500 text-sm italic bg-gray-50 rounded-xl border border-dashed border-gray-200">
-                No shifts scheduled for this location on this date.
-              </div>
-            )}
+                });
+            })()}
           </div>
         </div>
       )}
