@@ -275,16 +275,22 @@ export default function AvailabilityPage() {
     if (!selectedDate) return;
     const dayStr = selectedDate.toISOString().split('T')[0];
     
-    const newCache = {
-      ...availabilityCache,
-      [dayStr]: {
-        isUnavailable,
-        isFullDay,
-        startTime,
-        endTime,
-        locations: selectedLocations
-      }
-    };
+    let newCache;
+    if (!isUnavailable && selectedLocations.length === 0) {
+      newCache = { ...availabilityCache };
+      delete newCache[dayStr];
+    } else {
+      newCache = {
+        ...availabilityCache,
+        [dayStr]: {
+          isUnavailable,
+          isFullDay,
+          startTime,
+          endTime,
+          locations: selectedLocations
+        }
+      };
+    }
     
     setAvailabilityCache(newCache);
     localStorage.setItem("nexus_avail_draft", JSON.stringify({
@@ -292,6 +298,46 @@ export default function AvailabilityPage() {
       data: newCache
     }));
   };
+
+  useEffect(() => {
+    if (!selectedDate) return;
+    const dayStr = selectedDate.toISOString().split('T')[0];
+    
+    const existing = availabilityCache[dayStr];
+    if (existing) {
+       if (existing.isUnavailable === isUnavailable &&
+           existing.startTime === startTime &&
+           existing.endTime === endTime &&
+           JSON.stringify(existing.locations) === JSON.stringify(selectedLocations)) {
+           return;
+       }
+    } else if (!isUnavailable && selectedLocations.length === 0) {
+       return;
+    }
+
+    let newCache;
+    if (!isUnavailable && selectedLocations.length === 0) {
+      newCache = { ...availabilityCache };
+      delete newCache[dayStr];
+    } else {
+      newCache = {
+        ...availabilityCache,
+        [dayStr]: {
+          isUnavailable,
+          isFullDay,
+          startTime,
+          endTime,
+          locations: selectedLocations
+        }
+      };
+    }
+    
+    setAvailabilityCache(newCache);
+    localStorage.setItem("nexus_avail_draft", JSON.stringify({
+      updated_at: new Date().toISOString(),
+      data: newCache
+    }));
+  }, [isUnavailable, isFullDay, startTime, endTime, selectedLocations]);
 
   const handleSaveDay = () => {
     saveCurrentDay();
