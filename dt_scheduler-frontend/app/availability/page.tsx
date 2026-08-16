@@ -204,8 +204,45 @@ export default function AvailabilityPage() {
     if (dbTime > localTime && availData?.schedule_data) {
        // Convert JSON back to cache format
        finalCache = transformDBToCache(availData.schedule_data);
-    } else if (localDraft?.data) {
+    } else if (localDraft?.data && Object.keys(localDraft.data).length > 0) {
        finalCache = localDraft.data;
+    } else {
+       // No data for this period and no local draft. Fetch most recent as a template!
+       const { data: latestAvail } = await supabase.from('availability')
+         .select('schedule_data')
+         .eq('user_id', userData.id)
+         .order('year', { ascending: false })
+         .order('month', { ascending: false })
+         .order('period', { ascending: false })
+         .limit(1)
+         .single();
+         
+       if (latestAvail?.schedule_data) {
+          const oldCache = transformDBToCache(latestAvail.schedule_data);
+          const dowMap: Record<number, any> = {};
+          // Map each day of the week to its latest occurrence in the previous schedule
+          Object.keys(oldCache).sort().forEach(dateStr => {
+             const parts = dateStr.split('-');
+             const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+             dowMap[d.getDay()] = oldCache[dateStr];
+          });
+          
+          const targetDates: Date[] = [];
+          if (targetPeriodNum === 1) {
+            for (let i = 1; i <= 15; i++) targetDates.push(new Date(targetYear, targetMonth - 1, i));
+          } else {
+            const lastDay = new Date(targetYear, targetMonth, 0).getDate();
+            for (let i = 16; i <= lastDay; i++) targetDates.push(new Date(targetYear, targetMonth - 1, i));
+          }
+          
+          targetDates.forEach(d => {
+             const dayStr = `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2, '0')}-${d.getDate().toString().padStart(2, '0')}`;
+             const pattern = dowMap[d.getDay()];
+             if (pattern) {
+                finalCache[dayStr] = JSON.parse(JSON.stringify(pattern));
+             }
+          });
+       }
     }
     
     setAvailabilityCache(finalCache);
@@ -833,7 +870,7 @@ export default function AvailabilityPage() {
 
       {showMissingModal && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-           <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl relative">
+           <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-xl w-full shadow-2xl relative">
               <button onClick={() => setShowMissingModal(false)} className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 bg-gray-50 rounded-full">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
               </button>
