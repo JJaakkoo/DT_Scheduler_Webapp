@@ -376,6 +376,7 @@ export default function Dashboard() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isDownloaded, setIsDownloaded] = useState(false);
+  const [isNavOpen, setIsNavOpen] = useState(false);
 
   // Live Status States
   const [masterShifts, setMasterShifts] = useState<any[]>([]);
@@ -692,31 +693,58 @@ export default function Dashboard() {
     <main className="min-h-[100dvh] w-screen flex flex-col bg-[#c2e2f5] font-sans overflow-x-hidden overflow-y-auto">
       
       <div className="w-full bg-white/90 backdrop-blur-md shadow-sm z-50 px-4 py-3 sm:px-8 flex justify-between items-center shrink-0">
-        <div className="flex items-center gap-3">
-          {email && (
-            <div className="text-gray-700 font-medium text-sm hidden sm:block">
-              {email}
-            </div>
-          )}
-          <div className="text-gray-600 font-medium text-sm bg-gray-100/80 px-3 py-1.5 rounded-full flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-gray-500">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-            </svg>
-            {currentTime.toLocaleString('en-US', { month: 'long', day: 'numeric' })}, {currentTime.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit' })}
+        <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
+          
+          {/* DESKTOP NAV (Hidden on mobile) */}
+          <div className="relative hidden sm:block">
+            <button onClick={() => setIsNavOpen(!isNavOpen)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors focus:outline-none">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6 text-gray-700">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+              </svg>
+            </button>
+            {isNavOpen && (
+              <div className="absolute top-full left-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50">
+                 <button onClick={handleLogOut} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" /></svg>
+                    {isLoading ? "Logging out..." : "Log Out"}
+                 </button>
+              </div>
+            )}
           </div>
-        </div>
 
-        <button 
-          onClick={handleLogOut} 
-          disabled={isLoading}
-          className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-full transition-all text-sm flex items-center gap-2 disabled:opacity-50"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-            <path fillRule="evenodd" d="M10 12.5a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v2a.5.5 0 0 0 1 0v-2A1.5 1.5 0 0 0 9.5 2h-8A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h8a1.5 1.5 0 0 0 1.5-1.5v-2a.5.5 0 0 0-1 0v2z"/>
-            <path fillRule="evenodd" d="M15.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 0 0-.708.708L14.293 7.5H5.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3z"/>
-          </svg>
-          {isLoading ? "Logging out..." : "Log Out"}
-        </button>
+          <div className="flex items-center gap-3">
+            {email && (
+              <div className="text-gray-700 font-medium text-sm hidden sm:block">
+                {email}
+              </div>
+            )}
+            <div className="text-gray-600 font-medium text-sm bg-gray-100/80 px-3 py-1.5 rounded-full flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-gray-500">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+              </svg>
+              {currentTime.toLocaleString('en-US', { month: 'long', day: 'numeric' })}, {currentTime.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit' })}
+            </div>
+          </div>
+
+          {/* MOBILE NAV (Hidden on desktop) */}
+          <div className="relative block sm:hidden">
+            <button onClick={() => setIsNavOpen(!isNavOpen)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors focus:outline-none">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6 text-gray-700">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+              </svg>
+            </button>
+            {isNavOpen && (
+              <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50">
+                 {email && <div className="px-4 py-2 text-xs text-gray-500 border-b border-gray-100 mb-1 truncate">{email}</div>}
+                 <button onClick={handleLogOut} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" /></svg>
+                    {isLoading ? "Logging out..." : "Log Out"}
+                 </button>
+              </div>
+            )}
+          </div>
+
+        </div>
       </div>
 
       <div className="flex-1 w-full flex flex-col items-center py-6 px-4 sm:px-8">
