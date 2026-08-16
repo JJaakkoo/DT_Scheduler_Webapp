@@ -243,7 +243,7 @@ function HomeContent() {
         <img
           src="/Background Image.png"
           alt="The inside of Dream Tea"
-          className="absolute top-0 right-0 bottom-0 w-[calc(100%-300px)] object-cover z-0 hidden md:block"
+          className="absolute top-0 right-0 bottom-0 w-[calc(100%-300px)] h-full object-cover z-0 hidden md:block"
         />
 
         <div className="w-full md:max-w-[448px] min-h-[650px] bg-white md:rounded-3xl shadow-[var(--shadow-panel)] flex flex-col items-center justify-center p-6 sm:p-8 shrink-0 relative z-10">
