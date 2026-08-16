@@ -15,7 +15,7 @@ const getLocationTheme = (location: string) => {
   return { text: "text-sky-500", border: "border-sky-200", bg: "bg-sky-50", fill: "bg-[#8ab4f8]" };
 };
 
-const HOURS = Array.from({length: 11}, (_, i) => (i + 12).toString());
+const HOURS = Array.from({length: 13}, (_, i) => (i + 10).toString());
 const MINUTES = ["00", "15", "30", "45"];
 
 const TimeWheel = ({ value, onChange, options, isHour = false }: { value: string, onChange: (v: string) => void, options: string[], isHour?: boolean }) => {
@@ -32,7 +32,7 @@ const TimeWheel = ({ value, onChange, options, isHour = false }: { value: string
   }, [value]);
 
   return (
-    <div ref={containerRef} className="time-wheel h-[150px] overflow-y-auto w-[40px] sm:w-[50px] flex flex-col items-center snap-y snap-mandatory pt-[50px] pb-[50px]">
+    <div ref={containerRef} className="time-wheel h-[150px] overflow-y-auto flex-1 w-full flex flex-col items-center snap-y snap-mandatory pt-[50px] pb-[50px]">
        {options.map(o => {
          const display = isHour ? (parseInt(o) > 12 ? parseInt(o) - 12 : parseInt(o)).toString() : o;
          return (
@@ -40,7 +40,7 @@ const TimeWheel = ({ value, onChange, options, isHour = false }: { value: string
              key={o} 
              data-val={o}
              onClick={() => onChange(o)}
-             className={`h-[50px] shrink-0 snap-center text-2xl sm:text-3xl font-bold transition-all ${value === o ? 'text-[#8ab4f8] scale-110' : 'text-gray-300 hover:text-gray-400'}`}
+             className={`w-full h-[50px] shrink-0 snap-center text-2xl sm:text-3xl font-bold transition-all ${value === o ? 'text-[#8ab4f8] scale-110' : 'text-gray-300 hover:text-gray-400'}`}
            >
              {display}
            </button>
@@ -75,6 +75,7 @@ export default function AvailabilityPage() {
   const [showMissingModal, setShowMissingModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [allSaved, setAllSaved] = useState(false);
+  const [actionIndicator, setActionIndicator] = useState<string | null>(null);
 
   useEffect(() => {
     // Auth Check
@@ -332,6 +333,9 @@ export default function AvailabilityPage() {
       updated_at: new Date().toISOString(),
       data: newCache
     }));
+    
+    setActionIndicator("Cleared");
+    setTimeout(() => setActionIndicator(null), 1500);
   };
 
   const handleSaveDay = () => {
@@ -344,6 +348,9 @@ export default function AvailabilityPage() {
       setAllSaved(true);
       setSelectedDate(null);
     }
+    
+    setActionIndicator("Saved");
+    setTimeout(() => setActionIndicator(null), 1500);
   };
 
   const handleNextDay = handleSaveDay;
@@ -600,6 +607,18 @@ export default function AvailabilityPage() {
                                <style dangerouslySetInnerHTML={{__html: `
                                  .time-wheel::-webkit-scrollbar { display: none; }
                                  .time-wheel { -ms-overflow-style: none; scrollbar-width: none; }
+                                 @keyframes fadeOutUp {
+                                   0% { opacity: 0; transform: translate(-50%, 10px); }
+                                   20% { opacity: 1; transform: translate(-50%, 0); }
+                                   80% { opacity: 1; transform: translate(-50%, 0); }
+                                   100% { opacity: 0; transform: translate(-50%, -10px); }
+                                 }
+                                 .animate-fade-out-up { animation: fadeOutUp 1.5s ease-out forwards; }
+                                 @keyframes popIn {
+                                   0% { opacity: 0; transform: scale(0.9); }
+                                   100% { opacity: 1; transform: scale(1); }
+                                 }
+                                 .animate-pop-in { animation: popIn 0.2s ease-out forwards; }
                                `}} />
                                
                                <div className="flex-1 bg-gray-50 rounded-2xl p-2 sm:p-4 border border-gray-100 flex flex-col justify-center items-center relative overflow-hidden">
@@ -620,8 +639,10 @@ export default function AvailabilityPage() {
                                        if (newT > newTimes[activeLocation].endTime) newTimes[activeLocation].endTime = newT;
                                        setLocationTimes(newTimes);
                                     }} options={MINUTES} />
-                                    <div className="flex items-center text-lg sm:text-xl font-bold text-gray-400 ml-1 sm:ml-2 mt-[-5px]">
-                                       {parseInt(locationTimes[activeLocation].startTime.split(':')[0]) >= 12 ? 'PM' : 'AM'}
+                                    <div className="flex items-center text-lg sm:text-xl font-bold text-gray-400 ml-1 sm:ml-2 mt-[-5px] relative w-[30px] h-[30px] overflow-hidden">
+                                       <span key={parseInt(locationTimes[activeLocation].startTime.split(':')[0]) >= 12 ? 'PM' : 'AM'} className="absolute animate-pop-in">
+                                         {parseInt(locationTimes[activeLocation].startTime.split(':')[0]) >= 12 ? 'PM' : 'AM'}
+                                       </span>
                                     </div>
                                  </div>
                                </div>
@@ -644,8 +665,10 @@ export default function AvailabilityPage() {
                                        if (newT < newTimes[activeLocation].startTime) newTimes[activeLocation].startTime = newT;
                                        setLocationTimes(newTimes);
                                     }} options={MINUTES} />
-                                    <div className="flex items-center text-lg sm:text-xl font-bold text-gray-400 ml-1 sm:ml-2 mt-[-5px]">
-                                       {parseInt(locationTimes[activeLocation].endTime.split(':')[0]) >= 12 ? 'PM' : 'AM'}
+                                    <div className="flex items-center text-lg sm:text-xl font-bold text-gray-400 ml-1 sm:ml-2 mt-[-5px] relative w-[30px] h-[30px] overflow-hidden">
+                                       <span key={parseInt(locationTimes[activeLocation].endTime.split(':')[0]) >= 12 ? 'PM' : 'AM'} className="absolute animate-pop-in">
+                                         {parseInt(locationTimes[activeLocation].endTime.split(':')[0]) >= 12 ? 'PM' : 'AM'}
+                                       </span>
                                     </div>
                                  </div>
                                </div>
@@ -667,7 +690,12 @@ export default function AvailabilityPage() {
                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" /></svg>
                        <span className="hidden sm:inline">Previous Day</span>
                      </button>
-                     <div className="flex items-center gap-2">
+                     <div className="flex items-center gap-2 relative">
+                       {actionIndicator && (
+                         <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 text-sm font-bold text-gray-400 animate-fade-out-up whitespace-nowrap">
+                           {actionIndicator}
+                         </div>
+                       )}
                        <button onClick={handleClearDay} className="bg-white hover:bg-gray-50 text-black shadow-md shadow-gray-200 font-bold px-4 py-3 rounded-xl transition-all border border-gray-100">
                          Clear
                        </button>
