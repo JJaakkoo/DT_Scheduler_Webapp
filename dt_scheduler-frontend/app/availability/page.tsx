@@ -267,12 +267,13 @@ export default function AvailabilityPage() {
         setIsFullDay(false);
         setStartTime("12:00");
         setEndTime("22:00");
+        setSelectedLocations([]);
       }
     }
   }, [selectedDate, availabilityCache]);
 
   const saveCurrentDay = () => {
-    if (!selectedDate) return;
+    if (!selectedDate) return availabilityCache;
     const dayStr = selectedDate.toISOString().split('T')[0];
     
     let newCache;
@@ -291,6 +292,27 @@ export default function AvailabilityPage() {
         }
       };
     }
+    
+    setAvailabilityCache(newCache);
+    localStorage.setItem("nexus_avail_draft", JSON.stringify({
+      updated_at: new Date().toISOString(),
+      data: newCache
+    }));
+    
+    return newCache;
+  };
+
+  const handleClearDay = () => {
+    setIsUnavailable(false);
+    setIsFullDay(false);
+    setStartTime("12:00");
+    setEndTime("22:00");
+    setSelectedLocations([]);
+    
+    if (!selectedDate) return;
+    const dayStr = selectedDate.toISOString().split('T')[0];
+    const newCache = { ...availabilityCache };
+    delete newCache[dayStr];
     
     setAvailabilityCache(newCache);
     localStorage.setItem("nexus_avail_draft", JSON.stringify({
@@ -298,46 +320,6 @@ export default function AvailabilityPage() {
       data: newCache
     }));
   };
-
-  useEffect(() => {
-    if (!selectedDate) return;
-    const dayStr = selectedDate.toISOString().split('T')[0];
-    
-    const existing = availabilityCache[dayStr];
-    if (existing) {
-       if (existing.isUnavailable === isUnavailable &&
-           existing.startTime === startTime &&
-           existing.endTime === endTime &&
-           JSON.stringify(existing.locations) === JSON.stringify(selectedLocations)) {
-           return;
-       }
-    } else if (!isUnavailable && selectedLocations.length === 0) {
-       return;
-    }
-
-    let newCache;
-    if (!isUnavailable && selectedLocations.length === 0) {
-      newCache = { ...availabilityCache };
-      delete newCache[dayStr];
-    } else {
-      newCache = {
-        ...availabilityCache,
-        [dayStr]: {
-          isUnavailable,
-          isFullDay,
-          startTime,
-          endTime,
-          locations: selectedLocations
-        }
-      };
-    }
-    
-    setAvailabilityCache(newCache);
-    localStorage.setItem("nexus_avail_draft", JSON.stringify({
-      updated_at: new Date().toISOString(),
-      data: newCache
-    }));
-  }, [isUnavailable, isFullDay, startTime, endTime, selectedLocations]);
 
   const handleSaveDay = () => {
     saveCurrentDay();
@@ -656,13 +638,18 @@ export default function AvailabilityPage() {
                   <div className="flex justify-between items-center mt-auto pt-8">
                      <button onClick={handlePrevDay} className="text-gray-400 hover:text-gray-700 font-bold px-4 py-2 flex items-center gap-2">
                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" /></svg>
-                       Previous Day
+                       <span className="hidden sm:inline">Previous Day</span>
                      </button>
-                     <button onClick={handleSaveDay} className="bg-white hover:bg-gray-50 text-black shadow-md shadow-gray-200 font-bold px-8 py-3 rounded-xl transition-all border border-gray-100">
-                       Save Availability
-                     </button>
+                     <div className="flex items-center gap-2">
+                       <button onClick={handleClearDay} className="bg-red-50 hover:bg-red-100 text-red-500 font-bold px-4 py-3 rounded-xl transition-all border border-red-100">
+                         Clear
+                       </button>
+                       <button onClick={handleSaveDay} className="bg-white hover:bg-gray-50 text-black shadow-md shadow-gray-200 font-bold px-4 sm:px-8 py-3 rounded-xl transition-all border border-gray-100">
+                         Save Availability
+                       </button>
+                     </div>
                      <button onClick={handleNextDay} className="text-gray-400 hover:text-gray-700 font-bold px-4 py-2 flex items-center gap-2">
-                       Next Day
+                       <span className="hidden sm:inline">Next Day</span>
                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" /></svg>
                      </button>
                   </div>
@@ -730,7 +717,7 @@ export default function AvailabilityPage() {
                            const fmtEnd = `${endH > 12 ? endH - 12 : endH}:${endM}`;
                            return (
                              <span key={loc} className={`text-[10px] font-bold whitespace-nowrap overflow-hidden text-ellipsis max-w-full px-1 ${getLocationTheme(loc).text}`}>
-                               {loc}: {fmtStart}-{fmtEnd}
+                               {loc.charAt(0)}: {fmtStart}-{fmtEnd}
                              </span>
                            );
                          })}
@@ -751,7 +738,8 @@ export default function AvailabilityPage() {
 
           {/* SUBMISSION */}
           <button disabled={isSubmitting} onClick={() => {
-              const missing = validDates.filter(d => !availabilityCache[d.toISOString().split('T')[0]]);
+              const latestCache = saveCurrentDay() || availabilityCache;
+              const missing = validDates.filter(d => !latestCache[d.toISOString().split('T')[0]]);
               if (missing.length > 0) {
                  setMissingDates(missing);
                  setShowMissingModal(true);
