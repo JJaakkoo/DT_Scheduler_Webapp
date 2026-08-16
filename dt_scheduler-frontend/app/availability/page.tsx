@@ -15,6 +15,16 @@ const getLocationTheme = (location: string) => {
   return { text: "text-sky-500", border: "border-sky-200", bg: "bg-sky-50", fill: "bg-[#8ab4f8]" };
 };
 
+const TIME_SLOTS: string[] = [];
+for (let h = 12; h <= 22; h++) {
+  TIME_SLOTS.push(`${h.toString().padStart(2, '0')}:00`);
+  if (h < 22) {
+    TIME_SLOTS.push(`${h.toString().padStart(2, '0')}:15`);
+    TIME_SLOTS.push(`${h.toString().padStart(2, '0')}:30`);
+    TIME_SLOTS.push(`${h.toString().padStart(2, '0')}:45`);
+  }
+}
+
 export default function AvailabilityPage() {
   const router = useRouter();
   const supabase = createClient();
@@ -25,6 +35,7 @@ export default function AvailabilityPage() {
 
   // Calendar State
   const [targetPeriod, setTargetPeriod] = useState<{ year: number, month: number, period: number } | null>(null);
+  const [maxTargetPeriod, setMaxTargetPeriod] = useState<{ year: number, month: number, period: number } | null>(null);
   const [validDates, setValidDates] = useState<Date[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [availabilityCache, setAvailabilityCache] = useState<Record<string, any>>({});
@@ -35,8 +46,8 @@ export default function AvailabilityPage() {
   const [isFullDay, setIsFullDay] = useState(false);
   
   // Bounds
-  const [startHour, setStartHour] = useState<number>(12); // 12 PM
-  const [endHour, setEndHour] = useState<number>(22); // 10 PM
+  const [startTime, setStartTime] = useState<string>("12:00");
+  const [endTime, setEndTime] = useState<string>("22:00");
   
   // Submission State
   const [missingDates, setMissingDates] = useState<Date[]>([]);
@@ -102,6 +113,7 @@ export default function AvailabilityPage() {
     }
 
     setTargetPeriod({ year: targetYear, month: targetMonth, period: targetPeriodNum });
+    setMaxTargetPeriod({ year: targetYear, month: targetMonth, period: targetPeriodNum });
     calculateValidDates(targetYear, targetMonth, targetPeriodNum);
     
     // 2. Fetch custom user ID
@@ -148,28 +160,28 @@ export default function AvailabilityPage() {
         const locs = Object.keys(anyDayData.locations || {});
         
         if (locs.length === 0) {
-           cache[dayStr] = { isUnavailable: true, isFullDay: false, startHour: 12, endHour: 22, locations: [] };
+           cache[dayStr] = { isUnavailable: true, isFullDay: false, startTime: "12:00", endTime: "22:00", locations: [] };
            continue;
         }
         
-        let startHour = 12;
-        let endHour = 22;
+        let startTime = "12:00";
+        let endTime = "22:00";
         let isFullDay = true;
         
         const firstLocShifts = anyDayData.locations[locs[0]];
         if (firstLocShifts && firstLocShifts.length > 0) {
-           const startStr = firstLocShifts[0].start.dateTime;
-           const endStr = firstLocShifts[0].end.dateTime;
-           startHour = new Date(startStr).getHours();
-           endHour = new Date(endStr).getHours();
-           if (startHour !== 12 || endHour !== 22) isFullDay = false;
+           const startD = new Date(firstLocShifts[0].start.dateTime);
+           const endD = new Date(firstLocShifts[0].end.dateTime);
+           startTime = `${startD.getHours().toString().padStart(2, '0')}:${startD.getMinutes().toString().padStart(2, '0')}`;
+           endTime = `${endD.getHours().toString().padStart(2, '0')}:${endD.getMinutes().toString().padStart(2, '0')}`;
+           if (startTime !== "12:00" || endTime !== "22:00") isFullDay = false;
         }
         
         cache[dayStr] = {
            isUnavailable: false,
            isFullDay,
-           startHour,
-           endHour,
+           startTime,
+           endTime,
            locations: locs.map(l => l.charAt(0).toUpperCase() + l.slice(1)) // capitalize back
         };
      }
@@ -220,20 +232,20 @@ export default function AvailabilityPage() {
       if (cached) {
         setIsUnavailable(cached.isUnavailable);
         setIsFullDay(cached.isFullDay);
-        setStartHour(cached.startHour);
-        setEndHour(cached.endHour);
+        setStartTime(cached.startTime || "12:00");
+        setEndTime(cached.endTime || "22:00");
         if (cached.locations) setSelectedLocations(cached.locations);
       } else {
         // Reset defaults
         setIsUnavailable(false);
         setIsFullDay(false);
-        setStartHour(12);
-        setEndHour(22);
+        setStartTime("12:00");
+        setEndTime("22:00");
       }
     }
   }, [selectedDate, availabilityCache]);
 
-  const handleSaveDay = () => {
+  const saveCurrentDay = () => {
     if (!selectedDate) return;
     const dayStr = selectedDate.toISOString().split('T')[0];
     
@@ -242,8 +254,8 @@ export default function AvailabilityPage() {
       [dayStr]: {
         isUnavailable,
         isFullDay,
-        startHour,
-        endHour,
+        startTime,
+        endTime,
         locations: selectedLocations
       }
     };
@@ -255,8 +267,8 @@ export default function AvailabilityPage() {
     }));
   };
 
-  const handleNextDay = () => {
-    handleSaveDay();
+  const handleSaveDay = () => {
+    saveCurrentDay();
     if (!selectedDate) return;
     const currentIndex = validDates.findIndex(d => d.toDateString() === selectedDate.toDateString());
     if (currentIndex >= 0 && currentIndex < validDates.length - 1) {
@@ -264,8 +276,10 @@ export default function AvailabilityPage() {
     }
   };
 
+  const handleNextDay = handleSaveDay;
+
   const handlePrevDay = () => {
-    handleSaveDay();
+    saveCurrentDay();
     if (!selectedDate) return;
     const currentIndex = validDates.findIndex(d => d.toDateString() === selectedDate.toDateString());
     if (currentIndex > 0) {
@@ -283,8 +297,8 @@ export default function AvailabilityPage() {
       [dayStr]: {
         isUnavailable: true,
         isFullDay: false,
-        startHour: 12,
-        endHour: 22,
+        startTime: "12:00",
+        endTime: "22:00",
         locations: []
       }
     };
@@ -321,8 +335,11 @@ export default function AvailabilityPage() {
   };
 
   const handleNextPeriod = () => {
-    if (!targetPeriod) return;
+    if (!targetPeriod || !maxTargetPeriod) return;
     let { year, month, period } = targetPeriod;
+    if (year === maxTargetPeriod.year && month === maxTargetPeriod.month && period === maxTargetPeriod.period) {
+       return; // Cannot go past the allowed period
+    }
     if (period === 1) {
       period = 2;
     } else {
@@ -356,12 +373,12 @@ export default function AvailabilityPage() {
         };
         
         if (!cache.isUnavailable) {
-           const startH = cache.isFullDay ? 12 : cache.startHour;
-           const endH = cache.isFullDay ? 22 : cache.endHour;
+           const startStr = cache.isFullDay ? "12:00" : cache.startTime;
+           const endStr = cache.isFullDay ? "22:00" : cache.endTime;
            
            cache.locations.forEach((loc: string) => {
-              const startDateTime = `${dayStr}T${String(startH).padStart(2, '0')}:00:00`;
-              const endDateTime = `${dayStr}T${String(endH).padStart(2, '0')}:00:00`;
+              const startDateTime = `${dayStr}T${startStr}:00`;
+              const endDateTime = `${dayStr}T${endStr}:00`;
               
               schedule_data[dayStr].locations[loc.toLowerCase()] = [{
                  start: { dateTime: startDateTime, timeZone: "America/Edmonton" },
@@ -505,23 +522,27 @@ export default function AvailabilityPage() {
                          <h3 className="absolute top-4 left-4 text-xs font-bold text-gray-400 uppercase tracking-widest z-10">Start Time</h3>
                          <div className="relative w-full mt-6 h-[150px]">
                            <div className="time-wheel h-[150px] overflow-y-auto w-full flex flex-col items-center snap-y snap-mandatory pt-[50px] pb-[50px]">
-                              {Array.from({ length: 11 }, (_, i) => i + 12).map(h => {
-                                const isSelected = startHour === h;
+                              {TIME_SLOTS.map(t => {
+                                const isSelected = startTime === t;
+                                const hStr = t.split(':')[0];
+                                const mStr = t.split(':')[1];
+                                const h = parseInt(hStr);
+                                const display = `${h > 12 ? h - 12 : h}:${mStr} ${h >= 12 ? 'PM' : 'AM'}`;
+                                
                                 return (
                                   <button 
-                                    key={h} 
+                                    key={`start-${t}`} 
                                     onClick={() => {
-                                       setStartHour(h);
-                                       if (h > endHour) setEndHour(h);
+                                       setStartTime(t);
+                                       if (t > endTime) setEndTime(t);
                                     }}
-                                    className={`h-[50px] shrink-0 snap-center text-3xl font-bold transition-all ${isSelected ? 'text-amber-500 scale-110' : 'text-gray-300 hover:text-gray-400'}`}
+                                    className={`h-[50px] shrink-0 snap-center text-3xl font-bold transition-all ${isSelected ? 'text-[#8ab4f8] scale-110' : 'text-gray-300 hover:text-gray-400'}`}
                                   >
-                                    {h > 12 ? h - 12 : h}:00 {h >= 12 ? 'PM' : 'AM'}
+                                    {display}
                                   </button>
                                 );
                               })}
                            </div>
-                           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120px] h-[50px] border-2 border-amber-400/50 pointer-events-none rounded-2xl"></div>
                          </div>
                        </div>
                        
@@ -529,22 +550,26 @@ export default function AvailabilityPage() {
                          <h3 className="absolute top-4 left-4 text-xs font-bold text-gray-400 uppercase tracking-widest z-10">End Time</h3>
                          <div className="relative w-full mt-6 h-[150px]">
                            <div className="time-wheel h-[150px] overflow-y-auto w-full flex flex-col items-center snap-y snap-mandatory pt-[50px] pb-[50px]">
-                              {Array.from({ length: 11 }, (_, i) => i + 12).map(h => {
-                                const isSelected = endHour === h;
-                                const isDisabled = h < startHour;
+                              {TIME_SLOTS.map(t => {
+                                const isSelected = endTime === t;
+                                const isDisabled = t < startTime;
+                                const hStr = t.split(':')[0];
+                                const mStr = t.split(':')[1];
+                                const h = parseInt(hStr);
+                                const display = `${h > 12 ? h - 12 : h}:${mStr} ${h >= 12 ? 'PM' : 'AM'}`;
+                                
                                 return (
                                   <button 
-                                    key={h} 
+                                    key={`end-${t}`} 
                                     disabled={isDisabled}
-                                    onClick={() => setEndHour(h)}
-                                    className={`h-[50px] shrink-0 snap-center text-3xl font-bold transition-all ${isSelected ? 'text-amber-500 scale-110' : isDisabled ? 'text-gray-200 opacity-50' : 'text-gray-300 hover:text-gray-400'}`}
+                                    onClick={() => setEndTime(t)}
+                                    className={`h-[50px] shrink-0 snap-center text-3xl font-bold transition-all ${isSelected ? 'text-[#8ab4f8] scale-110' : isDisabled ? 'text-gray-200 opacity-50' : 'text-gray-300 hover:text-gray-400'}`}
                                   >
-                                    {h > 12 ? h - 12 : h}:00 {h >= 12 ? 'PM' : 'AM'}
+                                    {display}
                                   </button>
                                 );
                               })}
                            </div>
-                           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120px] h-[50px] border-2 border-amber-400/50 pointer-events-none rounded-2xl"></div>
                          </div>
                        </div>
                     </div>
@@ -563,7 +588,7 @@ export default function AvailabilityPage() {
                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" /></svg>
                        Previous Day
                      </button>
-                     <button onClick={handleSaveDay} className="bg-black hover:bg-gray-800 text-white font-bold px-8 py-3 rounded-xl transition-all border border-transparent">
+                     <button onClick={handleSaveDay} className="bg-white hover:bg-gray-50 text-black shadow-md shadow-gray-200 font-bold px-8 py-3 rounded-xl transition-all border border-gray-100">
                        Save Availability
                      </button>
                      <button onClick={handleNextDay} className="text-gray-400 hover:text-gray-700 font-bold px-4 py-2 flex items-center gap-2">
@@ -613,16 +638,15 @@ export default function AvailabilityPage() {
                     key={day.toISOString()}
                     onClick={() => setSelectedDate(day)}
                     className={`
-                      aspect-square p-1 sm:p-2 rounded-xl flex flex-col items-center justify-center relative transition-all border-2
-                      ${isSelected ? 'bg-gray-800 text-white border-gray-800 shadow-md' : 'hover:bg-gray-50 text-gray-700 border-transparent'}
-                      ${!isSelected && isCompleted ? 'bg-green-50' : ''}
+                      aspect-square p-1 sm:p-2 flex flex-col items-center justify-center relative transition-all border-b-4
+                      ${isSelected ? 'border-black font-bold text-black' : 'border-transparent hover:bg-gray-50 text-gray-700'}
                     `}
                   >
-                    <span className="text-sm font-medium">{day.getDate()}</span>
-                    {isCompleted && !isSelected && (
-                       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-green-500 mt-1">
-                         <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12Zm13.36-1.814a.75.75 0 1 0-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.14-.094l3.75-5.25Z" clipRule="evenodd" />
-                       </svg>
+                    <span className="text-sm">{day.getDate()}</span>
+                    {isCompleted && !isSelected && !cacheData.isUnavailable && (
+                       <span className="text-[10px] text-gray-500 mt-1 whitespace-nowrap overflow-hidden text-ellipsis max-w-full px-1">
+                         {cacheData.isFullDay ? "12-10PM" : `${cacheData.startTime.split(':')[0] > 12 ? cacheData.startTime.split(':')[0] - 12 : cacheData.startTime.split(':')[0]}:${cacheData.startTime.split(':')[1]}-${cacheData.endTime.split(':')[0] > 12 ? cacheData.endTime.split(':')[0] - 12 : cacheData.endTime.split(':')[0]}:${cacheData.endTime.split(':')[1]}`}
+                       </span>
                     )}
                   </button>
                 )
