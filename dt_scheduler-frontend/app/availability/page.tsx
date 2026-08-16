@@ -281,6 +281,8 @@ export default function AvailabilityPage() {
         setLocationTimes(cached.locationTimes || {});
         const locs = Object.keys(cached.locationTimes || {});
         setActiveLocation(locs.length > 0 ? locs[0] : null);
+      } else {
+        setIsUnavailable(false);
       }
     }
   }, [selectedDate, availabilityCache]);
