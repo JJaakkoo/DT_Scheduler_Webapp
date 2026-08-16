@@ -243,10 +243,10 @@ function HomeContent() {
         <img
           src="/Background Image.png"
           alt="The inside of Dream Tea"
-          className="absolute top-0 right-0 bottom-0 w-[calc(100%-300px)] h-full object-cover z-0 hidden md:block"
+          className="absolute top-0 right-0 bottom-0 w-[calc(100%-300px)] object-cover z-0 hidden md:block"
         />
 
-        <div className="w-full md:max-w-[448px] h-full bg-white md:rounded-3xl shadow-[var(--shadow-panel)] flex flex-col items-center justify-center p-6 sm:p-8 shrink-0 relative z-10">
+        <div className="w-full md:max-w-[448px] min-h-[650px] bg-white md:rounded-3xl shadow-[var(--shadow-panel)] flex flex-col items-center justify-center p-6 sm:p-8 shrink-0 relative z-10">
           
           <div className="flex flex-row items-center w-full justify-center mb-6">
             <img src="/dreamtealogo.svg" alt="Dream Tea Logo" className="object-contain w-8 h-8 mr-2" />
@@ -290,8 +290,8 @@ function HomeContent() {
               </div>
             )}
 
-            <div className={`w-full max-w-[280px] flex items-center mt-2 ${!isForgotPassword ? 'justify-between' : 'justify-center'}`}>
-              {!isForgotPassword && (
+            <div className={`w-full max-w-[280px] flex items-center mt-2 ${(!isForgotPassword && !isSignUp) ? 'justify-between' : 'justify-center'}`}>
+              {!isForgotPassword && !isSignUp && (
                 <div className="flex items-center cursor-pointer group" onClick={() => setIsRemembered(!isRemembered)}>
                   <button type="button" className="w-4 h-4 rounded-full flex items-center justify-center transition-all focus:outline-none border-[1.5px] border-gray-500 bg-transparent group-hover:border-dreamtea-blue">
                     {isRemembered && <div className="w-2 h-2 rounded-full bg-text-secondary" />}
