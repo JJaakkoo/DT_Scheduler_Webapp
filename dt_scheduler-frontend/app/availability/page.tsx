@@ -20,19 +20,44 @@ const MINUTES = ["00", "15", "30", "45"];
 
 const TimeWheel = ({ value, onChange, options, isHour = false }: { value: string, onChange: (v: string) => void, options: string[], isHour?: boolean }) => {
   const containerRef = React.useRef<HTMLDivElement>(null);
+  const scrollTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+  const isProgrammaticScroll = React.useRef(false);
   
   React.useEffect(() => {
      if (!containerRef.current) return;
      const el = containerRef.current.querySelector(`[data-val="${value}"]`) as HTMLElement;
      if (el) {
-        // center the element
+        isProgrammaticScroll.current = true;
         const top = el.offsetTop - containerRef.current.offsetTop - 50;
         containerRef.current.scrollTo({ top, behavior: 'smooth' });
+        setTimeout(() => { isProgrammaticScroll.current = false; }, 300);
      }
   }, [value]);
 
+  const handleScroll = () => {
+     if (isProgrammaticScroll.current) return;
+     if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+     scrollTimeoutRef.current = setTimeout(() => {
+        if (!containerRef.current) return;
+        const container = containerRef.current;
+        const center = container.scrollTop + (container.clientHeight / 2);
+        let closestVal = value;
+        let minDiff = Infinity;
+        const children = Array.from(container.querySelectorAll('button'));
+        children.forEach(child => {
+           const childCenter = child.offsetTop + (child.offsetHeight / 2) - container.offsetTop;
+           const diff = Math.abs(childCenter - center);
+           if (diff < minDiff) {
+              minDiff = diff;
+              closestVal = child.dataset.val || value;
+           }
+        });
+        if (closestVal !== value) onChange(closestVal);
+     }, 150);
+  };
+
   return (
-    <div ref={containerRef} className="time-wheel h-[150px] overflow-y-auto flex-1 w-full flex flex-col items-center snap-y snap-mandatory pt-[50px] pb-[50px]">
+    <div ref={containerRef} onScroll={handleScroll} className="time-wheel h-[150px] overflow-y-auto overflow-x-hidden flex-1 w-full flex flex-col items-center snap-y snap-mandatory pt-[50px] pb-[50px]">
        {options.map(o => {
          const display = isHour ? (parseInt(o) > 12 ? parseInt(o) - 12 : parseInt(o)).toString() : o;
          return (
@@ -273,20 +298,7 @@ export default function AvailabilityPage() {
     setLocationTimes(newTimes);
   };
 
-  useEffect(() => {
-    if (selectedDate) {
-      const dayStr = selectedDate.toISOString().split('T')[0];
-      const cached = availabilityCache[dayStr];
-      if (cached) {
-        setIsUnavailable(cached.isUnavailable);
-        setLocationTimes(cached.locationTimes || {});
-        const locs = Object.keys(cached.locationTimes || {});
-        setActiveLocation(locs.length > 0 ? locs[0] : null);
-      } else {
-        setIsUnavailable(false);
-      }
-    }
-  }, [selectedDate, availabilityCache]);
+  // useEffect removed to allow linear nav to preserve form state
 
   const saveCurrentDay = () => {
     if (!selectedDate) return availabilityCache;
@@ -639,8 +651,8 @@ export default function AvailabilityPage() {
                                        if (newT > newTimes[activeLocation].endTime) newTimes[activeLocation].endTime = newT;
                                        setLocationTimes(newTimes);
                                     }} options={MINUTES} />
-                                    <div className="flex items-center text-lg sm:text-xl font-bold text-gray-400 ml-1 sm:ml-2 mt-[-5px] relative w-[30px] h-[30px] overflow-hidden">
-                                       <span key={parseInt(locationTimes[activeLocation].startTime.split(':')[0]) >= 12 ? 'PM' : 'AM'} className="absolute animate-pop-in">
+                                    <div className="flex items-center text-xl sm:text-2xl font-bold text-gray-400 ml-2 mt-[-5px]">
+                                       <span key={parseInt(locationTimes[activeLocation].startTime.split(':')[0]) >= 12 ? 'PM' : 'AM'} className="animate-pop-in inline-block">
                                          {parseInt(locationTimes[activeLocation].startTime.split(':')[0]) >= 12 ? 'PM' : 'AM'}
                                        </span>
                                     </div>
@@ -665,8 +677,8 @@ export default function AvailabilityPage() {
                                        if (newT < newTimes[activeLocation].startTime) newTimes[activeLocation].startTime = newT;
                                        setLocationTimes(newTimes);
                                     }} options={MINUTES} />
-                                    <div className="flex items-center text-lg sm:text-xl font-bold text-gray-400 ml-1 sm:ml-2 mt-[-5px] relative w-[30px] h-[30px] overflow-hidden">
-                                       <span key={parseInt(locationTimes[activeLocation].endTime.split(':')[0]) >= 12 ? 'PM' : 'AM'} className="absolute animate-pop-in">
+                                    <div className="flex items-center text-xl sm:text-2xl font-bold text-gray-400 ml-2 mt-[-5px]">
+                                       <span key={parseInt(locationTimes[activeLocation].endTime.split(':')[0]) >= 12 ? 'PM' : 'AM'} className="animate-pop-in inline-block">
                                          {parseInt(locationTimes[activeLocation].endTime.split(':')[0]) >= 12 ? 'PM' : 'AM'}
                                        </span>
                                     </div>
@@ -753,7 +765,20 @@ export default function AvailabilityPage() {
                 return (
                   <button
                     key={day.toISOString()}
-                    onClick={() => { setSelectedDate(day); setAllSaved(false); }}
+                    onClick={() => { 
+                       setSelectedDate(day); 
+                       setAllSaved(false); 
+                       const dStr = day.toISOString().split('T')[0];
+                       const cached = availabilityCache[dStr];
+                       if (cached) {
+                         setIsUnavailable(cached.isUnavailable);
+                         setLocationTimes(cached.locationTimes || {});
+                         const locs = Object.keys(cached.locationTimes || {});
+                         setActiveLocation(locs.length > 0 ? locs[0] : null);
+                       } else {
+                         setIsUnavailable(false);
+                       }
+                    }}
                     className={`
                       aspect-square p-1 sm:p-2 flex flex-col items-center justify-start relative transition-all bg-white
                     `}
@@ -823,9 +848,30 @@ export default function AvailabilityPage() {
                  <ul className="list-disc list-inside font-medium space-y-1">
                    {validDates.map(d => {
                      const isMissing = missingDates.some(md => md.toISOString() === d.toISOString());
+                     let suffix = "";
+                     if (!isMissing) {
+                        const dayStr = d.toISOString().split('T')[0];
+                        const cache = availabilityCache[dayStr];
+                        if (cache.isUnavailable) {
+                           suffix = ": Unavailable";
+                        } else {
+                           const locs = Object.values(cache.locationTimes || {}) as any[];
+                           if (locs.length > 0) {
+                              const startH = parseInt(locs[0].startTime.split(':')[0]);
+                              const startM = locs[0].startTime.split(':')[1];
+                              const endH = parseInt(locs[0].endTime.split(':')[0]);
+                              const endM = locs[0].endTime.split(':')[1];
+                              const fmtStart = `${startH > 12 ? startH - 12 : startH}:${startM}${startH >= 12 ? 'PM' : 'AM'}`;
+                              const fmtEnd = `${endH > 12 ? endH - 12 : endH}:${endM}${endH >= 12 ? 'PM' : 'AM'}`;
+                              suffix = `: ${fmtStart}-${fmtEnd}`;
+                           } else {
+                              suffix = ": Available";
+                           }
+                        }
+                     }
                      return (
-                       <li key={d.toISOString()} className={isMissing ? "text-amber-800" : "text-amber-800/30"}>
-                         {d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                       <li key={d.toISOString()} className={isMissing ? "text-amber-800" : "text-amber-800/50"}>
+                         {d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}{suffix}
                        </li>
                      );
                    })}
