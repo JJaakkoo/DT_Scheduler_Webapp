@@ -236,9 +236,9 @@ function HomeContent() {
   };
 
   return (
-    <main className="h-screen w-screen flex items-center justify-center p-8">
+    <main className="min-h-screen w-screen flex items-center justify-center p-8 overflow-y-auto">
       
-      <div className="w-full max-w-5xl h-[600px] rounded-3xl flex overflow-hidden shadow-xl relative bg-white">
+      <div className="w-full max-w-5xl min-h-[650px] rounded-3xl flex overflow-hidden shadow-xl relative bg-white">
         
         <img
           src="/Background Image.png"
