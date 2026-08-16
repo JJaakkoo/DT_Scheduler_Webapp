@@ -5,14 +5,13 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "../../utils/supabase/client";
 
-const LOCATIONS = ["Whyte", "Downtown", "Heritage", "North"];
+const LOCATIONS = ["Whyte", "Downtown", "Heritage"];
 
 const getLocationTheme = (location: string) => {
   const loc = (location || "").toLowerCase();
   if (loc.includes("whyte")) return { text: "text-[#CAB1E3]", border: "border-[#CAB1E3]", bg: "bg-[#CAB1E3]/10", fill: "bg-[#CAB1E3]" };
   if (loc.includes("heritage")) return { text: "text-[#ED9BB4]", border: "border-[#ED9BB4]", bg: "bg-[#ED9BB4]/10", fill: "bg-[#ED9BB4]" };
   if (loc.includes("downtown") || loc.includes("dt")) return { text: "text-[#A0B99B]", border: "border-[#A0B99B]", bg: "bg-[#A0B99B]/10", fill: "bg-[#A0B99B]" };
-  if (loc.includes("north")) return { text: "text-purple-500", border: "border-purple-200", bg: "bg-purple-50", fill: "bg-purple-300" };
   return { text: "text-sky-500", border: "border-sky-200", bg: "bg-sky-50", fill: "bg-[#8ab4f8]" };
 };
 
@@ -274,6 +273,70 @@ export default function AvailabilityPage() {
     }
   };
 
+  const handleUnavailableToggle = () => {
+    setIsUnavailable(true);
+    if (!selectedDate) return;
+    const dayStr = selectedDate.toISOString().split('T')[0];
+    
+    const newCache = {
+      ...availabilityCache,
+      [dayStr]: {
+        isUnavailable: true,
+        isFullDay: false,
+        startHour: 12,
+        endHour: 22,
+        locations: []
+      }
+    };
+    
+    setAvailabilityCache(newCache);
+    localStorage.setItem("nexus_avail_draft", JSON.stringify({
+      updated_at: new Date().toISOString(),
+      data: newCache
+    }));
+    
+    // Auto advance
+    const currentIndex = validDates.findIndex(d => d.toDateString() === selectedDate.toDateString());
+    if (currentIndex >= 0 && currentIndex < validDates.length - 1) {
+      setSelectedDate(validDates[currentIndex + 1]);
+    }
+  };
+
+  const handlePrevPeriod = () => {
+    if (!targetPeriod) return;
+    let { year, month, period } = targetPeriod;
+    if (period === 2) {
+      period = 1;
+    } else {
+      period = 2;
+      month -= 1;
+      if (month < 1) {
+        month = 12;
+        year -= 1;
+      }
+    }
+    setTargetPeriod({ year, month, period });
+    calculateValidDates(year, month, period);
+    // Ideally we fetch data for this period from Supabase, but for now we rely on the localStorage cache spanning multiple periods.
+  };
+
+  const handleNextPeriod = () => {
+    if (!targetPeriod) return;
+    let { year, month, period } = targetPeriod;
+    if (period === 1) {
+      period = 2;
+    } else {
+      period = 1;
+      month += 1;
+      if (month > 12) {
+        month = 1;
+        year += 1;
+      }
+    }
+    setTargetPeriod({ year, month, period });
+    calculateValidDates(year, month, period);
+  };
+
   const handleFinalSubmit = async () => {
     if (!targetPeriod || !email) return;
     setIsSubmitting(true);
@@ -374,7 +437,7 @@ export default function AvailabilityPage() {
                {email}
              </div>
              <div className="text-gray-600 font-medium text-sm bg-gray-100/80 px-3 py-1.5 rounded-full flex items-center gap-2">
-               Submit Availability
+               Availability
              </div>
           </div>
         </div>
@@ -401,7 +464,7 @@ export default function AvailabilityPage() {
                     </div>
                     
                     <button 
-                      onClick={() => setIsUnavailable(!isUnavailable)}
+                      onClick={handleUnavailableToggle}
                       className={`px-4 py-2 rounded-xl font-bold text-sm transition-all shadow-sm flex items-center gap-2 ${isUnavailable ? 'bg-red-500 text-white shadow-red-200' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636" /></svg>
@@ -433,30 +496,55 @@ export default function AvailabilityPage() {
 
                     {/* TIMES */}
                     <div className="flex flex-col sm:flex-row gap-6 mb-8">
-                       <div className="flex-1 bg-gray-50 rounded-2xl p-4 border border-gray-100 flex flex-col justify-center items-center relative">
-                         <h3 className="absolute top-4 left-4 text-xs font-bold text-gray-400 uppercase tracking-widest">Start Time</h3>
-                         <div className="flex items-center gap-4 mt-6">
-                           <input type="range" min="12" max="22" value={startHour} onChange={(e) => {
-                             const v = parseInt(e.target.value);
-                             setStartHour(v);
-                             if (v > endHour) setEndHour(v);
-                           }} className="w-full accent-blue-500" />
-                           <span className="font-bold text-2xl text-gray-800 min-w-[80px] text-right">
-                             {startHour > 12 ? startHour - 12 : startHour}:00 {startHour >= 12 ? 'PM' : 'AM'}
-                           </span>
+                       <style dangerouslySetInnerHTML={{__html: `
+                         .time-wheel::-webkit-scrollbar { display: none; }
+                         .time-wheel { -ms-overflow-style: none; scrollbar-width: none; }
+                       `}} />
+                       
+                       <div className="flex-1 bg-gray-50 rounded-2xl p-4 border border-gray-100 flex flex-col justify-center items-center relative overflow-hidden">
+                         <h3 className="absolute top-4 left-4 text-xs font-bold text-gray-400 uppercase tracking-widest z-10">Start Time</h3>
+                         <div className="relative w-full mt-6 h-[150px]">
+                           <div className="time-wheel h-[150px] overflow-y-auto w-full flex flex-col items-center snap-y snap-mandatory pt-[50px] pb-[50px]">
+                              {Array.from({ length: 11 }, (_, i) => i + 12).map(h => {
+                                const isSelected = startHour === h;
+                                return (
+                                  <button 
+                                    key={h} 
+                                    onClick={() => {
+                                       setStartHour(h);
+                                       if (h > endHour) setEndHour(h);
+                                    }}
+                                    className={`h-[50px] shrink-0 snap-center text-3xl font-bold transition-all ${isSelected ? 'text-amber-500 scale-110' : 'text-gray-300 hover:text-gray-400'}`}
+                                  >
+                                    {h > 12 ? h - 12 : h}:00 {h >= 12 ? 'PM' : 'AM'}
+                                  </button>
+                                );
+                              })}
+                           </div>
+                           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120px] h-[50px] border-2 border-amber-400/50 pointer-events-none rounded-2xl"></div>
                          </div>
                        </div>
                        
-                       <div className="flex-1 bg-gray-50 rounded-2xl p-4 border border-gray-100 flex flex-col justify-center items-center relative">
-                         <h3 className="absolute top-4 left-4 text-xs font-bold text-gray-400 uppercase tracking-widest">End Time</h3>
-                         <div className="flex items-center gap-4 mt-6">
-                           <input type="range" min="12" max="22" value={endHour} onChange={(e) => {
-                             const v = parseInt(e.target.value);
-                             if (v >= startHour) setEndHour(v);
-                           }} className="w-full accent-blue-500" />
-                           <span className="font-bold text-2xl text-gray-800 min-w-[80px] text-right">
-                             {endHour > 12 ? endHour - 12 : endHour}:00 {endHour >= 12 ? 'PM' : 'AM'}
-                           </span>
+                       <div className="flex-1 bg-gray-50 rounded-2xl p-4 border border-gray-100 flex flex-col justify-center items-center relative overflow-hidden">
+                         <h3 className="absolute top-4 left-4 text-xs font-bold text-gray-400 uppercase tracking-widest z-10">End Time</h3>
+                         <div className="relative w-full mt-6 h-[150px]">
+                           <div className="time-wheel h-[150px] overflow-y-auto w-full flex flex-col items-center snap-y snap-mandatory pt-[50px] pb-[50px]">
+                              {Array.from({ length: 11 }, (_, i) => i + 12).map(h => {
+                                const isSelected = endHour === h;
+                                const isDisabled = h < startHour;
+                                return (
+                                  <button 
+                                    key={h} 
+                                    disabled={isDisabled}
+                                    onClick={() => setEndHour(h)}
+                                    className={`h-[50px] shrink-0 snap-center text-3xl font-bold transition-all ${isSelected ? 'text-amber-500 scale-110' : isDisabled ? 'text-gray-200 opacity-50' : 'text-gray-300 hover:text-gray-400'}`}
+                                  >
+                                    {h > 12 ? h - 12 : h}:00 {h >= 12 ? 'PM' : 'AM'}
+                                  </button>
+                                );
+                              })}
+                           </div>
+                           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120px] h-[50px] border-2 border-amber-400/50 pointer-events-none rounded-2xl"></div>
                          </div>
                        </div>
                     </div>
@@ -475,8 +563,8 @@ export default function AvailabilityPage() {
                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" /></svg>
                        Previous Day
                      </button>
-                     <button onClick={handleSaveDay} className="bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-200 font-bold px-8 py-3 rounded-xl transition-all">
-                       Save Day
+                     <button onClick={handleSaveDay} className="bg-black hover:bg-gray-800 text-white font-bold px-8 py-3 rounded-xl transition-all border border-transparent">
+                       Save Availability
                      </button>
                      <button onClick={handleNextDay} className="text-gray-400 hover:text-gray-700 font-bold px-4 py-2 flex items-center gap-2">
                        Next Day
@@ -489,14 +577,19 @@ export default function AvailabilityPage() {
 
           {/* STRICT CALENDAR */}
           <div className="w-full bg-white rounded-3xl shadow-xl p-6 sm:p-8 flex flex-col">
-             <h3 className="font-bold text-gray-800 text-lg mb-6 flex items-center justify-between">
-                <span>Target Period</span>
+             <div className="flex items-center justify-between mb-6">
+                <button onClick={handlePrevPeriod} className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 transition-colors">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" /></svg>
+                </button>
                 {targetPeriod && (
-                  <span className="text-sm font-medium text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
-                    {targetPeriod.year}-{String(targetPeriod.month).padStart(2, '0')} Period {targetPeriod.period}
-                  </span>
+                  <h3 className="text-lg font-bold text-gray-800 text-center">
+                    {targetPeriod.year} {new Date(targetPeriod.year, targetPeriod.month - 1).toLocaleString('en-US', { month: 'long' })} {targetPeriod.period === 1 ? '1-15' : '16-31'} (Period {targetPeriod.period})
+                  </h3>
                 )}
-             </h3>
+                <button onClick={handleNextPeriod} className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 transition-colors">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" /></svg>
+                </button>
+             </div>
              
              <div className="grid grid-cols-7 gap-1 sm:gap-2 mb-2">
               {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
@@ -521,7 +614,7 @@ export default function AvailabilityPage() {
                     onClick={() => setSelectedDate(day)}
                     className={`
                       aspect-square p-1 sm:p-2 rounded-xl flex flex-col items-center justify-center relative transition-all border-2
-                      ${isSelected ? 'bg-blue-500 text-white border-blue-500 shadow-md' : 'hover:bg-gray-50 text-gray-700 border-transparent'}
+                      ${isSelected ? 'bg-gray-800 text-white border-gray-800 shadow-md' : 'hover:bg-gray-50 text-gray-700 border-transparent'}
                       ${!isSelected && isCompleted ? 'bg-green-50' : ''}
                     `}
                   >
@@ -547,7 +640,7 @@ export default function AvailabilityPage() {
                  handleFinalSubmit();
               }
             }} 
-            className="w-full max-w-[400px] bg-green-500 hover:bg-green-600 disabled:bg-gray-400 text-white font-bold py-4 rounded-2xl shadow-xl shadow-green-200 transition-all text-lg mb-12">
+            className="w-full max-w-xs bg-black hover:bg-gray-800 disabled:bg-gray-300 text-white font-bold py-3 rounded-xl transition-all text-base mb-12">
             {isSubmitting ? "Submitting..." : "Submit Availability"}
           </button>
 
