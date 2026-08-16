@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "../utils/supabase/client";
+import Link from "next/link";
 
 function HomeContent() {
   const supabase = createClient();
@@ -303,6 +304,14 @@ function HomeContent() {
               </button>
             </div>
 
+            {isSignUp && (
+              <div className="w-full max-w-[280px] mt-4">
+                <p className="text-[10px] text-text-tertiary text-center leading-tight">
+                  By signing up, you agree to our <Link href="/terms-of-service" className="text-dreamtea-blue hover:underline">Terms of Service</Link> and acknowledge that we collect your email address as described in our <Link href="/privacy-policy" className="text-dreamtea-blue hover:underline">Privacy Policy</Link>.
+                </p>
+              </div>
+            )}
+
             {!isForgotPassword && !isSignUp && (
               <div className="w-full max-w-[280px] flex justify-center mt-1">
                 <button
@@ -408,6 +417,11 @@ function HomeContent() {
                   </button>
                 </>
               )}
+            </div>
+
+            <div className="w-full flex justify-center gap-4 mt-8 pt-4 border-t border-gray-100">
+              <Link href="/privacy-policy" className="text-[10px] text-text-tertiary hover:text-dreamtea-blue transition-colors">Privacy Policy</Link>
+              <Link href="/terms-of-service" className="text-[10px] text-text-tertiary hover:text-dreamtea-blue transition-colors">Terms of Service</Link>
             </div>
 
           </div>
