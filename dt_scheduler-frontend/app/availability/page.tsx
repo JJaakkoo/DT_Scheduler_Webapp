@@ -57,7 +57,7 @@ const TimeWheel = ({ value, onChange, options, isHour = false }: { value: string
   };
 
   return (
-    <div ref={containerRef} onScroll={handleScroll} className="time-wheel h-[150px] overflow-y-auto overflow-x-hidden flex-1 w-full flex flex-col items-center snap-y snap-mandatory pt-[50px] pb-[50px]">
+    <div ref={containerRef} onScroll={handleScroll} className="time-wheel h-[150px] overflow-y-auto overflow-x-hidden w-[70px] sm:w-[90px] flex flex-col items-center snap-y snap-mandatory pt-[50px] pb-[50px]">
        {options.map(o => {
          const display = isHour ? (parseInt(o) > 12 ? parseInt(o) - 12 : parseInt(o)).toString() : o;
          return (
@@ -819,12 +819,8 @@ export default function AvailabilityPage() {
           {/* SUBMISSION */}
           <button disabled={isSubmitting} onClick={() => {
               const missing = validDates.filter(d => !availabilityCache[d.toISOString().split('T')[0]]);
-              if (missing.length > 0) {
-                 setMissingDates(missing);
-                 setShowMissingModal(true);
-              } else {
-                 handleFinalSubmit();
-              }
+              setMissingDates(missing);
+              setShowMissingModal(true);
             }} 
             className="w-full max-w-xs bg-white hover:bg-gray-50 text-gray-800 shadow-md shadow-gray-200 font-bold py-3 rounded-xl transition-all border border-gray-100 text-base mb-12 disabled:opacity-50">
             {isSubmitting ? "Submitting..." : "Submit Availability"}
@@ -839,13 +835,17 @@ export default function AvailabilityPage() {
               <button onClick={() => setShowMissingModal(false)} className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 bg-gray-50 rounded-full">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
               </button>
-              <div className="flex items-center gap-4 mb-4 text-amber-500">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-10 h-10"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-                <h3 className="text-xl font-bold text-gray-800">Missing Days</h3>
+              <div className={`flex items-center gap-4 mb-4 ${missingDates.length > 0 ? 'text-amber-500' : 'text-green-500'}`}>
+                {missingDates.length > 0 ? (
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-10 h-10"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-10 h-10"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
+                )}
+                <h3 className="text-xl font-bold text-gray-800">{missingDates.length > 0 ? 'Missing Days' : 'Confirm Availability'}</h3>
               </div>
-              <p className="text-gray-600 mb-4">There was no availability given for these days:</p>
-              <div className="max-h-[200px] overflow-y-auto bg-amber-50 rounded-xl p-4 mb-6 border border-amber-100">
-                 <ul className="list-disc list-inside font-medium space-y-1">
+              <p className="text-gray-600 mb-4">{missingDates.length > 0 ? 'There was no availability given for these days:' : 'All availability has been filled! Please review your submission:'}</p>
+              <div className={`max-h-[200px] overflow-y-auto rounded-xl p-4 mb-6 border ${missingDates.length > 0 ? 'bg-amber-50 border-amber-100' : 'bg-gray-50 border-gray-100'}`}>
+                 <ul className="list-disc list-inside font-medium space-y-1 text-sm sm:text-base">
                    {validDates.map(d => {
                      const isMissing = missingDates.some(md => md.toISOString() === d.toISOString());
                      let suffix = "";
@@ -870,7 +870,7 @@ export default function AvailabilityPage() {
                         }
                      }
                      return (
-                       <li key={d.toISOString()} className={isMissing ? "text-amber-800" : "text-amber-800/50"}>
+                       <li key={d.toISOString()} className={missingDates.length > 0 ? (isMissing ? "text-amber-800" : "text-amber-800/50") : "text-gray-700"}>
                          {d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}{suffix}
                        </li>
                      );
