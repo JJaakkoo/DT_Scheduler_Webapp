@@ -282,11 +282,19 @@ const LocationCalendar = ({ activeQuery, masterShifts: initialMasterShifts, sear
             >
               <span className="text-sm font-medium">{day.getDate()}</span>
               {hasPersonalShifts && (
-                <div className="absolute bottom-1 sm:bottom-1.5 left-0 right-0 flex gap-1 justify-center flex-wrap">
+                <div className="absolute bottom-1 left-0 right-0 flex flex-col items-center gap-[2px] w-full px-0.5">
                   {personShiftsThisDay.map((ps, idx) => {
                     const loc = (ps.location || ps.summary.replace("Work at ", "")).trim();
                     const theme = getLocationTheme(loc);
-                    return <div key={idx} className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-white' : theme.fill}`}></div>
+                    const formatMin = (dtStr: string) => {
+                      const d = new Date(dtStr);
+                      return d.toLocaleTimeString('en-GB', { hour: 'numeric', minute: '2-digit' });
+                    };
+                    return (
+                      <span key={idx} className={`text-[8.5px] leading-none sm:text-[10px] font-bold tracking-tighter ${isSelected ? 'text-white drop-shadow-sm' : theme.text}`}>
+                        {formatMin(ps.start.dateTime || ps.start.date)}-{formatMin(ps.end.dateTime || ps.end.date)}
+                      </span>
+                    );
                   })}
                 </div>
               )}
