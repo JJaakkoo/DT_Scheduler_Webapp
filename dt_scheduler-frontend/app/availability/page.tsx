@@ -114,9 +114,21 @@ export default function AvailabilityPage() {
     let targetYear, targetMonth, targetPeriodNum;
     if (schedError || !schedData || schedData.length === 0) {
        const now = new Date();
-       targetYear = now.getFullYear();
-       targetMonth = now.getMonth() + 1;
-       targetPeriodNum = now.getDate() <= 15 ? 1 : 2;
+       let currentYear = now.getFullYear();
+       let currentMonth = now.getMonth() + 1;
+       let currentPeriod = now.getDate() <= 15 ? 1 : 2;
+       
+       targetYear = currentYear;
+       targetMonth = currentMonth;
+       targetPeriodNum = currentPeriod === 1 ? 2 : 1;
+       
+       if (targetPeriodNum === 1) {
+         targetMonth += 1;
+         if (targetMonth > 12) {
+           targetMonth = 1;
+           targetYear += 1;
+         }
+       }
     } else {
        const latest = schedData[0];
        targetYear = latest.year;
