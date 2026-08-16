@@ -261,13 +261,6 @@ export default function AvailabilityPage() {
         setStartTime(cached.startTime || "12:00");
         setEndTime(cached.endTime || "22:00");
         if (cached.locations) setSelectedLocations(cached.locations);
-      } else {
-        // Reset defaults
-        setIsUnavailable(false);
-        setIsFullDay(false);
-        setStartTime("12:00");
-        setEndTime("22:00");
-        setSelectedLocations([]);
       }
     }
   }, [selectedDate, availabilityCache]);
@@ -641,7 +634,7 @@ export default function AvailabilityPage() {
                        <span className="hidden sm:inline">Previous Day</span>
                      </button>
                      <div className="flex items-center gap-2">
-                       <button onClick={handleClearDay} className="bg-red-50 hover:bg-red-100 text-red-500 font-bold px-4 py-3 rounded-xl transition-all border border-red-100">
+                       <button onClick={handleClearDay} className="bg-white hover:bg-gray-50 text-black shadow-md shadow-gray-200 font-bold px-4 py-3 rounded-xl transition-all border border-gray-100">
                          Clear
                        </button>
                        <button onClick={handleSaveDay} className="bg-white hover:bg-gray-50 text-black shadow-md shadow-gray-200 font-bold px-4 sm:px-8 py-3 rounded-xl transition-all border border-gray-100">
