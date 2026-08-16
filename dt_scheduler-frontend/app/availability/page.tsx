@@ -678,16 +678,20 @@ export default function AvailabilityPage() {
                                     <TimeWheel value={locationTimes[activeLocation].startTime.split(':')[0]} onChange={(h) => {
                                        const newT = `${h}:${locationTimes[activeLocation].startTime.split(':')[1]}`;
                                        const newTimes = { ...locationTimes };
-                                       newTimes[activeLocation] = { ...newTimes[activeLocation], startTime: newT };
-                                       if (newT > newTimes[activeLocation].endTime) newTimes[activeLocation].endTime = newT;
+                                       Object.keys(newTimes).forEach(l => {
+                                          newTimes[l] = { ...newTimes[l], startTime: newT };
+                                          if (newT > newTimes[l].endTime) newTimes[l].endTime = newT;
+                                       });
                                        setLocationTimes(newTimes);
                                     }} options={HOURS} isHour />
                                     <div className="flex items-center text-2xl sm:text-3xl font-bold text-gray-400 mt-[-10px]">:</div>
                                     <TimeWheel value={locationTimes[activeLocation].startTime.split(':')[1]} onChange={(m) => {
                                        const newT = `${locationTimes[activeLocation].startTime.split(':')[0]}:${m}`;
                                        const newTimes = { ...locationTimes };
-                                       newTimes[activeLocation] = { ...newTimes[activeLocation], startTime: newT };
-                                       if (newT > newTimes[activeLocation].endTime) newTimes[activeLocation].endTime = newT;
+                                       Object.keys(newTimes).forEach(l => {
+                                          newTimes[l] = { ...newTimes[l], startTime: newT };
+                                          if (newT > newTimes[l].endTime) newTimes[l].endTime = newT;
+                                       });
                                        setLocationTimes(newTimes);
                                     }} options={MINUTES} />
                                     <div className="flex items-center text-xl sm:text-2xl font-bold text-gray-400 ml-2 mt-[-5px]">
@@ -704,16 +708,20 @@ export default function AvailabilityPage() {
                                     <TimeWheel value={locationTimes[activeLocation].endTime.split(':')[0]} onChange={(h) => {
                                        const newT = `${h}:${locationTimes[activeLocation].endTime.split(':')[1]}`;
                                        const newTimes = { ...locationTimes };
-                                       newTimes[activeLocation] = { ...newTimes[activeLocation], endTime: newT };
-                                       if (newT < newTimes[activeLocation].startTime) newTimes[activeLocation].startTime = newT;
+                                       Object.keys(newTimes).forEach(l => {
+                                          newTimes[l] = { ...newTimes[l], endTime: newT };
+                                          if (newT < newTimes[l].startTime) newTimes[l].startTime = newT;
+                                       });
                                        setLocationTimes(newTimes);
                                     }} options={HOURS} isHour />
                                     <div className="flex items-center text-2xl sm:text-3xl font-bold text-gray-400 mt-[-10px]">:</div>
                                     <TimeWheel value={locationTimes[activeLocation].endTime.split(':')[1]} onChange={(m) => {
                                        const newT = `${locationTimes[activeLocation].endTime.split(':')[0]}:${m}`;
                                        const newTimes = { ...locationTimes };
-                                       newTimes[activeLocation] = { ...newTimes[activeLocation], endTime: newT };
-                                       if (newT < newTimes[activeLocation].startTime) newTimes[activeLocation].startTime = newT;
+                                       Object.keys(newTimes).forEach(l => {
+                                          newTimes[l] = { ...newTimes[l], endTime: newT };
+                                          if (newT < newTimes[l].startTime) newTimes[l].startTime = newT;
+                                       });
                                        setLocationTimes(newTimes);
                                     }} options={MINUTES} />
                                     <div className="flex items-center text-xl sm:text-2xl font-bold text-gray-400 ml-2 mt-[-5px]">
