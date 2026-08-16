@@ -116,7 +116,7 @@ def get_schedule_data(employee_name, force_sync=False, access_token=None, req_mo
             db_records = response.data
             db_record = db_records[0] if len(db_records) > 0 else None
         else:
-            response = supabase.table('schedules').select('*').order('year', desc=True).order('month', desc=True).order('period', desc=True).limit(1).execute()
+            response = supabase.table('schedules').select('*').order('year', desc=True).order('month', desc=True).order('period', desc=True).limit(2).execute()
             db_records = response.data
             db_record = db_records[0] if len(db_records) > 0 else None
 
@@ -192,7 +192,8 @@ def get_schedule_data(employee_name, force_sync=False, access_token=None, req_mo
                                         supabase.table('schedules').insert(new_record_data).execute()
 
                                     db_record = new_record_data
-                                    db_records = [new_record_data]
+                                    fresh_response = supabase.table('schedules').select('*').order('year', desc=True).order('month', desc=True).order('period', desc=True).limit(2).execute()
+                                    db_records = fresh_response.data
                 except Exception as e:
                     print(f"SYNC FAILED: Token error or Gmail API rejected request: {e}")
                     sync_status = "TOKEN_EXPIRED"
