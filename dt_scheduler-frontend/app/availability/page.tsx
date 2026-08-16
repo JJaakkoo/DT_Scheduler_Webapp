@@ -32,7 +32,7 @@ const TimeWheel = ({ value, onChange, options, isHour = false }: { value: string
   }, [value]);
 
   return (
-    <div ref={containerRef} className="time-wheel h-[150px] overflow-y-auto w-[50px] flex flex-col items-center snap-y snap-mandatory pt-[50px] pb-[50px]">
+    <div ref={containerRef} className="time-wheel h-[150px] overflow-y-auto w-[40px] sm:w-[50px] flex flex-col items-center snap-y snap-mandatory pt-[50px] pb-[50px]">
        {options.map(o => {
          const display = isHour ? (parseInt(o) > 12 ? parseInt(o) - 12 : parseInt(o)).toString() : o;
          return (
@@ -40,7 +40,7 @@ const TimeWheel = ({ value, onChange, options, isHour = false }: { value: string
              key={o} 
              data-val={o}
              onClick={() => onChange(o)}
-             className={`h-[50px] shrink-0 snap-center text-3xl font-bold transition-all ${value === o ? 'text-[#8ab4f8] scale-110' : 'text-gray-300 hover:text-gray-400'}`}
+             className={`h-[50px] shrink-0 snap-center text-2xl sm:text-3xl font-bold transition-all ${value === o ? 'text-[#8ab4f8] scale-110' : 'text-gray-300 hover:text-gray-400'}`}
            >
              {display}
            </button>
@@ -498,7 +498,7 @@ export default function AvailabilityPage() {
       
       {/* HEADER */}
       <div className="w-full bg-white/90 backdrop-blur-md shadow-sm z-50 px-4 py-3 sm:px-8 flex justify-between items-center shrink-0">
-        <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
+        <div className="flex items-center gap-3 w-full sm:w-auto justify-between flex-row-reverse sm:flex-row sm:justify-start">
           <div className="relative">
             <button onClick={() => setIsNavOpen(!isNavOpen)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors focus:outline-none">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6 text-gray-700">
@@ -506,7 +506,7 @@ export default function AvailabilityPage() {
               </svg>
             </button>
             {isNavOpen && (
-              <div className="absolute top-full left-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50">
+              <div className="absolute top-full right-0 sm:right-auto sm:left-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50">
                  {email && <div className="px-4 py-2 text-xs text-gray-500 border-b border-gray-100 mb-1 truncate block sm:hidden">{email}</div>}
                  <Link href="/dashboard" className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2 border-b border-gray-50 mb-1">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-gray-500"><path strokeLinecap="round" strokeLinejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" /></svg>
@@ -590,7 +590,7 @@ export default function AvailabilityPage() {
                       </div>
 
                       {/* TIMES */}
-                      <div className="flex flex-col sm:flex-row gap-6 mb-8">
+                      <div className="flex flex-row gap-2 sm:gap-6 mb-8 w-full">
                          {!activeLocation ? (
                             <div className="flex-1 bg-gray-50 rounded-2xl p-8 border border-gray-100 flex items-center justify-center text-gray-400 font-bold text-center">
                                Select a location above to set its hours
@@ -602,9 +602,9 @@ export default function AvailabilityPage() {
                                  .time-wheel { -ms-overflow-style: none; scrollbar-width: none; }
                                `}} />
                                
-                               <div className="flex-1 bg-gray-50 rounded-2xl p-4 border border-gray-100 flex flex-col justify-center items-center relative overflow-hidden">
-                                 <h3 className="absolute top-4 left-4 text-xs font-bold text-gray-400 uppercase tracking-widest z-10">Start Time</h3>
-                                 <div className="flex w-full mt-6 h-[150px] justify-center gap-2 relative">
+                               <div className="flex-1 bg-gray-50 rounded-2xl p-2 sm:p-4 border border-gray-100 flex flex-col justify-center items-center relative overflow-hidden">
+                                 <h3 className="absolute top-2 left-2 sm:top-4 sm:left-4 text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-widest z-10">Start Time</h3>
+                                 <div className="flex w-full mt-6 h-[150px] justify-center gap-1 sm:gap-2 relative">
                                     <TimeWheel value={locationTimes[activeLocation].startTime.split(':')[0]} onChange={(h) => {
                                        const newT = `${h}:${locationTimes[activeLocation].startTime.split(':')[1]}`;
                                        const newTimes = { ...locationTimes };
@@ -612,7 +612,7 @@ export default function AvailabilityPage() {
                                        if (newT > newTimes[activeLocation].endTime) newTimes[activeLocation].endTime = newT;
                                        setLocationTimes(newTimes);
                                     }} options={HOURS} isHour />
-                                    <div className="flex items-center text-3xl font-bold text-gray-400 mt-[-10px]">:</div>
+                                    <div className="flex items-center text-2xl sm:text-3xl font-bold text-gray-400 mt-[-10px]">:</div>
                                     <TimeWheel value={locationTimes[activeLocation].startTime.split(':')[1]} onChange={(m) => {
                                        const newT = `${locationTimes[activeLocation].startTime.split(':')[0]}:${m}`;
                                        const newTimes = { ...locationTimes };
@@ -620,15 +620,15 @@ export default function AvailabilityPage() {
                                        if (newT > newTimes[activeLocation].endTime) newTimes[activeLocation].endTime = newT;
                                        setLocationTimes(newTimes);
                                     }} options={MINUTES} />
-                                    <div className="flex items-center text-xl font-bold text-gray-400 ml-2 mt-[-5px]">
+                                    <div className="flex items-center text-lg sm:text-xl font-bold text-gray-400 ml-1 sm:ml-2 mt-[-5px]">
                                        {parseInt(locationTimes[activeLocation].startTime.split(':')[0]) >= 12 ? 'PM' : 'AM'}
                                     </div>
                                  </div>
                                </div>
                                
-                               <div className="flex-1 bg-gray-50 rounded-2xl p-4 border border-gray-100 flex flex-col justify-center items-center relative overflow-hidden">
-                                 <h3 className="absolute top-4 left-4 text-xs font-bold text-gray-400 uppercase tracking-widest z-10">End Time</h3>
-                                 <div className="flex w-full mt-6 h-[150px] justify-center gap-2 relative">
+                               <div className="flex-1 bg-gray-50 rounded-2xl p-2 sm:p-4 border border-gray-100 flex flex-col justify-center items-center relative overflow-hidden">
+                                 <h3 className="absolute top-2 left-2 sm:top-4 sm:left-4 text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-widest z-10">End Time</h3>
+                                 <div className="flex w-full mt-6 h-[150px] justify-center gap-1 sm:gap-2 relative">
                                     <TimeWheel value={locationTimes[activeLocation].endTime.split(':')[0]} onChange={(h) => {
                                        const newT = `${h}:${locationTimes[activeLocation].endTime.split(':')[1]}`;
                                        const newTimes = { ...locationTimes };
@@ -636,7 +636,7 @@ export default function AvailabilityPage() {
                                        if (newT < newTimes[activeLocation].startTime) newTimes[activeLocation].startTime = newT;
                                        setLocationTimes(newTimes);
                                     }} options={HOURS} isHour />
-                                    <div className="flex items-center text-3xl font-bold text-gray-400 mt-[-10px]">:</div>
+                                    <div className="flex items-center text-2xl sm:text-3xl font-bold text-gray-400 mt-[-10px]">:</div>
                                     <TimeWheel value={locationTimes[activeLocation].endTime.split(':')[1]} onChange={(m) => {
                                        const newT = `${locationTimes[activeLocation].endTime.split(':')[0]}:${m}`;
                                        const newTimes = { ...locationTimes };
@@ -644,7 +644,7 @@ export default function AvailabilityPage() {
                                        if (newT < newTimes[activeLocation].startTime) newTimes[activeLocation].startTime = newT;
                                        setLocationTimes(newTimes);
                                     }} options={MINUTES} />
-                                    <div className="flex items-center text-xl font-bold text-gray-400 ml-2 mt-[-5px]">
+                                    <div className="flex items-center text-lg sm:text-xl font-bold text-gray-400 ml-1 sm:ml-2 mt-[-5px]">
                                        {parseInt(locationTimes[activeLocation].endTime.split(':')[0]) >= 12 ? 'PM' : 'AM'}
                                     </div>
                                  </div>
