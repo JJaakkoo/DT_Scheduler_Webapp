@@ -302,8 +302,11 @@ export default function AvailabilityPage() {
 
   const handleClearDay = () => {
     setIsUnavailable(false);
-    setLocationTimes({});
-    setActiveLocation(null);
+    const resetTimes: Record<string, { startTime: string, endTime: string }> = {};
+    for (const loc of Object.keys(locationTimes)) {
+       resetTimes[loc] = { startTime: "12:00", endTime: "22:00" };
+    }
+    setLocationTimes(resetTimes);
     
     if (!selectedDate) return;
     const dayStr = selectedDate.toISOString().split('T')[0];
@@ -563,7 +566,7 @@ export default function AvailabilityPage() {
                               <button
                                 key={loc}
                                 onClick={() => toggleLocation(loc)}
-                                className={`px-4 py-2 rounded-full border-2 text-sm font-bold transition-all ${isSelected ? theme.bg + ' ' + theme.border + ' ' + theme.text : 'border-gray-200 text-gray-400 hover:border-gray-300'} ${isActive ? 'ring-2 ring-offset-2 ring-gray-400' : ''}`}
+                                className={`px-4 py-2 rounded-full border-2 text-sm font-bold transition-all ${isSelected ? theme.bg + ' ' + theme.border + ' ' + theme.text : 'border-gray-200 text-gray-400 hover:border-gray-300'}`}
                               >
                                 {loc}
                               </button>
