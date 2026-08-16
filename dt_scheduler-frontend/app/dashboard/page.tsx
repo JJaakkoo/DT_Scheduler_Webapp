@@ -155,7 +155,9 @@ export default function Dashboard() {
     // 1. Check user role
     const currentRole = localStorage.getItem("nexus_role");
     if (!currentRole) {
-      router.push("/"); // Kick back to login if they bypassed it
+      supabase.auth.signOut().then(() => {
+        router.push("/"); // Kick back to login if they bypassed it
+      });
       return;
     }
     setRole(currentRole);

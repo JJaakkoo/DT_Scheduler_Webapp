@@ -23,8 +23,10 @@ function HomeContent() {
     const errorParam = searchParams.get('error');
     if (errorParam === 'not-whitelisted') {
       setLoginError("This Google account is not authorized to access the portal.");
+      localStorage.removeItem("nexus_role");
     } else if (errorParam === 'auth-failed') {
       setLoginError("Google Sign-In failed or was cancelled.");
+      localStorage.removeItem("nexus_role");
     }
   }, [searchParams]);
 
