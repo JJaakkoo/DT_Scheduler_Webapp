@@ -15,7 +15,7 @@ export default function TermsOfService() {
         </div>
 
         <h1 className="text-3xl font-bold text-text-primary mb-6">Terms of Service</h1>
-        <p className="text-sm text-text-secondary mb-8">Last Updated: {new Date().toLocaleDateString()}</p>
+        <p className="text-sm text-text-secondary mb-8">Last Updated: 8/16/2026</p>
 
         <div className="prose prose-sm sm:prose-base text-text-primary space-y-6">
           <p>
@@ -29,27 +29,26 @@ export default function TermsOfService() {
 
           <h2 className="text-xl font-bold mt-8 mb-4">2. Access and Use</h2>
           <p>
-            This portal is intended for authorized staff scheduling and management. You are responsible for maintaining the confidentiality of your account and password, including but not limited to the restriction of access to your computer and/or account. You agree to accept responsibility for any and all activities or actions that occur under your account.
+            This portal is strictly intended for authorized Dream Tea staff scheduling and management. Access to the portal is contingent upon your active employment. Account access, along with all associated permissions, will be immediately revoked upon termination or resignation. You are responsible for maintaining the confidentiality of your account and password, and you agree to accept responsibility for all activities that occur under your account.
           </p>
 
           <h2 className="text-xl font-bold mt-8 mb-4">3. Prohibited Uses</h2>
-          <p>You may use the Service only for lawful purposes. You agree not to use the Service:</p>
+          <p>You may use the Service only for lawful workplace purposes. You agree not to use the Service:</p>
           <ul className="list-disc pl-6 space-y-2">
-            <li>In any way that violates any applicable national or international law or regulation.</li>
-            <li>For the purpose of exploiting, harming, or attempting to exploit or harm minors in any way.</li>
-            <li>To transmit, or procure the sending of, any advertising or promotional material, including any "junk mail", "chain letter," "spam," or any other similar solicitation.</li>
-            <li>To impersonate or attempt to impersonate the Company, a Company employee, another user, or any other person or entity.</li>
-            <li>In any way that infringes upon the rights of others, or in any way is illegal, threatening, fraudulent, or harmful.</li>
+            <li>To attempt to bypass whitelist restrictions, alter row-level security policies, or access another employee's account.</li>
+            <li>To engage in unauthorized tampering with shift data, schedule assignments, or backend automation triggers.</li>
+            <li>To share internal portal access, screenshots, or proprietary company data with unauthorized third parties or the general public.</li>
+            <li>In any way that infringes upon the rights of others, or is illegal, fraudulent, or harmful to the operations of Dream Tea.</li>
           </ul>
 
           <h2 className="text-xl font-bold mt-8 mb-4">4. Limitation of Liability</h2>
           <p>
-            In no event shall Dream Tea Nexus, nor its directors, employees, partners, agents, suppliers, or affiliates, be liable for any indirect, incidental, special, consequential or punitive damages, including without limitation, loss of profits, data, use, goodwill, or other intangible losses, resulting from (i) your access to or use of or inability to access or use the Service; (ii) any conduct or content of any third party on the Service; (iii) any content obtained from the Service; and (iv) unauthorized access, use or alteration of your transmissions or content, whether based on warranty, contract, tort (including negligence) or any other legal theory.
+            In no event shall Dream Tea Nexus, nor its directors, employees, partners, agents, suppliers, or affiliates, be liable for any indirect, incidental, special, consequential or punitive damages, including without limitation, loss of profits, data, use, goodwill, or other intangible losses, resulting from (i) your access to or use of or inability to access or use the Service; (ii) any conduct or content of any third party on the Service; (iii) any content obtained from the Service; and (iv) unauthorized access, use or alteration of your transmissions or content.
           </p>
 
-          <h2 className="text-xl font-bold mt-8 mb-4">5. Intellectual Property & Copyright</h2>
+          <h2 className="text-xl font-bold mt-8 mb-4">5. Intellectual Property</h2>
           <p>
-            The Service and its original content, features, and functionality are and will remain the exclusive property of Dream Tea Nexus and its licensors. If you believe that any content on the Service infringes upon any copyright which you own or control, you may send a written notification of such infringement to our designated agent at the email address below.
+            The Service and its original content, features, frontend components, and backend functionality are and will remain the exclusive property of Dream Tea Nexus and its licensors.
           </p>
 
           <h2 className="text-xl font-bold mt-8 mb-4">6. Changes to Terms</h2>
