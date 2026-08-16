@@ -527,76 +527,84 @@ export default function AvailabilityPage() {
                     </button>
                   </div>
 
-                  <div className={`transition-opacity duration-300 ${isUnavailable ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}>
-                    
-                    {/* LOCATIONS */}
-                    <div className="mb-6">
-                      <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wider mb-3">Locations</h3>
-                      <div className="flex flex-wrap gap-2">
-                        {LOCATIONS.map(loc => {
-                          const theme = getLocationTheme(loc);
-                          const isSelected = selectedLocations.includes(loc);
-                          return (
-                            <button
-                              key={loc}
-                              onClick={() => toggleLocation(loc)}
-                              className={`px-4 py-2 rounded-full border-2 text-sm font-bold transition-all ${isSelected ? theme.bg + ' ' + theme.border + ' ' + theme.text : 'border-gray-200 text-gray-400 hover:border-gray-300'}`}
-                            >
-                              {loc}
-                            </button>
-                          )
-                        })}
+                  <div className="relative flex-1 flex flex-col">
+                    <div className={`flex-1 flex flex-col transition-opacity duration-300 ${isUnavailable ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}>
+                      
+                      {/* LOCATIONS */}
+                      <div className="mb-6">
+                        <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wider mb-3">Locations</h3>
+                        <div className="flex flex-wrap gap-2">
+                          {LOCATIONS.map(loc => {
+                            const theme = getLocationTheme(loc);
+                            const isSelected = selectedLocations.includes(loc);
+                            return (
+                              <button
+                                key={loc}
+                                onClick={() => toggleLocation(loc)}
+                                className={`px-4 py-2 rounded-full border-2 text-sm font-bold transition-all ${isSelected ? theme.bg + ' ' + theme.border + ' ' + theme.text : 'border-gray-200 text-gray-400 hover:border-gray-300'}`}
+                              >
+                                {loc}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
+
+                      {/* TIMES */}
+                      <div className="flex flex-col sm:flex-row gap-6 mb-8">
+                         <style dangerouslySetInnerHTML={{__html: `
+                           .time-wheel::-webkit-scrollbar { display: none; }
+                           .time-wheel { -ms-overflow-style: none; scrollbar-width: none; }
+                         `}} />
+                         
+                         <div className="flex-1 bg-gray-50 rounded-2xl p-4 border border-gray-100 flex flex-col justify-center items-center relative overflow-hidden">
+                           <h3 className="absolute top-4 left-4 text-xs font-bold text-gray-400 uppercase tracking-widest z-10">Start Time</h3>
+                           <div className="flex w-full mt-6 h-[150px] justify-center gap-2 relative">
+                              <TimeWheel value={startTime.split(':')[0]} onChange={(h) => {
+                                 const newT = `${h}:${startTime.split(':')[1]}`;
+                                 setStartTime(newT);
+                                 if (newT > endTime) setEndTime(newT);
+                              }} options={HOURS} isHour />
+                              <div className="flex items-center text-3xl font-bold text-gray-400 mt-[-10px]">:</div>
+                              <TimeWheel value={startTime.split(':')[1]} onChange={(m) => {
+                                 const newT = `${startTime.split(':')[0]}:${m}`;
+                                 setStartTime(newT);
+                                 if (newT > endTime) setEndTime(newT);
+                              }} options={MINUTES} />
+                              <div className="flex items-center text-xl font-bold text-gray-400 ml-2 mt-[-5px]">
+                                 {parseInt(startTime.split(':')[0]) >= 12 ? 'PM' : 'AM'}
+                              </div>
+                           </div>
+                         </div>
+                         
+                         <div className="flex-1 bg-gray-50 rounded-2xl p-4 border border-gray-100 flex flex-col justify-center items-center relative overflow-hidden">
+                           <h3 className="absolute top-4 left-4 text-xs font-bold text-gray-400 uppercase tracking-widest z-10">End Time</h3>
+                           <div className="flex w-full mt-6 h-[150px] justify-center gap-2 relative">
+                              <TimeWheel value={endTime.split(':')[0]} onChange={(h) => {
+                                 const newT = `${h}:${endTime.split(':')[1]}`;
+                                 setEndTime(newT);
+                                 if (newT < startTime) setStartTime(newT);
+                              }} options={HOURS} isHour />
+                              <div className="flex items-center text-3xl font-bold text-gray-400 mt-[-10px]">:</div>
+                              <TimeWheel value={endTime.split(':')[1]} onChange={(m) => {
+                                 const newT = `${endTime.split(':')[0]}:${m}`;
+                                 setEndTime(newT);
+                                 if (newT < startTime) setStartTime(newT);
+                              }} options={MINUTES} />
+                              <div className="flex items-center text-xl font-bold text-gray-400 ml-2 mt-[-5px]">
+                                 {parseInt(endTime.split(':')[0]) >= 12 ? 'PM' : 'AM'}
+                              </div>
+                           </div>
+                         </div>
                       </div>
                     </div>
-
-                    {/* TIMES */}
-                    <div className="flex flex-col sm:flex-row gap-6 mb-8">
-                       <style dangerouslySetInnerHTML={{__html: `
-                         .time-wheel::-webkit-scrollbar { display: none; }
-                         .time-wheel { -ms-overflow-style: none; scrollbar-width: none; }
-                       `}} />
-                       
-                       <div className="flex-1 bg-gray-50 rounded-2xl p-4 border border-gray-100 flex flex-col justify-center items-center relative overflow-hidden">
-                         <h3 className="absolute top-4 left-4 text-xs font-bold text-gray-400 uppercase tracking-widest z-10">Start Time</h3>
-                         <div className="flex w-full mt-6 h-[150px] justify-center gap-2 relative">
-                            <TimeWheel value={startTime.split(':')[0]} onChange={(h) => {
-                               const newT = `${h}:${startTime.split(':')[1]}`;
-                               setStartTime(newT);
-                               if (newT > endTime) setEndTime(newT);
-                            }} options={HOURS} isHour />
-                            <div className="flex items-center text-3xl font-bold text-gray-400 mt-[-10px]">:</div>
-                            <TimeWheel value={startTime.split(':')[1]} onChange={(m) => {
-                               const newT = `${startTime.split(':')[0]}:${m}`;
-                               setStartTime(newT);
-                               if (newT > endTime) setEndTime(newT);
-                            }} options={MINUTES} />
-                            <div className="flex items-center text-xl font-bold text-gray-400 ml-2 mt-[-5px]">
-                               {parseInt(startTime.split(':')[0]) >= 12 ? 'PM' : 'AM'}
-                            </div>
-                         </div>
-                       </div>
-                       
-                       <div className="flex-1 bg-gray-50 rounded-2xl p-4 border border-gray-100 flex flex-col justify-center items-center relative overflow-hidden">
-                         <h3 className="absolute top-4 left-4 text-xs font-bold text-gray-400 uppercase tracking-widest z-10">End Time</h3>
-                         <div className="flex w-full mt-6 h-[150px] justify-center gap-2 relative">
-                            <TimeWheel value={endTime.split(':')[0]} onChange={(h) => {
-                               const newT = `${h}:${endTime.split(':')[1]}`;
-                               setEndTime(newT);
-                               if (newT < startTime) setStartTime(newT);
-                            }} options={HOURS} isHour />
-                            <div className="flex items-center text-3xl font-bold text-gray-400 mt-[-10px]">:</div>
-                            <TimeWheel value={endTime.split(':')[1]} onChange={(m) => {
-                               const newT = `${endTime.split(':')[0]}:${m}`;
-                               setEndTime(newT);
-                               if (newT < startTime) setStartTime(newT);
-                            }} options={MINUTES} />
-                            <div className="flex items-center text-xl font-bold text-gray-400 ml-2 mt-[-5px]">
-                               {parseInt(endTime.split(':')[0]) >= 12 ? 'PM' : 'AM'}
-                            </div>
-                         </div>
-                       </div>
-                    </div>
-
+                    {isUnavailable && (
+                       <div 
+                         className="absolute inset-0 z-20 cursor-pointer rounded-xl" 
+                         onClick={() => setIsUnavailable(false)}
+                         title="Click to mark as available"
+                       />
+                    )}
                   </div>
 
                   <div className="flex justify-between items-center mt-auto pt-8">
@@ -680,6 +688,13 @@ export default function AvailabilityPage() {
                              </span>
                            );
                          })}
+                       </div>
+                    )}
+                    {isCompleted && cacheData.isUnavailable && (
+                       <div className="flex flex-col w-full mt-1 items-center justify-center">
+                         <span className="text-[10px] font-bold text-red-400 mt-1 whitespace-nowrap px-1">
+                           Unavailable
+                         </span>
                        </div>
                     )}
                   </button>
