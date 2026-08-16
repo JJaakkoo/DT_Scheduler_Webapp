@@ -66,13 +66,9 @@ export default function AvailabilityPage() {
   const [availabilityCache, setAvailabilityCache] = useState<Record<string, any>>({});
   
   // Form State
-  const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
+  const [locationTimes, setLocationTimes] = useState<Record<string, { startTime: string, endTime: string }>>({});
+  const [activeLocation, setActiveLocation] = useState<string | null>(null);
   const [isUnavailable, setIsUnavailable] = useState(false);
-  const [isFullDay, setIsFullDay] = useState(false);
-  
-  // Bounds
-  const [startTime, setStartTime] = useState<string>("12:00");
-  const [endTime, setEndTime] = useState<string>("22:00");
   
   // Submission State
   const [missingDates, setMissingDates] = useState<Date[]>([]);
@@ -97,9 +93,7 @@ export default function AvailabilityPage() {
       }
       setRole(currentRole);
 
-      // Load saved locations
-      const savedLocs = localStorage.getItem("nexus_avail_locations");
-      if (savedLocs) setSelectedLocations(JSON.parse(savedLocs));
+      // Removed saved locations logic since times are now per-location
       
       fetchInitialData(data.session.user.id);
     };
@@ -186,29 +180,27 @@ export default function AvailabilityPage() {
         const locs = Object.keys(anyDayData.locations || {});
         
         if (locs.length === 0) {
-           cache[dayStr] = { isUnavailable: true, isFullDay: false, startTime: "12:00", endTime: "22:00", locations: [] };
+           cache[dayStr] = { isUnavailable: true, locationTimes: {} };
            continue;
         }
         
-        let startTime = "12:00";
-        let endTime = "22:00";
-        let isFullDay = true;
+        const dayLocationTimes: Record<string, { startTime: string, endTime: string }> = {};
         
-        const firstLocShifts = anyDayData.locations[locs[0]];
-        if (firstLocShifts && firstLocShifts.length > 0) {
-           const startD = new Date(firstLocShifts[0].start.dateTime);
-           const endD = new Date(firstLocShifts[0].end.dateTime);
-           startTime = `${startD.getHours().toString().padStart(2, '0')}:${startD.getMinutes().toString().padStart(2, '0')}`;
-           endTime = `${endD.getHours().toString().padStart(2, '0')}:${endD.getMinutes().toString().padStart(2, '0')}`;
-           if (startTime !== "12:00" || endTime !== "22:00") isFullDay = false;
+        for (const loc of locs) {
+           const shifts = anyDayData.locations[loc];
+           if (shifts && shifts.length > 0) {
+               const startD = new Date(shifts[0].start.dateTime);
+               const endD = new Date(shifts[0].end.dateTime);
+               const startTime = `${startD.getHours().toString().padStart(2, '0')}:${startD.getMinutes().toString().padStart(2, '0')}`;
+               const endTime = `${endD.getHours().toString().padStart(2, '0')}:${endD.getMinutes().toString().padStart(2, '0')}`;
+               const formattedLoc = loc.charAt(0).toUpperCase() + loc.slice(1);
+               dayLocationTimes[formattedLoc] = { startTime, endTime };
+           }
         }
         
         cache[dayStr] = {
            isUnavailable: false,
-           isFullDay,
-           startTime,
-           endTime,
-           locations: locs.map(l => l.charAt(0).toUpperCase() + l.slice(1)) // capitalize back
+           locationTimes: dayLocationTimes
         };
      }
      return cache;
@@ -241,14 +233,31 @@ export default function AvailabilityPage() {
   };
 
   const toggleLocation = (loc: string) => {
-    let newLocs = [...selectedLocations];
-    if (newLocs.includes(loc)) {
-      newLocs = newLocs.filter(l => l !== loc);
+    const newTimes = { ...locationTimes };
+    
+    if (newTimes[loc]) {
+      if (activeLocation === loc) {
+        // Just turn it off and pick another active location if available
+        delete newTimes[loc];
+        const remaining = Object.keys(newTimes);
+        setActiveLocation(remaining.length > 0 ? remaining[0] : null);
+      } else {
+        // Turn it off
+        delete newTimes[loc];
+      }
     } else {
-      newLocs.push(loc);
+      // Turn it on
+      let st = "12:00";
+      let et = "22:00";
+      if (activeLocation && newTimes[activeLocation]) {
+         st = newTimes[activeLocation].startTime;
+         et = newTimes[activeLocation].endTime;
+      }
+      newTimes[loc] = { startTime: st, endTime: et };
+      setActiveLocation(loc);
     }
-    setSelectedLocations(newLocs);
-    localStorage.setItem("nexus_avail_locations", JSON.stringify(newLocs));
+    
+    setLocationTimes(newTimes);
   };
 
   useEffect(() => {
@@ -257,10 +266,9 @@ export default function AvailabilityPage() {
       const cached = availabilityCache[dayStr];
       if (cached) {
         setIsUnavailable(cached.isUnavailable);
-        setIsFullDay(cached.isFullDay);
-        setStartTime(cached.startTime || "12:00");
-        setEndTime(cached.endTime || "22:00");
-        if (cached.locations) setSelectedLocations(cached.locations);
+        setLocationTimes(cached.locationTimes || {});
+        const locs = Object.keys(cached.locationTimes || {});
+        setActiveLocation(locs.length > 0 ? locs[0] : null);
       }
     }
   }, [selectedDate, availabilityCache]);
@@ -270,7 +278,7 @@ export default function AvailabilityPage() {
     const dayStr = selectedDate.toISOString().split('T')[0];
     
     let newCache;
-    if (!isUnavailable && selectedLocations.length === 0) {
+    if (!isUnavailable && Object.keys(locationTimes).length === 0) {
       newCache = { ...availabilityCache };
       delete newCache[dayStr];
     } else {
@@ -278,10 +286,7 @@ export default function AvailabilityPage() {
         ...availabilityCache,
         [dayStr]: {
           isUnavailable,
-          isFullDay,
-          startTime,
-          endTime,
-          locations: selectedLocations
+          locationTimes
         }
       };
     }
@@ -297,10 +302,8 @@ export default function AvailabilityPage() {
 
   const handleClearDay = () => {
     setIsUnavailable(false);
-    setIsFullDay(false);
-    setStartTime("12:00");
-    setEndTime("22:00");
-    setSelectedLocations([]);
+    setLocationTimes({});
+    setActiveLocation(null);
     
     if (!selectedDate) return;
     const dayStr = selectedDate.toISOString().split('T')[0];
@@ -425,13 +428,10 @@ export default function AvailabilityPage() {
            locations: {}
         };
         
-        if (!cache.isUnavailable) {
-           const startStr = cache.isFullDay ? "12:00" : cache.startTime;
-           const endStr = cache.isFullDay ? "22:00" : cache.endTime;
-           
-           cache.locations.forEach((loc: string) => {
-              const startDateTime = `${dayStr}T${startStr}:00`;
-              const endDateTime = `${dayStr}T${endStr}:00`;
+        if (!cache.isUnavailable && cache.locationTimes) {
+           Object.entries(cache.locationTimes).forEach(([loc, times]: [string, any]) => {
+              const startDateTime = `${dayStr}T${times.startTime}:00`;
+              const endDateTime = `${dayStr}T${times.endTime}:00`;
               
               schedule_data[dayStr].locations[loc.toLowerCase()] = [{
                  start: { dateTime: startDateTime, timeZone: "America/Edmonton" },
@@ -557,12 +557,13 @@ export default function AvailabilityPage() {
                         <div className="flex flex-wrap gap-2">
                           {LOCATIONS.map(loc => {
                             const theme = getLocationTheme(loc);
-                            const isSelected = selectedLocations.includes(loc);
+                            const isSelected = !!locationTimes[loc];
+                            const isActive = activeLocation === loc;
                             return (
                               <button
                                 key={loc}
                                 onClick={() => toggleLocation(loc)}
-                                className={`px-4 py-2 rounded-full border-2 text-sm font-bold transition-all ${isSelected ? theme.bg + ' ' + theme.border + ' ' + theme.text : 'border-gray-200 text-gray-400 hover:border-gray-300'}`}
+                                className={`px-4 py-2 rounded-full border-2 text-sm font-bold transition-all ${isSelected ? theme.bg + ' ' + theme.border + ' ' + theme.text : 'border-gray-200 text-gray-400 hover:border-gray-300'} ${isActive ? 'ring-2 ring-offset-2 ring-gray-400' : ''}`}
                               >
                                 {loc}
                               </button>
@@ -573,50 +574,66 @@ export default function AvailabilityPage() {
 
                       {/* TIMES */}
                       <div className="flex flex-col sm:flex-row gap-6 mb-8">
-                         <style dangerouslySetInnerHTML={{__html: `
-                           .time-wheel::-webkit-scrollbar { display: none; }
-                           .time-wheel { -ms-overflow-style: none; scrollbar-width: none; }
-                         `}} />
-                         
-                         <div className="flex-1 bg-gray-50 rounded-2xl p-4 border border-gray-100 flex flex-col justify-center items-center relative overflow-hidden">
-                           <h3 className="absolute top-4 left-4 text-xs font-bold text-gray-400 uppercase tracking-widest z-10">Start Time</h3>
-                           <div className="flex w-full mt-6 h-[150px] justify-center gap-2 relative">
-                              <TimeWheel value={startTime.split(':')[0]} onChange={(h) => {
-                                 const newT = `${h}:${startTime.split(':')[1]}`;
-                                 setStartTime(newT);
-                                 if (newT > endTime) setEndTime(newT);
-                              }} options={HOURS} isHour />
-                              <div className="flex items-center text-3xl font-bold text-gray-400 mt-[-10px]">:</div>
-                              <TimeWheel value={startTime.split(':')[1]} onChange={(m) => {
-                                 const newT = `${startTime.split(':')[0]}:${m}`;
-                                 setStartTime(newT);
-                                 if (newT > endTime) setEndTime(newT);
-                              }} options={MINUTES} />
-                              <div className="flex items-center text-xl font-bold text-gray-400 ml-2 mt-[-5px]">
-                                 {parseInt(startTime.split(':')[0]) >= 12 ? 'PM' : 'AM'}
-                              </div>
-                           </div>
-                         </div>
-                         
-                         <div className="flex-1 bg-gray-50 rounded-2xl p-4 border border-gray-100 flex flex-col justify-center items-center relative overflow-hidden">
-                           <h3 className="absolute top-4 left-4 text-xs font-bold text-gray-400 uppercase tracking-widest z-10">End Time</h3>
-                           <div className="flex w-full mt-6 h-[150px] justify-center gap-2 relative">
-                              <TimeWheel value={endTime.split(':')[0]} onChange={(h) => {
-                                 const newT = `${h}:${endTime.split(':')[1]}`;
-                                 setEndTime(newT);
-                                 if (newT < startTime) setStartTime(newT);
-                              }} options={HOURS} isHour />
-                              <div className="flex items-center text-3xl font-bold text-gray-400 mt-[-10px]">:</div>
-                              <TimeWheel value={endTime.split(':')[1]} onChange={(m) => {
-                                 const newT = `${endTime.split(':')[0]}:${m}`;
-                                 setEndTime(newT);
-                                 if (newT < startTime) setStartTime(newT);
-                              }} options={MINUTES} />
-                              <div className="flex items-center text-xl font-bold text-gray-400 ml-2 mt-[-5px]">
-                                 {parseInt(endTime.split(':')[0]) >= 12 ? 'PM' : 'AM'}
-                              </div>
-                           </div>
-                         </div>
+                         {!activeLocation ? (
+                            <div className="flex-1 bg-gray-50 rounded-2xl p-8 border border-gray-100 flex items-center justify-center text-gray-400 font-bold text-center">
+                               Select a location above to set its hours
+                            </div>
+                         ) : (
+                            <>
+                               <style dangerouslySetInnerHTML={{__html: `
+                                 .time-wheel::-webkit-scrollbar { display: none; }
+                                 .time-wheel { -ms-overflow-style: none; scrollbar-width: none; }
+                               `}} />
+                               
+                               <div className="flex-1 bg-gray-50 rounded-2xl p-4 border border-gray-100 flex flex-col justify-center items-center relative overflow-hidden">
+                                 <h3 className="absolute top-4 left-4 text-xs font-bold text-gray-400 uppercase tracking-widest z-10">Start Time</h3>
+                                 <div className="flex w-full mt-6 h-[150px] justify-center gap-2 relative">
+                                    <TimeWheel value={locationTimes[activeLocation].startTime.split(':')[0]} onChange={(h) => {
+                                       const newT = `${h}:${locationTimes[activeLocation].startTime.split(':')[1]}`;
+                                       const newTimes = { ...locationTimes };
+                                       newTimes[activeLocation] = { ...newTimes[activeLocation], startTime: newT };
+                                       if (newT > newTimes[activeLocation].endTime) newTimes[activeLocation].endTime = newT;
+                                       setLocationTimes(newTimes);
+                                    }} options={HOURS} isHour />
+                                    <div className="flex items-center text-3xl font-bold text-gray-400 mt-[-10px]">:</div>
+                                    <TimeWheel value={locationTimes[activeLocation].startTime.split(':')[1]} onChange={(m) => {
+                                       const newT = `${locationTimes[activeLocation].startTime.split(':')[0]}:${m}`;
+                                       const newTimes = { ...locationTimes };
+                                       newTimes[activeLocation] = { ...newTimes[activeLocation], startTime: newT };
+                                       if (newT > newTimes[activeLocation].endTime) newTimes[activeLocation].endTime = newT;
+                                       setLocationTimes(newTimes);
+                                    }} options={MINUTES} />
+                                    <div className="flex items-center text-xl font-bold text-gray-400 ml-2 mt-[-5px]">
+                                       {parseInt(locationTimes[activeLocation].startTime.split(':')[0]) >= 12 ? 'PM' : 'AM'}
+                                    </div>
+                                 </div>
+                               </div>
+                               
+                               <div className="flex-1 bg-gray-50 rounded-2xl p-4 border border-gray-100 flex flex-col justify-center items-center relative overflow-hidden">
+                                 <h3 className="absolute top-4 left-4 text-xs font-bold text-gray-400 uppercase tracking-widest z-10">End Time</h3>
+                                 <div className="flex w-full mt-6 h-[150px] justify-center gap-2 relative">
+                                    <TimeWheel value={locationTimes[activeLocation].endTime.split(':')[0]} onChange={(h) => {
+                                       const newT = `${h}:${locationTimes[activeLocation].endTime.split(':')[1]}`;
+                                       const newTimes = { ...locationTimes };
+                                       newTimes[activeLocation] = { ...newTimes[activeLocation], endTime: newT };
+                                       if (newT < newTimes[activeLocation].startTime) newTimes[activeLocation].startTime = newT;
+                                       setLocationTimes(newTimes);
+                                    }} options={HOURS} isHour />
+                                    <div className="flex items-center text-3xl font-bold text-gray-400 mt-[-10px]">:</div>
+                                    <TimeWheel value={locationTimes[activeLocation].endTime.split(':')[1]} onChange={(m) => {
+                                       const newT = `${locationTimes[activeLocation].endTime.split(':')[0]}:${m}`;
+                                       const newTimes = { ...locationTimes };
+                                       newTimes[activeLocation] = { ...newTimes[activeLocation], endTime: newT };
+                                       if (newT < newTimes[activeLocation].startTime) newTimes[activeLocation].startTime = newT;
+                                       setLocationTimes(newTimes);
+                                    }} options={MINUTES} />
+                                    <div className="flex items-center text-xl font-bold text-gray-400 ml-2 mt-[-5px]">
+                                       {parseInt(locationTimes[activeLocation].endTime.split(':')[0]) >= 12 ? 'PM' : 'AM'}
+                                    </div>
+                                 </div>
+                               </div>
+                            </>
+                         )}
                       </div>
                     </div>
                     {isUnavailable && (
@@ -701,11 +718,11 @@ export default function AvailabilityPage() {
                     </div>
                     {isCompleted && !cacheData.isUnavailable && (
                        <div className="flex flex-col w-full mt-1 items-center gap-0.5">
-                         {cacheData.locations.map((loc: string) => {
-                           const startH = parseInt(cacheData.startTime.split(':')[0]);
-                           const startM = cacheData.startTime.split(':')[1];
-                           const endH = parseInt(cacheData.endTime.split(':')[0]);
-                           const endM = cacheData.endTime.split(':')[1];
+                         {cacheData.locationTimes && Object.entries(cacheData.locationTimes).map(([loc, times]: [string, any]) => {
+                           const startH = parseInt(times.startTime.split(':')[0]);
+                           const startM = times.startTime.split(':')[1];
+                           const endH = parseInt(times.endTime.split(':')[0]);
+                           const endM = times.endTime.split(':')[1];
                            const fmtStart = `${startH > 12 ? startH - 12 : startH}:${startM}`;
                            const fmtEnd = `${endH > 12 ? endH - 12 : endH}:${endM}`;
                            return (
