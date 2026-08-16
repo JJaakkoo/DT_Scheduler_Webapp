@@ -116,7 +116,28 @@ def get_schedule_data(employee_name, force_sync=False, access_token=None, req_mo
             db_records = response.data
             db_record = db_records[0] if len(db_records) > 0 else None
         else:
-            response = supabase.table('schedules').select('*').order('year', desc=True).order('month', desc=True).order('period', desc=True).limit(2).execute()
+            edmonton_tz = pytz.timezone('America/Edmonton')
+            current_time_local = datetime.now(edmonton_tz)
+            curr_year = current_time_local.year
+            curr_month = current_time_local.month
+            curr_period = 1 if current_time_local.day <= 15 else 2
+
+            if curr_period == 2:
+                prev_year = curr_year
+                prev_month = curr_month
+                prev_period = 1
+            else:
+                if curr_month == 1:
+                    prev_year = curr_year - 1
+                    prev_month = 12
+                    prev_period = 2
+                else:
+                    prev_year = curr_year
+                    prev_month = curr_month - 1
+                    prev_period = 2
+
+            filter_str = f"year.gt.{prev_year},and(year.eq.{prev_year},month.gt.{prev_month}),and(year.eq.{prev_year},month.eq.{prev_month},period.gte.{prev_period})"
+            response = supabase.table('schedules').select('*').or_(filter_str).order('year', desc=True).order('month', desc=True).order('period', desc=True).execute()
             db_records = response.data
             db_record = db_records[0] if len(db_records) > 0 else None
 
@@ -192,7 +213,7 @@ def get_schedule_data(employee_name, force_sync=False, access_token=None, req_mo
                                         supabase.table('schedules').insert(new_record_data).execute()
 
                                     db_record = new_record_data
-                                    fresh_response = supabase.table('schedules').select('*').order('year', desc=True).order('month', desc=True).order('period', desc=True).limit(2).execute()
+                                    fresh_response = supabase.table('schedules').select('*').or_(filter_str).order('year', desc=True).order('month', desc=True).order('period', desc=True).execute()
                                     db_records = fresh_response.data
                 except Exception as e:
                     print(f"SYNC FAILED: Token error or Gmail API rejected request: {e}")
@@ -213,6 +234,8 @@ def get_schedule_data(employee_name, force_sync=False, access_token=None, req_mo
             else:
                 shifts.extend(record.get('schedule_data', {}).get(employee_key, []))
             
+        shifts.sort(key=lambda x: x.get('start', {}).get('dateTime', x.get('start', {}).get('date', '')))
+
         return shifts, db_record, sync_status, None
 
     except Exception as e:
