@@ -406,6 +406,8 @@ export default function AvailabilityPage() {
       setAllSaved(true);
       setSelectedDate(null);
     }
+    
+    setIsUnavailable(false);
   };
 
   const handlePrevPeriod = () => {
@@ -635,7 +637,7 @@ export default function AvailabilityPage() {
                                
                                <div className="flex-1 bg-gray-50 rounded-2xl p-2 sm:p-4 border border-gray-100 flex flex-col justify-center items-center relative overflow-hidden">
                                  <h3 className="absolute top-2 left-2 sm:top-4 sm:left-4 text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-widest z-10">Start Time</h3>
-                                 <div className="flex w-full mt-6 h-[150px] justify-center gap-1 sm:gap-2 relative">
+                                 <div className="flex w-full mt-6 h-[150px] justify-center gap-1 sm:gap-2 relative pr-[20px] sm:pr-0">
                                     <TimeWheel value={locationTimes[activeLocation].startTime.split(':')[0]} onChange={(h) => {
                                        const newT = `${h}:${locationTimes[activeLocation].startTime.split(':')[1]}`;
                                        const newTimes = { ...locationTimes };
@@ -661,7 +663,7 @@ export default function AvailabilityPage() {
                                
                                <div className="flex-1 bg-gray-50 rounded-2xl p-2 sm:p-4 border border-gray-100 flex flex-col justify-center items-center relative overflow-hidden">
                                  <h3 className="absolute top-2 left-2 sm:top-4 sm:left-4 text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-widest z-10">End Time</h3>
-                                 <div className="flex w-full mt-6 h-[150px] justify-center gap-1 sm:gap-2 relative">
+                                 <div className="flex w-full mt-6 h-[150px] justify-center gap-1 sm:gap-2 relative pr-[20px] sm:pr-0">
                                     <TimeWheel value={locationTimes[activeLocation].endTime.split(':')[0]} onChange={(h) => {
                                        const newT = `${h}:${locationTimes[activeLocation].endTime.split(':')[1]}`;
                                        const newTimes = { ...locationTimes };
