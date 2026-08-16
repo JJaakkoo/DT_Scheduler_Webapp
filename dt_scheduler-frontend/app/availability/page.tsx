@@ -751,8 +751,7 @@ export default function AvailabilityPage() {
 
           {/* SUBMISSION */}
           <button disabled={isSubmitting} onClick={() => {
-              const latestCache = saveCurrentDay() || availabilityCache;
-              const missing = validDates.filter(d => !latestCache[d.toISOString().split('T')[0]]);
+              const missing = validDates.filter(d => !availabilityCache[d.toISOString().split('T')[0]]);
               if (missing.length > 0) {
                  setMissingDates(missing);
                  setShowMissingModal(true);
@@ -779,15 +778,28 @@ export default function AvailabilityPage() {
               </div>
               <p className="text-gray-600 mb-4">There was no availability given for these days:</p>
               <div className="max-h-[200px] overflow-y-auto bg-amber-50 rounded-xl p-4 mb-6 border border-amber-100">
-                 <ul className="list-disc list-inside text-amber-800 font-medium space-y-1">
-                   {missingDates.map(d => (
-                     <li key={d.toISOString()}>{d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</li>
-                   ))}
+                 <ul className="list-disc list-inside font-medium space-y-1">
+                   {validDates.map(d => {
+                     const isMissing = missingDates.some(md => md.toISOString() === d.toISOString());
+                     return (
+                       <li key={d.toISOString()} className={isMissing ? "text-amber-800" : "text-amber-800/30"}>
+                         {d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                       </li>
+                     );
+                   })}
                  </ul>
               </div>
-              <button onClick={() => setShowMissingModal(false)} className="w-full bg-gray-800 hover:bg-gray-900 text-white font-bold py-3 rounded-xl transition-all">
-                Go Back and Complete
-              </button>
+              <div className="flex flex-col sm:flex-row gap-3">
+                 <button onClick={() => setShowMissingModal(false)} className="flex-1 bg-gray-800 hover:bg-gray-900 text-white font-bold py-3 rounded-xl transition-all">
+                   Go Back
+                 </button>
+                 <button onClick={() => {
+                    setShowMissingModal(false);
+                    handleFinalSubmit();
+                 }} className="flex-1 bg-white hover:bg-gray-50 text-gray-800 shadow-md shadow-gray-200 font-bold py-3 rounded-xl transition-all border border-gray-100">
+                   Confirm
+                 </button>
+              </div>
            </div>
         </div>
       )}
