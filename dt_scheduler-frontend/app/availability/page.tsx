@@ -15,15 +15,40 @@ const getLocationTheme = (location: string) => {
   return { text: "text-sky-500", border: "border-sky-200", bg: "bg-sky-50", fill: "bg-[#8ab4f8]" };
 };
 
-const TIME_SLOTS: string[] = [];
-for (let h = 12; h <= 22; h++) {
-  TIME_SLOTS.push(`${h.toString().padStart(2, '0')}:00`);
-  if (h < 22) {
-    TIME_SLOTS.push(`${h.toString().padStart(2, '0')}:15`);
-    TIME_SLOTS.push(`${h.toString().padStart(2, '0')}:30`);
-    TIME_SLOTS.push(`${h.toString().padStart(2, '0')}:45`);
-  }
-}
+const HOURS = Array.from({length: 11}, (_, i) => (i + 12).toString());
+const MINUTES = ["00", "15", "30", "45"];
+
+const TimeWheel = ({ value, onChange, options, isHour = false }: { value: string, onChange: (v: string) => void, options: string[], isHour?: boolean }) => {
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  
+  React.useEffect(() => {
+     if (!containerRef.current) return;
+     const el = containerRef.current.querySelector(`[data-val="${value}"]`) as HTMLElement;
+     if (el) {
+        // center the element
+        const top = el.offsetTop - containerRef.current.offsetTop - 50;
+        containerRef.current.scrollTo({ top, behavior: 'smooth' });
+     }
+  }, [value]);
+
+  return (
+    <div ref={containerRef} className="time-wheel h-[150px] overflow-y-auto w-[50px] flex flex-col items-center snap-y snap-mandatory pt-[50px] pb-[50px]">
+       {options.map(o => {
+         const display = isHour ? (parseInt(o) > 12 ? parseInt(o) - 12 : parseInt(o)).toString() : o;
+         return (
+           <button 
+             key={o} 
+             data-val={o}
+             onClick={() => onChange(o)}
+             className={`h-[50px] shrink-0 snap-center text-3xl font-bold transition-all ${value === o ? 'text-[#8ab4f8] scale-110' : 'text-gray-300 hover:text-gray-400'}`}
+           >
+             {display}
+           </button>
+         );
+       })}
+    </div>
+  );
+};
 
 export default function AvailabilityPage() {
   const router = useRouter();
@@ -520,66 +545,44 @@ export default function AvailabilityPage() {
                        
                        <div className="flex-1 bg-gray-50 rounded-2xl p-4 border border-gray-100 flex flex-col justify-center items-center relative overflow-hidden">
                          <h3 className="absolute top-4 left-4 text-xs font-bold text-gray-400 uppercase tracking-widest z-10">Start Time</h3>
-                         <div className="relative w-full mt-6 h-[150px]">
-                           <div className="time-wheel h-[150px] overflow-y-auto w-full flex flex-col items-center snap-y snap-mandatory pt-[50px] pb-[50px]">
-                              {TIME_SLOTS.map(t => {
-                                const isSelected = startTime === t;
-                                const hStr = t.split(':')[0];
-                                const mStr = t.split(':')[1];
-                                const h = parseInt(hStr);
-                                const display = `${h > 12 ? h - 12 : h}:${mStr} ${h >= 12 ? 'PM' : 'AM'}`;
-                                
-                                return (
-                                  <button 
-                                    key={`start-${t}`} 
-                                    onClick={() => {
-                                       setStartTime(t);
-                                       if (t > endTime) setEndTime(t);
-                                    }}
-                                    className={`h-[50px] shrink-0 snap-center text-3xl font-bold transition-all ${isSelected ? 'text-[#8ab4f8] scale-110' : 'text-gray-300 hover:text-gray-400'}`}
-                                  >
-                                    {display}
-                                  </button>
-                                );
-                              })}
-                           </div>
+                         <div className="flex w-full mt-6 h-[150px] justify-center gap-2 relative">
+                            <TimeWheel value={startTime.split(':')[0]} onChange={(h) => {
+                               const newT = `${h}:${startTime.split(':')[1]}`;
+                               setStartTime(newT);
+                               if (newT > endTime) setEndTime(newT);
+                            }} options={HOURS} isHour />
+                            <div className="flex items-center text-3xl font-bold text-gray-400 mt-[-10px]">:</div>
+                            <TimeWheel value={startTime.split(':')[1]} onChange={(m) => {
+                               const newT = `${startTime.split(':')[0]}:${m}`;
+                               setStartTime(newT);
+                               if (newT > endTime) setEndTime(newT);
+                            }} options={MINUTES} />
+                            <div className="flex items-center text-xl font-bold text-gray-400 ml-2 mt-[-5px]">
+                               {parseInt(startTime.split(':')[0]) >= 12 ? 'PM' : 'AM'}
+                            </div>
                          </div>
                        </div>
                        
                        <div className="flex-1 bg-gray-50 rounded-2xl p-4 border border-gray-100 flex flex-col justify-center items-center relative overflow-hidden">
                          <h3 className="absolute top-4 left-4 text-xs font-bold text-gray-400 uppercase tracking-widest z-10">End Time</h3>
-                         <div className="relative w-full mt-6 h-[150px]">
-                           <div className="time-wheel h-[150px] overflow-y-auto w-full flex flex-col items-center snap-y snap-mandatory pt-[50px] pb-[50px]">
-                              {TIME_SLOTS.map(t => {
-                                const isSelected = endTime === t;
-                                const isDisabled = t < startTime;
-                                const hStr = t.split(':')[0];
-                                const mStr = t.split(':')[1];
-                                const h = parseInt(hStr);
-                                const display = `${h > 12 ? h - 12 : h}:${mStr} ${h >= 12 ? 'PM' : 'AM'}`;
-                                
-                                return (
-                                  <button 
-                                    key={`end-${t}`} 
-                                    disabled={isDisabled}
-                                    onClick={() => setEndTime(t)}
-                                    className={`h-[50px] shrink-0 snap-center text-3xl font-bold transition-all ${isSelected ? 'text-[#8ab4f8] scale-110' : isDisabled ? 'text-gray-200 opacity-50' : 'text-gray-300 hover:text-gray-400'}`}
-                                  >
-                                    {display}
-                                  </button>
-                                );
-                              })}
-                           </div>
+                         <div className="flex w-full mt-6 h-[150px] justify-center gap-2 relative">
+                            <TimeWheel value={endTime.split(':')[0]} onChange={(h) => {
+                               const newT = `${h}:${endTime.split(':')[1]}`;
+                               setEndTime(newT);
+                               if (newT < startTime) setStartTime(newT);
+                            }} options={HOURS} isHour />
+                            <div className="flex items-center text-3xl font-bold text-gray-400 mt-[-10px]">:</div>
+                            <TimeWheel value={endTime.split(':')[1]} onChange={(m) => {
+                               const newT = `${endTime.split(':')[0]}:${m}`;
+                               setEndTime(newT);
+                               if (newT < startTime) setStartTime(newT);
+                            }} options={MINUTES} />
+                            <div className="flex items-center text-xl font-bold text-gray-400 ml-2 mt-[-5px]">
+                               {parseInt(endTime.split(':')[0]) >= 12 ? 'PM' : 'AM'}
+                            </div>
                          </div>
                        </div>
                     </div>
-
-                    <button 
-                      onClick={() => setIsFullDay(!isFullDay)}
-                      className={`w-full py-3 rounded-xl font-bold transition-all shadow-sm border-2 ${isFullDay ? 'bg-blue-50 border-blue-500 text-blue-600' : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'}`}
-                    >
-                      I am available the Full Day (12 PM - 10 PM)
-                    </button>
 
                   </div>
 
@@ -602,7 +605,7 @@ export default function AvailabilityPage() {
 
           {/* STRICT CALENDAR */}
           <div className="w-full bg-white rounded-3xl shadow-xl p-6 sm:p-8 flex flex-col">
-             <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center justify-between mb-6">
                 <button onClick={handlePrevPeriod} className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 transition-colors">
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" /></svg>
                 </button>
@@ -611,9 +614,14 @@ export default function AvailabilityPage() {
                     {targetPeriod.year} {new Date(targetPeriod.year, targetPeriod.month - 1).toLocaleString('en-US', { month: 'long' })} {targetPeriod.period === 1 ? '1-15' : '16-31'} (Period {targetPeriod.period})
                   </h3>
                 )}
-                <button onClick={handleNextPeriod} className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 transition-colors">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" /></svg>
-                </button>
+                {(() => {
+                  const isAtMaxPeriod = targetPeriod && maxTargetPeriod && targetPeriod.year === maxTargetPeriod.year && targetPeriod.month === maxTargetPeriod.month && targetPeriod.period === maxTargetPeriod.period;
+                  return (
+                    <button onClick={handleNextPeriod} disabled={!!isAtMaxPeriod} className={`p-2 rounded-lg transition-colors ${isAtMaxPeriod ? 'text-gray-200' : 'text-gray-500 hover:bg-gray-100'}`}>
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" /></svg>
+                    </button>
+                  )
+                })()}
              </div>
              
              <div className="grid grid-cols-7 gap-1 sm:gap-2 mb-2">
@@ -638,15 +646,28 @@ export default function AvailabilityPage() {
                     key={day.toISOString()}
                     onClick={() => setSelectedDate(day)}
                     className={`
-                      aspect-square p-1 sm:p-2 flex flex-col items-center justify-center relative transition-all border-b-4
-                      ${isSelected ? 'border-black font-bold text-black' : 'border-transparent hover:bg-gray-50 text-gray-700'}
+                      aspect-square p-1 sm:p-2 flex flex-col items-center justify-start relative transition-all bg-white
                     `}
                   >
-                    <span className="text-sm">{day.getDate()}</span>
-                    {isCompleted && !isSelected && !cacheData.isUnavailable && (
-                       <span className="text-[10px] text-gray-500 mt-1 whitespace-nowrap overflow-hidden text-ellipsis max-w-full px-1">
-                         {cacheData.isFullDay ? "12-10PM" : `${cacheData.startTime.split(':')[0] > 12 ? cacheData.startTime.split(':')[0] - 12 : cacheData.startTime.split(':')[0]}:${cacheData.startTime.split(':')[1]}-${cacheData.endTime.split(':')[0] > 12 ? cacheData.endTime.split(':')[0] - 12 : cacheData.endTime.split(':')[0]}:${cacheData.endTime.split(':')[1]}`}
-                       </span>
+                    <div className={`w-8 h-8 flex items-center justify-center rounded-full flex-shrink-0 ${isSelected ? 'border-b-4 border-gray-800 font-bold' : ''}`}>
+                       <span className={`text-sm ${isSelected ? 'text-gray-800' : 'text-gray-700'}`}>{day.getDate()}</span>
+                    </div>
+                    {isCompleted && !cacheData.isUnavailable && (
+                       <div className="flex flex-col w-full mt-1 items-center gap-0.5">
+                         {cacheData.locations.map((loc: string) => {
+                           const startH = parseInt(cacheData.startTime.split(':')[0]);
+                           const startM = cacheData.startTime.split(':')[1];
+                           const endH = parseInt(cacheData.endTime.split(':')[0]);
+                           const endM = cacheData.endTime.split(':')[1];
+                           const fmtStart = `${startH > 12 ? startH - 12 : startH}:${startM}`;
+                           const fmtEnd = `${endH > 12 ? endH - 12 : endH}:${endM}`;
+                           return (
+                             <span key={loc} className={`text-[10px] font-bold whitespace-nowrap overflow-hidden text-ellipsis max-w-full px-1 ${getLocationTheme(loc).text}`}>
+                               {loc}: {fmtStart}-{fmtEnd}
+                             </span>
+                           );
+                         })}
+                       </div>
                     )}
                   </button>
                 )
@@ -664,7 +685,7 @@ export default function AvailabilityPage() {
                  handleFinalSubmit();
               }
             }} 
-            className="w-full max-w-xs bg-black hover:bg-gray-800 disabled:bg-gray-300 text-white font-bold py-3 rounded-xl transition-all text-base mb-12">
+            className="w-full max-w-xs bg-white hover:bg-gray-50 text-gray-800 shadow-md shadow-gray-200 font-bold py-3 rounded-xl transition-all border border-gray-100 text-base mb-12 disabled:opacity-50">
             {isSubmitting ? "Submitting..." : "Submit Availability"}
           </button>
 
