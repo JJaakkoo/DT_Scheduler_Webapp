@@ -78,6 +78,7 @@ export default function AvailabilityPage() {
   const [missingDates, setMissingDates] = useState<Date[]>([]);
   const [showMissingModal, setShowMissingModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [allSaved, setAllSaved] = useState(false);
 
   useEffect(() => {
     // Auth Check
@@ -298,6 +299,9 @@ export default function AvailabilityPage() {
     const currentIndex = validDates.findIndex(d => d.toDateString() === selectedDate.toDateString());
     if (currentIndex >= 0 && currentIndex < validDates.length - 1) {
       setSelectedDate(validDates[currentIndex + 1]);
+    } else if (currentIndex === validDates.length - 1) {
+      setAllSaved(true);
+      setSelectedDate(null);
     }
   };
 
@@ -338,6 +342,9 @@ export default function AvailabilityPage() {
     const currentIndex = validDates.findIndex(d => d.toDateString() === selectedDate.toDateString());
     if (currentIndex >= 0 && currentIndex < validDates.length - 1) {
       setSelectedDate(validDates[currentIndex + 1]);
+    } else if (currentIndex === validDates.length - 1) {
+      setAllSaved(true);
+      setSelectedDate(null);
     }
   };
 
@@ -490,10 +497,16 @@ export default function AvailabilityPage() {
           
           {/* AVAILABILITY FORM CARD */}
           <div className="w-full bg-white rounded-3xl shadow-xl p-6 sm:p-8 min-h-[300px] flex flex-col relative overflow-hidden transition-all duration-300">
-             {!selectedDate ? (
+             {allSaved ? (
+               <div className="flex-1 flex flex-col items-center justify-center text-green-500">
+                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-16 h-16 mb-4"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
+                 <p className="text-2xl font-bold text-gray-800 text-center">All availability saved.</p>
+                 <p className="text-gray-500 mt-2 font-medium text-center">You're good to submit.</p>
+               </div>
+             ) : !selectedDate ? (
                <div className="flex-1 flex flex-col items-center justify-center text-gray-400">
                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-16 h-16 mb-4 opacity-50"><path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5m-9-6h.008v.008H12v-.008ZM12 15h.008v.008H12V15Zm0 2.25h.008v.008H12v-.008ZM9.75 15h.008v.008H9.75V15Zm0 2.25h.008v.008H9.75v-.008ZM7.5 15h.008v.008H7.5V15Zm0 2.25h.008v.008H7.5v-.008Zm6.75-4.5h.008v.008h-.008v-.008Zm0 2.25h.008v.008h-.008V15Zm0 2.25h.008v.008h-.008v-.008Zm2.25-4.5h.008v.008H16.5v-.008Zm0 2.25h.008v.008H16.5V15Z" /></svg>
-                 <p className="text-lg font-medium">Please choose a day from the calendar below</p>
+                 <p className="text-lg font-medium text-center">Please choose a day from the calendar below</p>
                </div>
              ) : (
                <div className="flex flex-col w-full h-full">
@@ -644,12 +657,12 @@ export default function AvailabilityPage() {
                 return (
                   <button
                     key={day.toISOString()}
-                    onClick={() => setSelectedDate(day)}
+                    onClick={() => { setSelectedDate(day); setAllSaved(false); }}
                     className={`
                       aspect-square p-1 sm:p-2 flex flex-col items-center justify-start relative transition-all bg-white
                     `}
                   >
-                    <div className={`w-8 h-8 flex items-center justify-center rounded-full flex-shrink-0 ${isSelected ? 'border-b-4 border-gray-800 font-bold' : ''}`}>
+                    <div className={`w-8 h-8 flex items-center justify-center flex-shrink-0 ${isSelected ? 'border-2 rounded-lg border-gray-800 font-bold' : ''}`}>
                        <span className={`text-sm ${isSelected ? 'text-gray-800' : 'text-gray-700'}`}>{day.getDate()}</span>
                     </div>
                     {isCompleted && !cacheData.isUnavailable && (
