@@ -17,8 +17,8 @@ export async function getAvailableStaff() {
 
     const { data, error } = await adminSupabase
       .from('staff')
-      .select('id:staff_id, name')
-      .is('claimed_by', null)
+      .select('id, name')
+      .is('staff_id', null)
       .order('name');
 
     if (error) return { error: 'Failed to fetch staff list' };
@@ -41,7 +41,7 @@ export async function getCurrentUserRole() {
     const { data: staffData } = await adminSupabase
       .from('staff')
       .select('role')
-      .eq('claimed_by', user.id)
+      .eq('staff_id', user.id)
       .single();
 
     if (staffData) {
@@ -69,15 +69,15 @@ export async function requestClaim(staffId: string) {
     // 2. Check if staff exists and is unclaimed
     const { data: staffData, error: staffError } = await adminSupabase
       .from('staff')
-      .select('id:staff_id, claimed_by, temp_email, name')
-      .eq('staff_id', staffId)
+      .select('id, staff_id, temp_email, name')
+      .eq('id', staffId)
       .single();
 
     if (staffError || !staffData) {
       return { error: 'Staff member not found.' };
     }
 
-    if (staffData.claimed_by) {
+    if (staffData.staff_id) {
       return { error: 'This staff identity has already been claimed.' };
     }
 
@@ -93,7 +93,7 @@ export async function requestClaim(staffId: string) {
         claim_otp: otp,
         otp_expires_at: expiresAt.toISOString(),
       })
-      .eq('staff_id', staffData.id);
+      .eq('id', staffData.id);
 
     if (updateError) {
       console.error('Failed to update OTP:', updateError);
@@ -144,8 +144,8 @@ export async function verifyClaim(staffId: string, otp: string) {
     // 2. Query staff for matching ID and OTP
     const { data: staffData, error: staffError } = await adminSupabase
       .from('staff')
-      .select('id:staff_id, otp_expires_at, claimed_by, s_name, email')
-      .eq('staff_id', staffId)
+      .select('id, otp_expires_at, staff_id, s_name, email')
+      .eq('id', staffId)
       .eq('claim_otp', otp)
       .single();
 
@@ -153,7 +153,7 @@ export async function verifyClaim(staffId: string, otp: string) {
       return { error: 'Invalid verification code.' };
     }
 
-    if (staffData.claimed_by) {
+    if (staffData.staff_id) {
       return { error: 'This identity has already been claimed.' };
     }
 
@@ -166,13 +166,13 @@ export async function verifyClaim(staffId: string, otp: string) {
     const { error: claimError } = await adminSupabase
       .from('staff')
       .update({
-        claimed_by: user.id,
+        staff_id: user.id,
         email: user.email, // Optionally set their real email here
         claim_otp: null,
         otp_expires_at: null,
         role: 'staff', // Set their role to staff since they claimed the identity
       })
-      .eq('staff_id', staffData.id);
+      .eq('id', staffData.id);
 
     if (claimError) {
       console.error('Failed to claim identity:', claimError);
