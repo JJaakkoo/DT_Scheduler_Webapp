@@ -878,8 +878,8 @@ export default function AvailabilityPage() {
                            const startM = times.startTime.split(':')[1];
                            const endH = parseInt(times.endTime.split(':')[0]);
                            const endM = times.endTime.split(':')[1];
-                           const fmtStart = `${startH > 12 ? startH - 12 : startH}:${startM}`;
-                           const fmtEnd = `${endH > 12 ? endH - 12 : endH}:${endM}`;
+                           const fmtStart = `${startH.toString().padStart(2, '0')}:${startM}`;
+                           const fmtEnd = `${endH.toString().padStart(2, '0')}:${endM}`;
                            return (
                              <span key={loc} className={`text-[10px] font-bold whitespace-nowrap overflow-hidden text-ellipsis max-w-full px-1 ${getLocationTheme(loc).text}`}>
                                {loc.charAt(0)}: {fmtStart}-{fmtEnd}
@@ -946,8 +946,8 @@ export default function AvailabilityPage() {
                               const startM = locs[0].startTime.split(':')[1];
                               const endH = parseInt(locs[0].endTime.split(':')[0]);
                               const endM = locs[0].endTime.split(':')[1];
-                              const fmtStart = `${startH > 12 ? startH - 12 : startH}:${startM}${startH >= 12 ? 'PM' : 'AM'}`;
-                              const fmtEnd = `${endH > 12 ? endH - 12 : endH}:${endM}${endH >= 12 ? 'PM' : 'AM'}`;
+                              const fmtStart = `${startH.toString().padStart(2, '0')}:${startM}`;
+                              const fmtEnd = `${endH.toString().padStart(2, '0')}:${endM}`;
                               suffix = `: ${fmtStart}-${fmtEnd}`;
                            } else {
                               suffix = ": Available";
