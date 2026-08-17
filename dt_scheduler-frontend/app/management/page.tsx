@@ -281,14 +281,14 @@ function StaffRow({ staff, onSave }: { staff: any, onSave: () => void }) {
     <tr className="hover:bg-gray-50 transition-colors">
       <td className="px-3 py-3">
         {isEditing ? (
-          <input type="text" value={name} onChange={e => setName(e.target.value)} className="w-full min-w-[120px] p-1 border rounded text-[13px] focus:ring-1 focus:ring-black outline-none" />
+          <input type="text" value={name} onChange={e => setName(e.target.value)} className="w-full p-1 border rounded text-[13px] focus:ring-1 focus:ring-black outline-none" />
         ) : (
           <span className="font-medium text-gray-900">{staff.name || '-'}</span>
         )}
       </td>
       <td className="px-3 py-3">
         {isEditing ? (
-          <input type="text" value={tempEmail} onChange={e => setTempEmail(e.target.value)} className="w-full min-w-[160px] p-1 border rounded text-[13px] focus:ring-1 focus:ring-black outline-none" />
+          <input type="text" value={tempEmail} onChange={e => setTempEmail(e.target.value)} className="w-full p-1 border rounded text-[13px] focus:ring-1 focus:ring-black outline-none" />
         ) : (
           <span className="text-gray-500">{staff.temp_email || '-'}</span>
         )}
@@ -298,14 +298,14 @@ function StaffRow({ staff, onSave }: { staff: any, onSave: () => void }) {
       </td>
       <td className="px-3 py-3">
         {isEditing ? (
-          <input type="text" value={sName} onChange={e => setSName(e.target.value)} className="w-full min-w-[80px] p-1 border rounded text-[13px] focus:ring-1 focus:ring-black outline-none" />
+          <input type="text" value={sName} onChange={e => setSName(e.target.value)} className="w-full p-1 border rounded text-[13px] focus:ring-1 focus:ring-black outline-none" />
         ) : (
           <span>{staff.s_name || '-'}</span>
         )}
       </td>
       <td className="px-3 py-3">
         {isEditing ? (
-          <select value={role} onChange={e => setRole(e.target.value)} className="w-full min-w-[100px] p-1 border rounded text-[13px] focus:ring-1 focus:ring-black outline-none bg-white">
+          <select value={role} onChange={e => setRole(e.target.value)} className="w-full p-1 border rounded text-[13px] focus:ring-1 focus:ring-black outline-none bg-white">
             <option value="admin">Admin</option>
             <option value="manager">Manager</option>
             <option value="supervisor">Supervisor</option>
