@@ -172,8 +172,8 @@ export default function ManagementPage() {
             <h1 className="text-2xl font-bold text-gray-800">Staff Management</h1>
           </div>
           
-          <div className="overflow-x-auto w-full">
-            <table className="w-full text-left text-sm text-gray-600 border-collapse">
+          <div className="overflow-x-auto w-full pb-4">
+            <table className="w-full text-left text-[13px] text-gray-600 border-collapse whitespace-nowrap">
               <thead className="bg-gray-50 text-gray-700 text-xs uppercase border-b border-gray-200">
                 <tr>
                   <th className="px-4 py-3 font-medium cursor-pointer hover:bg-gray-100 transition-colors select-none" onClick={() => handleSort('name')}>
@@ -270,14 +270,14 @@ function StaffRow({ staff, onSave }: { staff: any, onSave: () => void }) {
     <tr className="hover:bg-gray-50 transition-colors">
       <td className="px-4 py-3">
         {isEditing ? (
-          <input type="text" value={name} onChange={e => setName(e.target.value)} className="w-full p-1 border rounded text-sm focus:ring-1 focus:ring-black outline-none" />
+          <input type="text" value={name} onChange={e => setName(e.target.value)} className="w-full min-w-[120px] p-1 border rounded text-[13px] focus:ring-1 focus:ring-black outline-none" />
         ) : (
           <span className="font-medium text-gray-900">{staff.name || '-'}</span>
         )}
       </td>
       <td className="px-4 py-3">
         {isEditing ? (
-          <input type="text" value={tempEmail} onChange={e => setTempEmail(e.target.value)} className="w-full p-1 border rounded text-sm focus:ring-1 focus:ring-black outline-none" />
+          <input type="text" value={tempEmail} onChange={e => setTempEmail(e.target.value)} className="w-full min-w-[160px] p-1 border rounded text-[13px] focus:ring-1 focus:ring-black outline-none" />
         ) : (
           <span className="text-gray-500">{staff.temp_email || '-'}</span>
         )}
@@ -287,14 +287,14 @@ function StaffRow({ staff, onSave }: { staff: any, onSave: () => void }) {
       </td>
       <td className="px-4 py-3">
         {isEditing ? (
-          <input type="text" value={sName} onChange={e => setSName(e.target.value)} className="w-full p-1 border rounded text-sm focus:ring-1 focus:ring-black outline-none" />
+          <input type="text" value={sName} onChange={e => setSName(e.target.value)} className="w-full min-w-[100px] p-1 border rounded text-[13px] focus:ring-1 focus:ring-black outline-none" />
         ) : (
           <span>{staff.s_name || '-'}</span>
         )}
       </td>
       <td className="px-4 py-3">
         {isEditing ? (
-          <select value={role} onChange={e => setRole(e.target.value)} className="w-full p-1 border rounded text-sm focus:ring-1 focus:ring-black outline-none bg-white">
+          <select value={role} onChange={e => setRole(e.target.value)} className="w-full min-w-[120px] p-1 border rounded text-[13px] focus:ring-1 focus:ring-black outline-none bg-white">
             <option value="admin">Admin</option>
             <option value="manager">Manager</option>
             <option value="supervisor">Supervisor</option>
@@ -322,15 +322,15 @@ function StaffRow({ staff, onSave }: { staff: any, onSave: () => void }) {
       <td className="px-4 py-3 text-right">
         {isEditing ? (
           <div className="flex items-center justify-end gap-2">
-            <button onClick={handleSave} disabled={isSaving} className="text-green-600 hover:text-green-800 text-xs font-medium disabled:opacity-50">
+            <button onClick={handleSave} disabled={isSaving} className="text-green-600 hover:text-green-800 text-xs font-medium disabled:opacity-50 whitespace-nowrap">
               {isSaving ? 'Saving...' : 'Save'}
             </button>
-            <button onClick={handleCancel} disabled={isSaving} className="text-gray-500 hover:text-gray-700 text-xs font-medium">
+            <button onClick={handleCancel} disabled={isSaving} className="text-gray-500 hover:text-gray-700 text-xs font-medium whitespace-nowrap">
               Cancel
             </button>
           </div>
         ) : (
-          <button onClick={() => setIsEditing(true)} className="text-blue-600 hover:text-blue-800 text-xs font-medium">
+          <button onClick={() => setIsEditing(true)} className="text-blue-600 hover:text-blue-800 text-xs font-medium whitespace-nowrap">
             Edit
           </button>
         )}

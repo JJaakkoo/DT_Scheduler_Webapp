@@ -57,11 +57,14 @@ export async function getStaffTableData() {
        }
     }
     
-    const { data: staff, error } = await adminSupabase.from('staff').select('*').order('created_at');
+    const { data: staff, error } = await adminSupabase
+      .from('staff')
+      .select('id, staff_id, name, temp_email, email, role, s_name, created_at, availability_ids')
+      .order('name');
     if (error) return { error: 'Failed to fetch staff' };
     
     // Collect all availability ids
-    const availIds = staff.flatMap(s => s.availability || []);
+    const availIds = staff.flatMap(s => s.availability_ids || []);
     
     let validAvailabilityIds = new Set<string>();
     if (availIds.length > 0) {
@@ -81,8 +84,8 @@ export async function getStaffTableData() {
     
     const formattedStaff = staff.map(s => {
         let hasCurrentAvailability = false;
-        if (s.availability && Array.isArray(s.availability)) {
-            hasCurrentAvailability = s.availability.some((id: string) => validAvailabilityIds.has(id));
+        if (s.availability_ids && Array.isArray(s.availability_ids)) {
+            hasCurrentAvailability = s.availability_ids.some((id: string) => validAvailabilityIds.has(id));
         }
         
         return {
@@ -93,7 +96,7 @@ export async function getStaffTableData() {
             created_at: s.created_at,
             s_name: s.s_name,
             role: s.role,
-            availabilityRaw: s.availability,
+            availabilityRaw: s.availability_ids,
             hasCurrentAvailability
         };
     });
@@ -149,15 +152,15 @@ export async function runAvailabilityBackfill() {
     
     for (const staffId in staffToAvail) {
        const ids = staffToAvail[staffId];
-       const { data: staffRec } = await adminSupabase.from('staff').select('availability').eq('id', staffId).single();
+       const { data: staffRec } = await adminSupabase.from('staff').select('availability_ids').eq('id', staffId).single();
        
-       let currentArr = staffRec?.availability || [];
+       let currentArr = staffRec?.availability_ids || [];
        if (!Array.isArray(currentArr)) currentArr = [];
        
        const newArr = [...new Set([...currentArr, ...ids])];
        
        if (newArr.length !== currentArr.length) {
-           await adminSupabase.from('staff').update({ availability: newArr }).eq('id', staffId);
+           await adminSupabase.from('staff').update({ availability_ids: newArr }).eq('id', staffId);
        }
     }
     

@@ -519,7 +519,7 @@ export default function AvailabilityPage() {
       });
       
       // 2. We need the custom `staff_id` from the `staff` table
-      const { data: userData, error: userError } = await supabase.from('staff').select('id, availability').eq('staff_id', (await supabase.auth.getUser()).data.user?.id).single();
+      const { data: userData, error: userError } = await supabase.from('staff').select('id, availability_ids').eq('staff_id', (await supabase.auth.getUser()).data.user?.id).single();
       
       if (userError || !userData) {
          alert("Could not find your staff record. Please contact the manager to get your account linked.");
@@ -542,10 +542,10 @@ export default function AvailabilityPage() {
          alert("Failed to submit availability. " + (upsertError?.message || ""));
       } else {
          // 4. Update the staff table's availability array
-         let currentAvail = Array.isArray(userData.availability) ? userData.availability : [];
+         let currentAvail = Array.isArray(userData.availability_ids) ? userData.availability_ids : [];
          if (!currentAvail.includes(upsertData.id)) {
              currentAvail.push(upsertData.id);
-             await supabase.from('staff').update({ availability: currentAvail }).eq('id', userData.id);
+             await supabase.from('staff').update({ availability_ids: currentAvail }).eq('id', userData.id);
          }
          alert("Availability successfully submitted!");
       }
