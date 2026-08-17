@@ -160,8 +160,8 @@ export default function ManagementPage() {
                <div className="text-gray-700 font-medium text-sm flex items-center gap-2 sm:gap-3">
                  <span className="truncate max-w-[180px] sm:max-w-[250px] lg:max-w-none">{email}</span>
                  {role === 'admin' && (
-                   <div className="font-medium text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-1.5 rounded-full flex items-center gap-1 sm:gap-2 bg-purple-100/80 text-purple-700">
-                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3 sm:w-4 sm:h-4 text-purple-600">
+                   <div className="font-medium text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-1.5 rounded-full flex items-center gap-1 sm:gap-2 bg-sky-50 text-sky-700 border border-sky-100/50">
+                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3 sm:w-4 sm:h-4 text-sky-600">
                        <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.562.562 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557l-4.204-3.602a.562.562 0 0 1 .321-.988l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z" />
                      </svg>
                      Admin
@@ -181,17 +181,17 @@ export default function ManagementPage() {
           <div className="flex border-b border-gray-100 mb-6 space-x-6">
             <button 
               onClick={() => setActiveTab('staff')}
-              className={`pb-3 text-[15px] font-semibold transition-colors relative ${activeTab === 'staff' ? 'text-blue-600' : 'text-gray-500 hover:text-gray-800'}`}
+              className={`pb-3 text-[15px] font-semibold transition-colors relative ${activeTab === 'staff' ? 'text-sky-500' : 'text-gray-500 hover:text-gray-800'}`}
             >
               Staff
-              {activeTab === 'staff' && <div className="absolute bottom-[-1px] left-0 right-0 h-[2px] bg-blue-600 rounded-t-full" />}
+              {activeTab === 'staff' && <div className="absolute bottom-[-1px] left-0 right-0 h-[2px] bg-sky-500 rounded-t-full" />}
             </button>
             <button 
               onClick={() => setActiveTab('scheduling')}
-              className={`pb-3 text-[15px] font-semibold transition-colors relative ${activeTab === 'scheduling' ? 'text-blue-600' : 'text-gray-500 hover:text-gray-800'}`}
+              className={`pb-3 text-[15px] font-semibold transition-colors relative ${activeTab === 'scheduling' ? 'text-sky-500' : 'text-gray-500 hover:text-gray-800'}`}
             >
               Scheduling
-              {activeTab === 'scheduling' && <div className="absolute bottom-[-1px] left-0 right-0 h-[2px] bg-blue-600 rounded-t-full" />}
+              {activeTab === 'scheduling' && <div className="absolute bottom-[-1px] left-0 right-0 h-[2px] bg-sky-500 rounded-t-full" />}
             </button>
           </div>
           
