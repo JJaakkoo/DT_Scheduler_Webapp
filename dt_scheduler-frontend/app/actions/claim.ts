@@ -100,7 +100,7 @@ export async function requestClaim(staffId: string) {
 
     // 5. Send Email via Resend
     const { error: emailError } = await resend.emails.send({
-      from: 'Dream Tea Nexus <noreply@dt-scheduler.com>', // Replace with your actual verified domain later if needed
+      from: 'Dream Tea Nexus <no-reply@dreamteanexus.ca>',
       to: [staffData.temp_email],
       subject: 'Verify your Dream Tea Nexus Account',
       html: `
