@@ -552,7 +552,23 @@ export default function AvailabilityPage() {
   if (!role) return null;
 
   return (
-    <main className="min-h-[100dvh] w-screen flex flex-col bg-[#c2e2f5] font-sans overflow-x-hidden overflow-y-auto">
+    <main className="min-h-[100dvh] w-screen flex flex-col bg-[#c2e2f5] font-sans overflow-x-hidden overflow-y-auto relative">
+      {role !== 'staff' && (
+        <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl">
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">Access Denied</h2>
+            <p className="text-gray-600 mb-6">Please link your account first.</p>
+            <div className="flex flex-col gap-3">
+              <Link href="/claim" className="w-full bg-[#8ab4f8] text-white hover:bg-blue-500 py-3 rounded-xl font-bold transition-colors">
+                Link Account
+              </Link>
+              <Link href="/dashboard" className="w-full bg-gray-100 text-gray-700 hover:bg-gray-200 py-3 rounded-xl font-bold transition-colors">
+                Return to Dashboard
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* HEADER */}
       <div className="w-full bg-white/90 backdrop-blur-md shadow-sm z-50 px-4 py-3 sm:px-8 flex justify-between items-center shrink-0">
@@ -565,7 +581,7 @@ export default function AvailabilityPage() {
             </button>
             {isNavOpen && (
               <div className="absolute top-full right-0 sm:right-auto sm:left-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50">
-                 {email && <div className="px-4 py-2 text-xs text-gray-500 border-b border-gray-100 mb-1 truncate block sm:hidden">{email}</div>}
+                 {/* Email moved to top left on mobile */}
                  <Link href="/dashboard" className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2 border-b border-gray-50 mb-1">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-gray-500"><path strokeLinecap="round" strokeLinejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" /></svg>
                     Dashboard
@@ -579,11 +595,11 @@ export default function AvailabilityPage() {
           </div>
           <div className="flex items-center gap-3">
              {email && (
-               <div className="text-gray-700 font-medium text-sm hidden sm:flex items-center gap-3">
-                 {email}
+               <div className="text-gray-700 font-medium text-sm flex items-center gap-2 sm:gap-3">
+                 <span className="truncate max-w-[120px] sm:max-w-[200px] lg:max-w-none">{email}</span>
                  {role === 'staff' && (
-                   <div className="text-gray-600 font-medium text-sm bg-gray-100/80 px-3 py-1.5 rounded-full flex items-center gap-2">
-                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-gray-500">
+                   <div className="text-gray-600 font-medium text-xs sm:text-sm bg-gray-100/80 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full flex items-center gap-1 sm:gap-2">
+                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500">
                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
                      </svg>
                      Linked
@@ -591,7 +607,7 @@ export default function AvailabilityPage() {
                  )}
                </div>
              )}
-             <div className="text-gray-600 font-medium text-sm bg-gray-100/80 px-3 py-1.5 rounded-full flex items-center gap-2">
+             <div className="text-gray-600 font-medium text-sm bg-gray-100/80 px-3 py-1.5 rounded-full hidden sm:flex items-center gap-2">
                Availability
              </div>
           </div>
