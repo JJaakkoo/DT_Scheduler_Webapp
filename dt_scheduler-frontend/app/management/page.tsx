@@ -172,30 +172,30 @@ export default function ManagementPage() {
             <h1 className="text-2xl font-bold text-gray-800">Staff Management</h1>
           </div>
           
-          <div className="overflow-x-auto w-full pb-4 -mx-6 px-6 sm:-mx-8 sm:px-8">
-            <table className="w-full min-w-max text-left text-[13px] text-gray-600 border-collapse whitespace-nowrap">
+          <div className="overflow-x-auto w-full pb-4">
+            <table className="w-full text-left text-[13px] text-gray-600 border-collapse whitespace-nowrap">
               <thead className="bg-gray-50 text-gray-700 text-xs uppercase border-b border-gray-200">
                 <tr>
-                  <th className="px-4 py-3 font-medium cursor-pointer hover:bg-gray-100 transition-colors select-none" onClick={() => handleSort('name')}>
+                  <th className="px-3 py-3 font-medium cursor-pointer hover:bg-gray-100 transition-colors select-none" onClick={() => handleSort('name')}>
                     <div className="flex items-center gap-1">Name {sortField === 'name' && (sortDirection === 'asc' ? '↑' : '↓')}</div>
                   </th>
-                  <th className="px-4 py-3 font-medium cursor-pointer hover:bg-gray-100 transition-colors select-none" onClick={() => handleSort('temp_email')}>
+                  <th className="px-3 py-3 font-medium cursor-pointer hover:bg-gray-100 transition-colors select-none" onClick={() => handleSort('temp_email')}>
                     <div className="flex items-center gap-1">Temp Email {sortField === 'temp_email' && (sortDirection === 'asc' ? '↑' : '↓')}</div>
                   </th>
-                  <th className="px-4 py-3 font-medium cursor-pointer hover:bg-gray-100 transition-colors select-none" onClick={() => handleSort('email')}>
+                  <th className="px-3 py-3 font-medium cursor-pointer hover:bg-gray-100 transition-colors select-none" onClick={() => handleSort('email')}>
                     <div className="flex items-center gap-1">Email {sortField === 'email' && (sortDirection === 'asc' ? '↑' : '↓')}</div>
                   </th>
-                  <th className="px-4 py-3 font-medium cursor-pointer hover:bg-gray-100 transition-colors select-none" onClick={() => handleSort('s_name')}>
+                  <th className="px-3 py-3 font-medium cursor-pointer hover:bg-gray-100 transition-colors select-none" onClick={() => handleSort('s_name')}>
                     <div className="flex items-center gap-1">S Name {sortField === 's_name' && (sortDirection === 'asc' ? '↑' : '↓')}</div>
                   </th>
-                  <th className="px-4 py-3 font-medium cursor-pointer hover:bg-gray-100 transition-colors select-none" onClick={() => handleSort('role')}>
+                  <th className="px-3 py-3 font-medium cursor-pointer hover:bg-gray-100 transition-colors select-none" onClick={() => handleSort('role')}>
                     <div className="flex items-center gap-1">Role {sortField === 'role' && (sortDirection === 'asc' ? '↑' : '↓')}</div>
                   </th>
-                  <th className="px-4 py-3 font-medium cursor-pointer hover:bg-gray-100 transition-colors select-none" onClick={() => handleSort('created_at')}>
+                  <th className="px-3 py-3 font-medium cursor-pointer hover:bg-gray-100 transition-colors select-none" onClick={() => handleSort('created_at')}>
                     <div className="flex items-center gap-1">Created At {sortField === 'created_at' && (sortDirection === 'asc' ? '↑' : '↓')}</div>
                   </th>
-                  <th className="px-4 py-3 font-medium">Availability</th>
-                  <th className="px-4 py-3 font-medium">Actions</th>
+                  <th className="px-3 py-3 font-medium">Availability</th>
+                  <th className="px-3 py-3 font-medium text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -268,54 +268,53 @@ function StaffRow({ staff, onSave }: { staff: any, onSave: () => void }) {
 
   return (
     <tr className="hover:bg-gray-50 transition-colors">
-      <td className="px-4 py-3">
+      <td className="px-3 py-3">
         {isEditing ? (
           <input type="text" value={name} onChange={e => setName(e.target.value)} className="w-full min-w-[120px] p-1 border rounded text-[13px] focus:ring-1 focus:ring-black outline-none" />
         ) : (
           <span className="font-medium text-gray-900">{staff.name || '-'}</span>
         )}
       </td>
-      <td className="px-4 py-3">
+      <td className="px-3 py-3">
         {isEditing ? (
           <input type="text" value={tempEmail} onChange={e => setTempEmail(e.target.value)} className="w-full min-w-[160px] p-1 border rounded text-[13px] focus:ring-1 focus:ring-black outline-none" />
         ) : (
           <span className="text-gray-500">{staff.temp_email || '-'}</span>
         )}
       </td>
-      <td className="px-4 py-3 text-gray-500">
+      <td className="px-3 py-3 text-gray-500">
         {staff.email || '-'}
       </td>
-      <td className="px-4 py-3">
+      <td className="px-3 py-3">
         {isEditing ? (
-          <input type="text" value={sName} onChange={e => setSName(e.target.value)} className="w-full min-w-[100px] p-1 border rounded text-[13px] focus:ring-1 focus:ring-black outline-none" />
+          <input type="text" value={sName} onChange={e => setSName(e.target.value)} className="w-full min-w-[80px] p-1 border rounded text-[13px] focus:ring-1 focus:ring-black outline-none" />
         ) : (
           <span>{staff.s_name || '-'}</span>
         )}
       </td>
-      <td className="px-4 py-3">
+      <td className="px-3 py-3">
         {isEditing ? (
-          <select value={role} onChange={e => setRole(e.target.value)} className="w-full min-w-[120px] p-1 border rounded text-[13px] focus:ring-1 focus:ring-black outline-none bg-white">
+          <select value={role} onChange={e => setRole(e.target.value)} className="w-full min-w-[100px] p-1 border rounded text-[13px] focus:ring-1 focus:ring-black outline-none bg-white">
             <option value="admin">Admin</option>
             <option value="manager">Manager</option>
             <option value="supervisor">Supervisor</option>
             <option value="assistant supervisor">Assistant Supervisor</option>
             <option value="staff">Staff</option>
-            <option value="guest">Guest</option>
             <option value="unclaimed">Unclaimed</option>
           </select>
         ) : (
           <span className="capitalize">{staff.role || '-'}</span>
         )}
       </td>
-      <td className="px-4 py-3 text-gray-500 text-xs">
+      <td className="px-3 py-3 text-gray-500 text-xs">
         {formatDate(staff.created_at)}
       </td>
-      <td className="px-4 py-3">
+      <td className="px-3 py-3">
         <span className={`text-[13px] font-medium whitespace-nowrap ${staff.statusColor} ${staff.isClickable ? 'cursor-pointer hover:underline' : ''}`}>
            {staff.statusText}
         </span>
       </td>
-      <td className="px-4 py-3 text-right">
+      <td className="px-3 py-3 text-right">
         {isEditing ? (
           <div className="flex items-center justify-end gap-2">
             <button onClick={handleSave} disabled={isSaving} className="text-green-600 hover:text-green-800 text-xs font-medium disabled:opacity-50 whitespace-nowrap">
