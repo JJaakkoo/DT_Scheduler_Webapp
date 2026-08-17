@@ -596,11 +596,11 @@ export default function AvailabilityPage() {
           <div className="flex items-center gap-3">
              {role === 'guest' ? (
                <div className="text-gray-700 font-medium text-sm flex items-center gap-2 sm:gap-3">
-                 <span className="truncate max-w-[120px] sm:max-w-[200px] lg:max-w-none">Guest Log In</span>
+                 <span className="truncate max-w-[180px] sm:max-w-[250px] lg:max-w-none">Guest Log In</span>
                </div>
              ) : email ? (
                <div className="text-gray-700 font-medium text-sm flex items-center gap-2 sm:gap-3">
-                 <span className="truncate max-w-[120px] sm:max-w-[200px] lg:max-w-none">{email}</span>
+                 <span className="truncate max-w-[180px] sm:max-w-[250px] lg:max-w-none">{email}</span>
                  {role === 'staff' && (
                    <div className="text-gray-600 font-medium text-xs sm:text-sm bg-gray-100/80 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full flex items-center gap-1 sm:gap-2">
                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500">

@@ -45,7 +45,7 @@ export default function ClaimAccountPage() {
       if (result.error) {
         setError(result.error);
       } else {
-        setSuccessMsg('Verification code sent! Please check your email.');
+        setSuccessMsg('Verification code sent! Please check the email you recieve your schedule from.');
         setStep(2);
       }
     } catch (err) {
@@ -55,18 +55,19 @@ export default function ClaimAccountPage() {
     }
   };
 
-  const handleVerify = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleVerify = async (e?: React.FormEvent, code?: string) => {
+    if (e) e.preventDefault();
     setError('');
     
-    if (!otp || otp.length !== 6) {
+    const currentOtp = code || otp;
+    if (!currentOtp || currentOtp.length !== 6) {
       setError('Please enter the 6-digit verification code.');
       return;
     }
 
     setIsLoading(true);
     try {
-      const result = await verifyClaim(staffId, otp);
+      const result = await verifyClaim(staffId, currentOtp);
       if (result.error) {
         setError(result.error);
       } else {
@@ -133,7 +134,13 @@ export default function ClaimAccountPage() {
                   placeholder="000000"
                   maxLength={6}
                   value={otp}
-                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, '');
+                    setOtp(val);
+                    if (val.length === 6) {
+                      handleVerify(undefined, val);
+                    }
+                  }}
                   className="input-nexus w-full max-w-[280px] text-center tracking-[0.5em] font-bold text-xl"
                 />
               )}
@@ -170,7 +177,7 @@ export default function ClaimAccountPage() {
                   onClick={() => { setStep(1); setOtp(''); setError(''); setSuccessMsg(''); }}
                   className="text-xs text-text-secondary hover:text-text-primary mt-4 font-medium transition-colors"
                 >
-                  Use a different email
+                  Select a different name
                 </button>
               )}
             </form>
