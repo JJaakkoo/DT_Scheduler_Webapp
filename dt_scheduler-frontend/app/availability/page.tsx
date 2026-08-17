@@ -559,7 +559,7 @@ export default function AvailabilityPage() {
             <h2 className="text-2xl font-bold text-gray-800 mb-2">Access Denied</h2>
             <p className="text-gray-600 mb-6">Please link your account first.</p>
             <div className="flex flex-col gap-3">
-              <Link href="/claim" className="w-full bg-[#8ab4f8] text-white hover:bg-blue-500 py-3 rounded-xl font-bold transition-colors">
+              <Link href="/claim" className="w-full bg-[#8ab4f8] text-white hover:opacity-90 py-3 rounded-xl font-bold transition-all shadow-sm">
                 Link Account
               </Link>
               <Link href="/dashboard" className="w-full bg-gray-100 text-gray-700 hover:bg-gray-200 py-3 rounded-xl font-bold transition-colors">
@@ -594,7 +594,11 @@ export default function AvailabilityPage() {
             )}
           </div>
           <div className="flex items-center gap-3">
-             {email && (
+             {role === 'guest' ? (
+               <div className="text-gray-700 font-medium text-sm flex items-center gap-2 sm:gap-3">
+                 <span className="truncate max-w-[120px] sm:max-w-[200px] lg:max-w-none">Guest Log In</span>
+               </div>
+             ) : email ? (
                <div className="text-gray-700 font-medium text-sm flex items-center gap-2 sm:gap-3">
                  <span className="truncate max-w-[120px] sm:max-w-[200px] lg:max-w-none">{email}</span>
                  {role === 'staff' && (
@@ -606,7 +610,7 @@ export default function AvailabilityPage() {
                    </div>
                  )}
                </div>
-             )}
+             ) : null}
              <div className="text-gray-600 font-medium text-sm bg-gray-100/80 px-3 py-1.5 rounded-full hidden sm:flex items-center gap-2">
                Availability
              </div>

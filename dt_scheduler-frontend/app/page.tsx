@@ -203,6 +203,11 @@ function HomeContent() {
     setSuccessMessage("");
     setIsLoading(true);
     
+    // Clear any stale role or token data so it doesn't conflict after redirect
+    localStorage.removeItem("nexus_role");
+    localStorage.removeItem("google_access_token");
+    document.cookie = "nexus_role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    
     try {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',

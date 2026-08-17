@@ -744,7 +744,11 @@ export default function Dashboard() {
           </div>
 
           <div className="flex items-center gap-3">
-            {email && (
+            {role === 'guest' ? (
+              <div className="text-gray-700 font-medium text-sm flex items-center gap-2 sm:gap-3">
+                <span className="truncate max-w-[120px] sm:max-w-[200px] lg:max-w-none">Guest Log In</span>
+              </div>
+            ) : email ? (
               <div className="text-gray-700 font-medium text-sm flex items-center gap-2 sm:gap-3">
                 <span className="truncate max-w-[120px] sm:max-w-[200px] lg:max-w-none">{email}</span>
                 {role === 'staff' && (
@@ -756,7 +760,7 @@ export default function Dashboard() {
                   </div>
                 )}
               </div>
-            )}
+            ) : null}
             <div className="text-gray-600 font-medium text-sm bg-gray-100/80 px-3 py-1.5 rounded-full hidden sm:flex items-center gap-2">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-gray-500">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
