@@ -289,7 +289,7 @@ export default function ManagementPage() {
               onClick={() => setActiveTab('scheduling')}
               className={`pb-3 text-[15px] font-semibold transition-colors relative ${activeTab === 'scheduling' ? 'text-sky-500' : 'text-gray-500 hover:text-gray-800'}`}
             >
-              Scheduling
+              Availability
               {activeTab === 'scheduling' && <div className="absolute bottom-[-1px] left-0 right-0 h-[2px] bg-sky-500 rounded-t-full" />}
             </button>
           </div>
