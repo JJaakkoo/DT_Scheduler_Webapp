@@ -37,6 +37,17 @@ export async function getCurrentUserRole() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { role: 'guest' };
 
+    // Check if they claimed a staff identity
+    const { data: staffData } = await adminSupabase
+      .from('staff')
+      .select('id')
+      .eq('claimed_by', user.id)
+      .single();
+
+    if (staffData) {
+      return { role: 'staff' };
+    }
+
     const { data, error } = await adminSupabase
       .from('users')
       .select('role')
