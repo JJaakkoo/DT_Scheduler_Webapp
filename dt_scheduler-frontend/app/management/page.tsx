@@ -194,7 +194,9 @@ export default function ManagementPage() {
                   <th className="px-3 py-3 font-medium cursor-pointer hover:bg-gray-100 transition-colors select-none" onClick={() => handleSort('created_at')}>
                     <div className="flex items-center gap-1">Created At {sortField === 'created_at' && (sortDirection === 'asc' ? '↑' : '↓')}</div>
                   </th>
-                  <th className="px-3 py-3 font-medium">Availability</th>
+                  <th className="px-3 py-3 font-medium cursor-pointer hover:bg-gray-100 transition-colors select-none" onClick={() => handleSort('statusText')}>
+                    <div className="flex items-center gap-1">Availability {sortField === 'statusText' && (sortDirection === 'asc' ? '↑' : '↓')}</div>
+                  </th>
                   <th className="px-3 py-3 font-medium text-right">Actions</th>
                 </tr>
               </thead>
