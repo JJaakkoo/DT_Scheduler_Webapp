@@ -702,6 +702,15 @@ export default function Dashboard() {
   return (
     <main className="min-h-[100dvh] w-screen flex flex-col bg-[#c2e2f5] font-sans overflow-x-hidden overflow-y-auto">
       
+      {role !== 'staff' && (
+         <div className="w-full bg-[#fce7bb] text-[#8a6826] px-4 py-3 text-sm font-medium flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 shadow-sm z-[60] border-b border-[#f3d396]">
+            <span>Your account is unlinked. Upgrade to Staff to unlock all features.</span>
+            <Link href="/claim" className="bg-[#8a6826] text-white hover:bg-[#73561d] px-4 py-1.5 rounded-full text-xs font-bold transition-colors">
+               Link Official Email
+            </Link>
+         </div>
+      )}
+
       <div className="w-full bg-white/90 backdrop-blur-md shadow-sm z-50 px-4 py-3 sm:px-8 flex justify-between items-center shrink-0">
         <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
           
