@@ -47,6 +47,8 @@ export default function ManagementPage() {
 
   const [staffData, setStaffData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [sortField, setSortField] = useState<string | null>(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -65,6 +67,27 @@ export default function ManagementPage() {
       fetchData();
     }
   }, [role]);
+
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const sortedStaffData = [...staffData].sort((a, b) => {
+    if (!sortField) return 0;
+    let valA = a[sortField] || '';
+    let valB = b[sortField] || '';
+    if (typeof valA === 'string') valA = valA.toLowerCase();
+    if (typeof valB === 'string') valB = valB.toLowerCase();
+    
+    if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
+    if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
+    return 0;
+  });
 
   if (!role) return null;
 
@@ -153,18 +176,30 @@ export default function ManagementPage() {
             <table className="w-full text-left text-sm text-gray-600 border-collapse">
               <thead className="bg-gray-50 text-gray-700 text-xs uppercase border-b border-gray-200">
                 <tr>
-                  <th className="px-4 py-3 font-medium">Name</th>
-                  <th className="px-4 py-3 font-medium">Temp Email</th>
-                  <th className="px-4 py-3 font-medium">Email</th>
-                  <th className="px-4 py-3 font-medium">S Name</th>
-                  <th className="px-4 py-3 font-medium">Role</th>
-                  <th className="px-4 py-3 font-medium">Created At</th>
+                  <th className="px-4 py-3 font-medium cursor-pointer hover:bg-gray-100 transition-colors select-none" onClick={() => handleSort('name')}>
+                    <div className="flex items-center gap-1">Name {sortField === 'name' && (sortDirection === 'asc' ? '↑' : '↓')}</div>
+                  </th>
+                  <th className="px-4 py-3 font-medium cursor-pointer hover:bg-gray-100 transition-colors select-none" onClick={() => handleSort('temp_email')}>
+                    <div className="flex items-center gap-1">Temp Email {sortField === 'temp_email' && (sortDirection === 'asc' ? '↑' : '↓')}</div>
+                  </th>
+                  <th className="px-4 py-3 font-medium cursor-pointer hover:bg-gray-100 transition-colors select-none" onClick={() => handleSort('email')}>
+                    <div className="flex items-center gap-1">Email {sortField === 'email' && (sortDirection === 'asc' ? '↑' : '↓')}</div>
+                  </th>
+                  <th className="px-4 py-3 font-medium cursor-pointer hover:bg-gray-100 transition-colors select-none" onClick={() => handleSort('s_name')}>
+                    <div className="flex items-center gap-1">S Name {sortField === 's_name' && (sortDirection === 'asc' ? '↑' : '↓')}</div>
+                  </th>
+                  <th className="px-4 py-3 font-medium cursor-pointer hover:bg-gray-100 transition-colors select-none" onClick={() => handleSort('role')}>
+                    <div className="flex items-center gap-1">Role {sortField === 'role' && (sortDirection === 'asc' ? '↑' : '↓')}</div>
+                  </th>
+                  <th className="px-4 py-3 font-medium cursor-pointer hover:bg-gray-100 transition-colors select-none" onClick={() => handleSort('created_at')}>
+                    <div className="flex items-center gap-1">Created At {sortField === 'created_at' && (sortDirection === 'asc' ? '↑' : '↓')}</div>
+                  </th>
                   <th className="px-4 py-3 font-medium">Availability</th>
                   <th className="px-4 py-3 font-medium">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {staffData.map(staff => (
+                {sortedStaffData.map(staff => (
                   <StaffRow key={staff.id} staff={staff} onSave={fetchData} />
                 ))}
                 {staffData.length === 0 && !isLoading && (
@@ -277,11 +312,11 @@ function StaffRow({ staff, onSave }: { staff: any, onSave: () => void }) {
       </td>
       <td className="px-4 py-3">
         {(!staff.availabilityRaw || staff.availabilityRaw.length === 0) ? (
-           <span className="text-red-500 text-xs font-medium bg-red-50 px-2 py-1 rounded">Availability not Submitted</span>
+           <span className="text-red-500 text-xs font-medium bg-red-50 px-2.5 py-1 rounded whitespace-nowrap">Availability not Submitted</span>
         ) : staff.hasCurrentAvailability ? (
-           <span className="text-green-600 text-xs font-medium bg-green-50 px-2 py-1 rounded cursor-pointer hover:bg-green-100 transition-colors">check availability</span>
+           <span className="text-green-600 text-xs font-medium bg-green-50 px-2.5 py-1 rounded cursor-pointer hover:bg-green-100 transition-colors whitespace-nowrap">check availability</span>
         ) : (
-           <span className="text-orange-500 text-xs font-medium bg-orange-50 px-2 py-1 rounded">Past Availability Only</span>
+           <span className="text-orange-500 text-xs font-medium bg-orange-50 px-2.5 py-1 rounded whitespace-nowrap">Past Availability Only</span>
         )}
       </td>
       <td className="px-4 py-3 text-right">

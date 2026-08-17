@@ -125,3 +125,45 @@ export async function updateStaffRecord(id: string, updates: { name?: string, te
     return { error: 'Unexpected error occurred' };
   }
 }
+
+export async function runAvailabilityBackfill() {
+  try {
+    const adminSupabase = createAdminClient();
+    const supabase = await createClient();
+    
+    // Verify admin
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: 'Unauthorized' };
+    
+    const { data: staffData } = await adminSupabase.from('staff').select('role').eq('staff_id', user.id).single();
+    if (!staffData || staffData.role !== 'admin') return { error: 'Unauthorized' };
+
+    const { data: availabilities, error: availError } = await adminSupabase.from('availability').select('id, staff_id');
+    if (availError) return { error: availError.message };
+    
+    const staffToAvail: Record<string, string[]> = {};
+    for (const avail of availabilities) {
+       if (!staffToAvail[avail.staff_id]) staffToAvail[avail.staff_id] = [];
+       staffToAvail[avail.staff_id].push(avail.id);
+    }
+    
+    for (const staffId in staffToAvail) {
+       const ids = staffToAvail[staffId];
+       const { data: staffRec } = await adminSupabase.from('staff').select('availability').eq('id', staffId).single();
+       
+       let currentArr = staffRec?.availability || [];
+       if (!Array.isArray(currentArr)) currentArr = [];
+       
+       const newArr = [...new Set([...currentArr, ...ids])];
+       
+       if (newArr.length !== currentArr.length) {
+           await adminSupabase.from('staff').update({ availability: newArr }).eq('id', staffId);
+       }
+    }
+    
+    return { success: true };
+  } catch (error) {
+    console.error(error);
+    return { error: 'Unexpected error occurred during backfill' };
+  }
+}

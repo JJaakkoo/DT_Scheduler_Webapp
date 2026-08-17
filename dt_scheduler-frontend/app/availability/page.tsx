@@ -519,7 +519,7 @@ export default function AvailabilityPage() {
       });
       
       // 2. We need the custom `staff_id` from the `staff` table
-      const { data: userData, error: userError } = await supabase.from('staff').select('id').eq('staff_id', (await supabase.auth.getUser()).data.user?.id).single();
+      const { data: userData, error: userError } = await supabase.from('staff').select('id, availability').eq('staff_id', (await supabase.auth.getUser()).data.user?.id).single();
       
       if (userError || !userData) {
          alert("Could not find your staff record. Please contact the manager to get your account linked.");
@@ -528,19 +528,25 @@ export default function AvailabilityPage() {
       }
       
       // 3. Upsert into `availability` table
-      const { error: upsertError } = await supabase.from('availability').upsert({
+      const { data: upsertData, error: upsertError } = await supabase.from('availability').upsert({
          staff_id: userData.id,
          year: targetPeriod.year,
          month: targetPeriod.month,
          period: targetPeriod.period,
          schedule_data: schedule_data,
          updated_at: new Date().toISOString()
-      }, { onConflict: 'staff_id, year, month, period' });
+      }, { onConflict: 'staff_id, year, month, period' }).select('id').single();
       
-      if (upsertError) {
+      if (upsertError || !upsertData) {
          console.error(upsertError);
-         alert("Failed to submit availability. " + upsertError.message);
+         alert("Failed to submit availability. " + (upsertError?.message || ""));
       } else {
+         // 4. Update the staff table's availability array
+         let currentAvail = Array.isArray(userData.availability) ? userData.availability : [];
+         if (!currentAvail.includes(upsertData.id)) {
+             currentAvail.push(upsertData.id);
+             await supabase.from('staff').update({ availability: currentAvail }).eq('id', userData.id);
+         }
          alert("Availability successfully submitted!");
       }
     } catch (err) {
