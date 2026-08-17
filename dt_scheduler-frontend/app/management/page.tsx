@@ -281,26 +281,26 @@ function StaffRow({ staff, onSave }: { staff: any, onSave: () => void }) {
     <tr className="hover:bg-gray-50 transition-colors">
       <td className="px-3 py-3">
         {isEditing ? (
-          <input type="text" value={name} onChange={e => setName(e.target.value)} className="w-full p-1 border rounded text-[13px] focus:ring-1 focus:ring-black outline-none" />
+          <input type="text" value={name} onChange={e => setName(e.target.value)} className="w-full max-w-[120px] p-1 border rounded text-[13px] focus:ring-1 focus:ring-black outline-none" />
         ) : (
-          <span className="font-medium text-gray-900">{staff.name || '-'}</span>
+          <div className="font-medium text-gray-900 max-w-[120px] truncate" title={staff.name}>{staff.name || '-'}</div>
         )}
       </td>
       <td className="px-3 py-3">
         {isEditing ? (
-          <input type="text" value={tempEmail} onChange={e => setTempEmail(e.target.value)} className="w-full p-1 border rounded text-[13px] focus:ring-1 focus:ring-black outline-none" />
+          <input type="text" value={tempEmail} onChange={e => setTempEmail(e.target.value)} className="w-full max-w-[120px] p-1 border rounded text-[13px] focus:ring-1 focus:ring-black outline-none" />
         ) : (
-          <span className="text-gray-500">{staff.temp_email || '-'}</span>
+          <div className="text-gray-500 max-w-[120px] truncate" title={staff.temp_email}>{staff.temp_email || '-'}</div>
         )}
       </td>
       <td className="px-3 py-3 text-gray-500">
-        {staff.email || '-'}
+        <div className="max-w-[120px] truncate" title={staff.email}>{staff.email || '-'}</div>
       </td>
       <td className="px-3 py-3">
         {isEditing ? (
-          <input type="text" value={sName} onChange={e => setSName(e.target.value)} className="w-full p-1 border rounded text-[13px] focus:ring-1 focus:ring-black outline-none" />
+          <input type="text" value={sName} onChange={e => setSName(e.target.value)} className="w-full max-w-[90px] p-1 border rounded text-[13px] focus:ring-1 focus:ring-black outline-none" />
         ) : (
-          <span>{staff.s_name || '-'}</span>
+          <div className="max-w-[90px] truncate" title={staff.s_name}>{staff.s_name || '-'}</div>
         )}
       </td>
       <td className="px-3 py-3">
