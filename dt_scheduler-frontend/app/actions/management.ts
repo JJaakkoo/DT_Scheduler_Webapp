@@ -161,3 +161,46 @@ export async function updateStaffRecord(id: string, updates: { name?: string, te
     return { error: 'Unexpected error occurred' };
   }
 }
+
+export async function getAvailabilityForPeriod(year: number, month: number, period: number) {
+  try {
+    const adminSupabase = createAdminClient();
+    const supabase = await createClient();
+    
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: 'Unauthorized' };
+    
+    const { data: staffData } = await adminSupabase.from('staff').select('role').eq('staff_id', user.id).single();
+    if (!staffData || staffData.role !== 'admin') return { error: 'Unauthorized' };
+    
+    const { data: availData, error: availError } = await adminSupabase
+      .from('availability')
+      .select('*')
+      .eq('year', year)
+      .eq('month', month)
+      .eq('period', period);
+      
+    if (availError) return { error: availError.message };
+    
+    const { data: allStaff, error: staffError } = await adminSupabase
+      .from('staff')
+      .select('id, name, s_name');
+      
+    if (staffError) return { error: staffError.message };
+    
+    const staffMap: Record<string, any> = {};
+    for (const s of allStaff) {
+       staffMap[s.id] = s;
+    }
+    
+    const formatted = availData.map(a => ({
+       ...a,
+       staff: staffMap[a.staff_id] || { name: 'Unknown', s_name: 'Unknown' }
+    }));
+    
+    return { availability: formatted };
+  } catch (error) {
+    console.error(error);
+    return { error: 'Unexpected error occurred' };
+  }
+}
