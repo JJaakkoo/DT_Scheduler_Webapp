@@ -206,7 +206,7 @@ export default function ManagementPage() {
                   <th className="px-3 py-3 font-medium cursor-pointer hover:bg-gray-100 transition-colors select-none" onClick={() => handleSort('statusText')}>
                     <div className="flex items-center gap-1">Availability {sortField === 'statusText' && (sortDirection === 'asc' ? '↑' : '↓')}</div>
                   </th>
-                  <th className="px-3 py-3 font-medium text-right">Actions</th>
+                  <th className="px-3 py-3 font-medium text-right w-[140px]">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -305,7 +305,7 @@ function StaffRow({ staff, onSave }: { staff: any, onSave: () => void }) {
       </td>
       <td className="px-3 py-3">
         {isEditing ? (
-          <select value={role} onChange={e => setRole(e.target.value)} className="w-full p-1 border rounded text-[13px] focus:ring-1 focus:ring-black outline-none bg-white">
+          <select value={role} onChange={e => setRole(e.target.value)} className="w-full min-w-[110px] p-1 border rounded text-[13px] focus:ring-1 focus:ring-black outline-none bg-white">
             <option value="admin">Admin</option>
             <option value="manager">Manager</option>
             <option value="supervisor">Supervisor</option>
@@ -325,7 +325,7 @@ function StaffRow({ staff, onSave }: { staff: any, onSave: () => void }) {
            {staff.statusText}
         </span>
       </td>
-      <td className="px-3 py-3 text-right">
+      <td className="px-3 py-3 text-right w-[140px]">
         {isEditing ? (
           <div className="flex items-center justify-end gap-2">
             <button onClick={handleSave} disabled={isSaving} className="text-green-600 hover:text-green-800 text-xs font-medium disabled:opacity-50 whitespace-nowrap">
