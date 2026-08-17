@@ -45,6 +45,27 @@ export default function ManagementPage() {
     router.refresh();
   };
 
+  const [staffData, setStaffData] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchData = async () => {
+    setIsLoading(true);
+    const { getStaffTableData } = await import('../actions/management');
+    const { staff, error } = await getStaffTableData();
+    if (staff) {
+      setStaffData(staff);
+    } else {
+      console.error(error);
+    }
+    setIsLoading(false);
+  };
+
+  useEffect(() => {
+    if (role === 'admin') {
+      fetchData();
+    }
+  }, [role]);
+
   if (!role) return null;
 
   return (
@@ -122,18 +143,163 @@ export default function ManagementPage() {
         </div>
       </div>
 
-      <div className="flex-1 w-full flex flex-col items-center py-6 px-4 sm:px-8">
-        <div className="w-full max-w-[850px] flex flex-col items-center gap-8 relative z-10 my-auto">
-          <div className="w-full bg-white rounded-3xl shadow-xl p-6 sm:p-12 min-h-[400px] flex flex-col relative overflow-hidden transition-all duration-300 items-center justify-center">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1} stroke="currentColor" className="w-24 h-24 text-gray-300 mb-6">
-               <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.99l1.005.828c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z" />
-               <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-            </svg>
-            <h1 className="text-3xl font-bold text-gray-800 mb-2 text-center">Management Area</h1>
-            <p className="text-gray-500 text-center max-w-sm">This page is currently under construction. Future administrative tools will appear here.</p>
+      <div className="flex-1 w-full flex flex-col items-center py-6 px-4 sm:px-8 max-w-7xl mx-auto">
+        <div className="w-full bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8 flex flex-col relative overflow-hidden transition-all duration-300">
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-2xl font-bold text-gray-800">Staff Management</h1>
+          </div>
+          
+          <div className="overflow-x-auto w-full">
+            <table className="w-full text-left text-sm text-gray-600 border-collapse">
+              <thead className="bg-gray-50 text-gray-700 text-xs uppercase border-b border-gray-200">
+                <tr>
+                  <th className="px-4 py-3 font-medium">Name</th>
+                  <th className="px-4 py-3 font-medium">Temp Email</th>
+                  <th className="px-4 py-3 font-medium">Email</th>
+                  <th className="px-4 py-3 font-medium">S Name</th>
+                  <th className="px-4 py-3 font-medium">Role</th>
+                  <th className="px-4 py-3 font-medium">Created At</th>
+                  <th className="px-4 py-3 font-medium">Availability</th>
+                  <th className="px-4 py-3 font-medium">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {staffData.map(staff => (
+                  <StaffRow key={staff.id} staff={staff} onSave={fetchData} />
+                ))}
+                {staffData.length === 0 && !isLoading && (
+                  <tr>
+                    <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
+                      No staff records found.
+                    </td>
+                  </tr>
+                )}
+                {isLoading && (
+                  <tr>
+                    <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
+                      Loading staff data...
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
     </main>
+  );
+}
+
+function StaffRow({ staff, onSave }: { staff: any, onSave: () => void }) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  
+  const [name, setName] = useState(staff.name || '');
+  const [tempEmail, setTempEmail] = useState(staff.temp_email || '');
+  const [sName, setSName] = useState(staff.s_name || '');
+  const [role, setRole] = useState(staff.role || '');
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    const { updateStaffRecord } = await import('../actions/management');
+    const { success, error } = await updateStaffRecord(staff.id, {
+      name,
+      temp_email: tempEmail,
+      s_name: sName,
+      role
+    });
+    
+    setIsSaving(false);
+    if (success) {
+      setIsEditing(false);
+      onSave();
+    } else {
+      alert("Failed to save: " + error);
+    }
+  };
+
+  const handleCancel = () => {
+    setName(staff.name || '');
+    setTempEmail(staff.temp_email || '');
+    setSName(staff.s_name || '');
+    setRole(staff.role || '');
+    setIsEditing(false);
+  };
+
+  const formatDate = (dateString: string) => {
+    if (!dateString) return '';
+    return new Date(dateString).toLocaleDateString();
+  };
+
+  return (
+    <tr className="hover:bg-gray-50 transition-colors">
+      <td className="px-4 py-3">
+        {isEditing ? (
+          <input type="text" value={name} onChange={e => setName(e.target.value)} className="w-full p-1 border rounded text-sm focus:ring-1 focus:ring-black outline-none" />
+        ) : (
+          <span className="font-medium text-gray-900">{staff.name || '-'}</span>
+        )}
+      </td>
+      <td className="px-4 py-3">
+        {isEditing ? (
+          <input type="text" value={tempEmail} onChange={e => setTempEmail(e.target.value)} className="w-full p-1 border rounded text-sm focus:ring-1 focus:ring-black outline-none" />
+        ) : (
+          <span className="text-gray-500">{staff.temp_email || '-'}</span>
+        )}
+      </td>
+      <td className="px-4 py-3 text-gray-500">
+        {staff.email || '-'}
+      </td>
+      <td className="px-4 py-3">
+        {isEditing ? (
+          <input type="text" value={sName} onChange={e => setSName(e.target.value)} className="w-full p-1 border rounded text-sm focus:ring-1 focus:ring-black outline-none" />
+        ) : (
+          <span>{staff.s_name || '-'}</span>
+        )}
+      </td>
+      <td className="px-4 py-3">
+        {isEditing ? (
+          <select value={role} onChange={e => setRole(e.target.value)} className="w-full p-1 border rounded text-sm focus:ring-1 focus:ring-black outline-none bg-white">
+            <option value="admin">Admin</option>
+            <option value="manager">Manager</option>
+            <option value="supervisor">Supervisor</option>
+            <option value="assistant supervisor">Assistant Supervisor</option>
+            <option value="staff">Staff</option>
+            <option value="guest">Guest</option>
+            <option value="unclaimed">Unclaimed</option>
+          </select>
+        ) : (
+          <span className="capitalize">{staff.role || '-'}</span>
+        )}
+      </td>
+      <td className="px-4 py-3 text-gray-500 text-xs">
+        {formatDate(staff.created_at)}
+      </td>
+      <td className="px-4 py-3">
+        {(!staff.availabilityRaw || staff.availabilityRaw.length === 0) ? (
+           <span className="text-red-500 text-xs font-medium bg-red-50 px-2 py-1 rounded">Availability not Submitted</span>
+        ) : staff.hasCurrentAvailability ? (
+           <span className="text-green-600 text-xs font-medium bg-green-50 px-2 py-1 rounded cursor-pointer hover:bg-green-100 transition-colors">check availability</span>
+        ) : (
+           <span className="text-orange-500 text-xs font-medium bg-orange-50 px-2 py-1 rounded">Past Availability Only</span>
+        )}
+      </td>
+      <td className="px-4 py-3 text-right">
+        {isEditing ? (
+          <div className="flex items-center justify-end gap-2">
+            <button onClick={handleSave} disabled={isSaving} className="text-green-600 hover:text-green-800 text-xs font-medium disabled:opacity-50">
+              {isSaving ? 'Saving...' : 'Save'}
+            </button>
+            <button onClick={handleCancel} disabled={isSaving} className="text-gray-500 hover:text-gray-700 text-xs font-medium">
+              Cancel
+            </button>
+          </div>
+        ) : (
+          <button onClick={() => setIsEditing(true)} className="text-blue-600 hover:text-blue-800 text-xs font-medium">
+            Edit
+          </button>
+        )}
+      </td>
+    </tr>
   );
 }

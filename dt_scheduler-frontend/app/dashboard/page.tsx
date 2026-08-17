@@ -368,6 +368,15 @@ const LocationCalendar = ({ activeQuery, masterShifts: initialMasterShifts, sear
   );
 };
 
+// Types
+type SchedulePeriod = {
+  year: number;
+  month: number;
+  period: number;
+};
+
+const STAFF_ROLES = ['staff', 'admin', 'manager', 'supervisor', 'assistant supervisor'];
+
 export default function Dashboard() {
   const supabase = createClient();
   const router = useRouter();
@@ -620,7 +629,7 @@ export default function Dashboard() {
       // --- TOKEN LOGIC ENGINE ---
       if (data.sync_status === "TOKEN_REQUIRED" || data.sync_status === "TOKEN_EXPIRED") {
         const client = (window as any).googleTokenClient;
-        if (client && (role === "staff" || role === "admin")) {
+        if (client && STAFF_ROLES.includes(role || '')) {
            setAuthError("Schedule needs updating! Please link your Google account to sync the latest version from Jacky.");
            client.requestAccessToken(); // Pops open the Google Window!
         }
@@ -708,7 +717,7 @@ export default function Dashboard() {
   return (
     <main className="min-h-[100dvh] w-screen flex flex-col bg-[#c2e2f5] font-sans overflow-x-hidden overflow-y-auto">
       
-      {role !== 'staff' && role !== 'admin' && role !== 'guest' && (
+      {!STAFF_ROLES.includes(role || '') && role !== 'guest' && (
          <div className="w-full bg-[#fce7bb] text-[#8a6826] px-4 py-3 text-sm font-medium flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 shadow-sm z-[60] border-b border-[#f3d396]">
             <span>Your account is not linked.</span>
             <Link href="/claim" className="bg-[#8a6826] text-white hover:bg-[#73561d] px-4 py-1.5 rounded-full text-xs font-bold transition-colors">
@@ -765,7 +774,7 @@ export default function Dashboard() {
             ) : email ? (
               <div className="text-gray-700 font-medium text-sm flex items-center gap-2 sm:gap-3">
                 <span className="truncate max-w-[180px] sm:max-w-[250px] lg:max-w-none">{email}</span>
-                {(role === 'staff' || role === 'admin') && (
+                {STAFF_ROLES.includes(role || '') && (
                   <div className={`font-medium text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-1.5 rounded-full flex items-center gap-1 sm:gap-2 ${role === 'admin' ? 'bg-purple-100/80 text-purple-700' : 'bg-gray-100/80 text-gray-600'}`}>
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className={`w-3 h-3 sm:w-4 sm:h-4 ${role === 'admin' ? 'text-purple-600' : 'text-gray-500'}`}>
                       {role === 'admin' ? (

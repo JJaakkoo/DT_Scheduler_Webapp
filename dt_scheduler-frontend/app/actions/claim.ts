@@ -170,7 +170,7 @@ export async function verifyClaim(staffId: string, otp: string) {
         email: user.email, // Optionally set their real email here
         claim_otp: null,
         otp_expires_at: null,
-        role: staffData.role === 'admin' ? 'admin' : 'staff', // Preserve admin role if they already have it
+        role: ['admin', 'manager', 'supervisor', 'assistant supervisor'].includes(staffData.role) ? staffData.role : 'staff', // Preserve admin/manager roles if they already have it
       })
       .eq('id', staffData.id);
 
