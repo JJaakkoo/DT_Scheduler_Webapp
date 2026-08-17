@@ -46,6 +46,7 @@ export default function ManagementPage() {
   };
 
   const [staffData, setStaffData] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState<'staff' | 'scheduling'>('staff');
   const [isLoading, setIsLoading] = useState(true);
   const [sortField, setSortField] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
@@ -177,11 +178,25 @@ export default function ManagementPage() {
 
       <div className="flex-1 w-full flex flex-col items-center py-6 px-4 sm:px-8 max-w-7xl mx-auto">
         <div className="w-full bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8 flex flex-col relative overflow-hidden transition-all duration-300">
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-bold text-gray-800">Staff Management</h1>
+          <div className="flex border-b border-gray-100 mb-6 space-x-6">
+            <button 
+              onClick={() => setActiveTab('staff')}
+              className={`pb-3 text-[15px] font-semibold transition-colors relative ${activeTab === 'staff' ? 'text-blue-600' : 'text-gray-500 hover:text-gray-800'}`}
+            >
+              Staff
+              {activeTab === 'staff' && <div className="absolute bottom-[-1px] left-0 right-0 h-[2px] bg-blue-600 rounded-t-full" />}
+            </button>
+            <button 
+              onClick={() => setActiveTab('scheduling')}
+              className={`pb-3 text-[15px] font-semibold transition-colors relative ${activeTab === 'scheduling' ? 'text-blue-600' : 'text-gray-500 hover:text-gray-800'}`}
+            >
+              Scheduling
+              {activeTab === 'scheduling' && <div className="absolute bottom-[-1px] left-0 right-0 h-[2px] bg-blue-600 rounded-t-full" />}
+            </button>
           </div>
           
-          <div className="overflow-x-auto w-full pb-4">
+          {activeTab === 'staff' && (
+            <div className="overflow-x-auto w-full pb-4">
             <table className="w-full text-left text-[13px] text-gray-600 border-collapse whitespace-nowrap">
               <thead className="bg-gray-50 text-gray-700 text-xs uppercase border-b border-gray-200">
                 <tr>
@@ -230,6 +245,13 @@ export default function ManagementPage() {
               </tbody>
             </table>
           </div>
+          )}
+          
+          {activeTab === 'scheduling' && (
+            <div className="w-full h-48 flex items-center justify-center text-gray-400 font-medium border-2 border-dashed border-gray-100 rounded-xl">
+               Scheduling coming soon
+            </div>
+          )}
         </div>
       </div>
     </main>
