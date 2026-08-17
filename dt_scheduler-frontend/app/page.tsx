@@ -370,18 +370,6 @@ function HomeContent() {
                   </svg>
                   Sign in as Guest
                 </button>
-
-                <Link href="/claim" className="w-full max-w-[280px] mt-2">
-                  <button 
-                    type="button"
-                    className="w-full text-xs text-text-secondary font-medium hover:text-dreamtea-blue transition-colors cursor-pointer bg-transparent border-none p-0 flex items-center justify-center gap-1"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
-                    </svg>
-                    Link Official Staff Email
-                  </button>
-                </Link>
               </>
             )}
 

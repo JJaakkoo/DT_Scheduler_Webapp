@@ -6,11 +6,41 @@ import { Resend } from 'resend';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-export async function requestClaim(email: string) {
+export async function getAvailableEmails() {
   try {
+    const supabase = await createClient();
     const adminSupabase = createAdminClient();
 
-    // 1. Check if email exists in whitelisted_emails and is unclaimed
+    // Must be logged in
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) return { error: 'Unauthorized' };
+
+    const { data, error } = await adminSupabase
+      .from('whitelisted_emails')
+      .select('email')
+      .is('claimed_by', null)
+      .order('email');
+
+    if (error) return { error: 'Failed to fetch emails' };
+    return { emails: data.map(d => d.email) };
+  } catch (error) {
+    console.error(error);
+    return { error: 'Unexpected error occurred' };
+  }
+}
+
+export async function requestClaim(email: string) {
+  try {
+    const supabase = await createClient();
+    const adminSupabase = createAdminClient();
+
+    // 1. Check if user is logged in
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return { error: 'You must be logged in to request an account claim.' };
+    }
+
+    // 2. Check if email exists in whitelisted_emails and is unclaimed
     const { data: whitelistData, error: whitelistError } = await adminSupabase
       .from('whitelisted_emails')
       .select('id, claimed_by')
