@@ -24,17 +24,6 @@ export async function getStaffTableData() {
       .order('period', { ascending: false })
       .limit(1);
 
-    let targetYear, targetMonth, targetPeriod;
-    if (schedError || !schedData || schedData.length === 0) {
-       const now = new Date();
-    const { data: schedData, error: schedError } = await adminSupabase
-      .from('schedules')
-      .select('year, month, period')
-      .order('year', { ascending: false })
-      .order('month', { ascending: false })
-      .order('period', { ascending: false })
-      .limit(1);
-
     let releasedYear: number;
     let releasedMonth: number;
     let releasedPeriod: number;
