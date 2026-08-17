@@ -89,9 +89,12 @@ export async function getStaffTableData() {
             .filter(Boolean)
             .sort((a: any, b: any) => getScore(b.year, b.month, b.period) - getScore(a.year, a.month, a.period));
             
+        let statusScore = 0;
+        
         if (staffAvails.length > 0) {
             const latest = staffAvails[0];
             const availScore = getScore(latest.year, latest.month, latest.period);
+            statusScore = availScore;
             
             let hasAvailableShift = false;
             if (latest.schedule_data) {
@@ -126,7 +129,8 @@ export async function getStaffTableData() {
             role: s.role,
             statusText,
             statusColor,
-            isClickable
+            isClickable,
+            availabilityScore: statusScore
         };
     });
     

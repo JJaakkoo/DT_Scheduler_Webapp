@@ -79,6 +79,15 @@ export default function ManagementPage() {
 
   const sortedStaffData = [...staffData].sort((a, b) => {
     if (!sortField) return 0;
+    
+    if (sortField === 'statusText') {
+       const scoreA = a.availabilityScore || 0;
+       const scoreB = b.availabilityScore || 0;
+       if (scoreA < scoreB) return sortDirection === 'asc' ? -1 : 1;
+       if (scoreA > scoreB) return sortDirection === 'asc' ? 1 : -1;
+       return 0;
+    }
+    
     let valA = a[sortField] || '';
     let valB = b[sortField] || '';
     if (typeof valA === 'string') valA = valA.toLowerCase();
