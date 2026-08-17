@@ -51,6 +51,61 @@ export default function ManagementPage() {
   const [sortField, setSortField] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
+  // Calendar State
+  const [targetPeriod, setTargetPeriod] = useState<{ year: number, month: number, period: number } | null>(null);
+  const [maxTargetPeriod, setMaxTargetPeriod] = useState<{ year: number, month: number, period: number } | null>(null);
+  const [validDates, setValidDates] = useState<Date[]>([]);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+
+  const calculateValidDates = (y: number, m: number, p: number) => {
+    const dates: Date[] = [];
+    if (p === 1) {
+      for (let i = 1; i <= 15; i++) dates.push(new Date(y, m - 1, i));
+    } else {
+      const lastDay = new Date(y, m, 0).getDate();
+      for (let i = 16; i <= lastDay; i++) dates.push(new Date(y, m - 1, i));
+    }
+    setValidDates(dates);
+  };
+
+  const handlePrevPeriod = () => {
+    if (!targetPeriod) return;
+    let { year, month, period } = targetPeriod;
+    if (period === 2) {
+      period = 1;
+    } else {
+      period = 2;
+      month -= 1;
+      if (month < 1) {
+        month = 12;
+        year -= 1;
+      }
+    }
+    setTargetPeriod({ year, month, period });
+    calculateValidDates(year, month, period);
+    setSelectedDate(null);
+  };
+
+  const handleNextPeriod = () => {
+    if (!targetPeriod) return;
+    if (maxTargetPeriod && targetPeriod.year === maxTargetPeriod.year && targetPeriod.month === maxTargetPeriod.month && targetPeriod.period === maxTargetPeriod.period) return;
+    
+    let { year, month, period } = targetPeriod;
+    if (period === 1) {
+      period = 2;
+    } else {
+      period = 1;
+      month += 1;
+      if (month > 12) {
+        month = 1;
+        year += 1;
+      }
+    }
+    setTargetPeriod({ year, month, period });
+    calculateValidDates(year, month, period);
+    setSelectedDate(null);
+  };
+
   const fetchData = async () => {
     setIsLoading(true);
     const { getStaffTableData } = await import('../actions/management');
@@ -60,6 +115,50 @@ export default function ManagementPage() {
     } else {
       console.error(error);
     }
+    
+    // Fetch schedule boundary data
+    const { data: schedData, error: schedError } = await supabase
+      .from('schedules')
+      .select('year, month, period')
+      .order('year', { ascending: false })
+      .order('month', { ascending: false })
+      .order('period', { ascending: false })
+      .limit(1);
+
+    let targetYear, targetMonth, targetPeriodNum;
+    if (schedError || !schedData || schedData.length === 0) {
+       const now = new Date();
+       targetYear = now.getFullYear();
+       targetMonth = now.getMonth() + 1;
+       targetPeriodNum = now.getDate() <= 15 ? 1 : 2;
+       
+       targetPeriodNum = targetPeriodNum === 1 ? 2 : 1;
+       if (targetPeriodNum === 1) {
+         targetMonth += 1;
+         if (targetMonth > 12) {
+           targetMonth = 1;
+           targetYear += 1;
+         }
+       }
+    } else {
+       const latest = schedData[0];
+       targetYear = latest.year;
+       targetMonth = latest.month;
+       targetPeriodNum = latest.period === 1 ? 2 : 1;
+       
+       if (targetPeriodNum === 1) {
+         targetMonth += 1;
+         if (targetMonth > 12) {
+           targetMonth = 1;
+           targetYear += 1;
+         }
+       }
+    }
+
+    setTargetPeriod({ year: targetYear, month: targetMonth, period: targetPeriodNum });
+    setMaxTargetPeriod({ year: targetYear, month: targetMonth, period: targetPeriodNum });
+    calculateValidDates(targetYear, targetMonth, targetPeriodNum);
+    
     setIsLoading(false);
   };
 
@@ -248,8 +347,77 @@ export default function ManagementPage() {
           )}
           
           {activeTab === 'scheduling' && (
-            <div className="w-full h-48 flex items-center justify-center text-gray-400 font-medium border-2 border-dashed border-gray-100 rounded-xl">
-               Scheduling coming soon
+            <div className="w-full flex flex-col gap-6">
+              
+              {/* TOP CARD */}
+              <div className="w-full bg-white rounded-3xl shadow-[0_4px_24px_rgba(0,0,0,0.05)] border border-gray-100 p-6 sm:p-8 min-h-[300px] flex flex-col relative overflow-hidden transition-all duration-300">
+                 {!selectedDate ? (
+                   <div className="flex-1 flex flex-col items-center justify-center text-gray-400">
+                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-16 h-16 mb-4 opacity-50"><path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5m-9-6h.008v.008H12v-.008ZM12 15h.008v.008H12V15Zm0 2.25h.008v.008H12v-.008ZM9.75 15h.008v.008H9.75V15Zm0 2.25h.008v.008H9.75v-.008ZM7.5 15h.008v.008H7.5V15Zm0 2.25h.008v.008H7.5v-.008Zm6.75-4.5h.008v.008h-.008v-.008Zm0 2.25h.008v.008h-.008V15Zm0 2.25h.008v.008h-.008v-.008Zm2.25-4.5h.008v.008H16.5v-.008Zm0 2.25h.008v.008H16.5V15Z" /></svg>
+                     <p className="text-lg font-medium text-center">Please choose a day from the calendar below</p>
+                   </div>
+                 ) : (
+                   <div className="flex-1 flex flex-col items-center justify-center">
+                      <h2 className="text-2xl font-bold text-gray-800 mb-2">
+                        {selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                      </h2>
+                      <p className="text-gray-500 font-medium">Day view placeholder</p>
+                   </div>
+                 )}
+              </div>
+
+              {/* BOTTOM CARD: CALENDAR */}
+              <div className="w-full bg-white rounded-3xl shadow-[0_4px_24px_rgba(0,0,0,0.05)] border border-gray-100 p-6 sm:p-8 flex flex-col">
+                  <div className="flex items-center justify-between mb-6">
+                    <button onClick={handlePrevPeriod} className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 transition-colors">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" /></svg>
+                    </button>
+                    {targetPeriod && (
+                      <h3 className="text-lg font-bold text-gray-800 text-center">
+                        {targetPeriod.year} {new Date(targetPeriod.year, targetPeriod.month - 1).toLocaleString('en-US', { month: 'long' })} {targetPeriod.period === 1 ? '1-15' : '16-31'} (Period {targetPeriod.period})
+                      </h3>
+                    )}
+                    {(() => {
+                      const isAtMaxPeriod = targetPeriod && maxTargetPeriod && targetPeriod.year === maxTargetPeriod.year && targetPeriod.month === maxTargetPeriod.month && targetPeriod.period === maxTargetPeriod.period;
+                      return (
+                        <button onClick={handleNextPeriod} disabled={!!isAtMaxPeriod} className={`p-2 rounded-lg transition-colors ${isAtMaxPeriod ? 'text-gray-200' : 'text-gray-500 hover:bg-gray-100'}`}>
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" /></svg>
+                        </button>
+                      )
+                    })()}
+                 </div>
+                 
+                 <div className="grid grid-cols-7 gap-1 sm:gap-2 mb-2">
+                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                    <div key={day} className="text-center text-xs font-bold text-gray-400 py-2">
+                      {day}
+                    </div>
+                  ))}
+                  
+                  {validDates.length > 0 && Array.from({ length: validDates[0].getDay() }).map((_, i) => (
+                    <div key={`empty-${i}`} className="p-2"></div>
+                  ))}
+
+                  {validDates.map(day => {
+                    const isSelected = selectedDate?.toDateString() === day.toDateString();
+                    
+                    return (
+                      <button
+                        key={day.toISOString()}
+                        onClick={() => setSelectedDate(day)}
+                        className={`
+                          aspect-square p-1 sm:p-2 flex flex-col items-center justify-start relative transition-all bg-white hover:bg-gray-50 border rounded-xl
+                          ${isSelected ? 'border-sky-500 bg-sky-50/50 shadow-sm' : 'border-gray-100'}
+                        `}
+                      >
+                        <div className={`w-8 h-8 flex items-center justify-center flex-shrink-0 ${isSelected ? 'border-2 rounded-lg border-sky-600 font-bold' : ''}`}>
+                           <span className={`text-sm ${isSelected ? 'text-sky-700' : 'text-gray-700'}`}>{day.getDate()}</span>
+                        </div>
+                      </button>
+                    )
+                  })}
+                 </div>
+              </div>
             </div>
           )}
         </div>
