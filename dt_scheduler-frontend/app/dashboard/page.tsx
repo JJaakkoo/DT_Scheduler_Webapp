@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "../../utils/supabase/client";
+import { getCurrentUserRole } from "@/app/actions/claim";
 
 const getLocationTheme = (location: string) => {
   const loc = (location || "").toLowerCase();
@@ -423,13 +424,18 @@ export default function Dashboard() {
 
     // 1. Check user role
     const currentRole = localStorage.getItem("nexus_role");
-    if (!currentRole) {
-      supabase.auth.signOut().then(() => {
-        router.push("/"); // Kick back to login if they bypassed it
+    
+    if (currentRole === 'guest') {
+      setRole('guest');
+    } else {
+      // Validate with database
+      getCurrentUserRole().then((result) => {
+        const fetchedRole = result.role;
+        localStorage.setItem("nexus_role", fetchedRole);
+        document.cookie = `nexus_role=${fetchedRole}; path=/; max-age=86400`;
+        setRole(fetchedRole);
       });
-      return;
     }
-    setRole(currentRole);
 
     // 2. Initialize Google Client for On-Demand Syncing
     function initGoogleClient() {

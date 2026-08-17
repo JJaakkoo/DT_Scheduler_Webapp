@@ -29,6 +29,29 @@ export async function getAvailableEmails() {
   }
 }
 
+export async function getCurrentUserRole() {
+  try {
+    const supabase = await createClient();
+    const adminSupabase = createAdminClient();
+    
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { role: 'guest' }; // Not logged in -> they are a guest
+
+    const { data, error } = await adminSupabase
+      .from('users')
+      .select('role')
+      .eq('auth_user_id', user.id)
+      .single();
+
+    if (error || !data) {
+      return { role: 'employee' }; // Default if they aren't in the table yet
+    }
+    return { role: data.role };
+  } catch (err) {
+    return { role: 'employee' };
+  }
+}
+
 export async function requestClaim(email: string) {
   try {
     const supabase = await createClient();

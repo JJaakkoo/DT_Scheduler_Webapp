@@ -204,7 +204,6 @@ function HomeContent() {
     setIsLoading(true);
     
     try {
-      localStorage.setItem("nexus_role", "staff");
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
