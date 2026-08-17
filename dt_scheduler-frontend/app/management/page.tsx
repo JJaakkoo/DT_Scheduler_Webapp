@@ -172,8 +172,8 @@ export default function ManagementPage() {
             <h1 className="text-2xl font-bold text-gray-800">Staff Management</h1>
           </div>
           
-          <div className="overflow-x-auto w-full pb-4">
-            <table className="w-full text-left text-[13px] text-gray-600 border-collapse whitespace-nowrap">
+          <div className="overflow-x-auto w-full pb-4 -mx-6 px-6 sm:-mx-8 sm:px-8">
+            <table className="w-full min-w-max text-left text-[13px] text-gray-600 border-collapse whitespace-nowrap">
               <thead className="bg-gray-50 text-gray-700 text-xs uppercase border-b border-gray-200">
                 <tr>
                   <th className="px-4 py-3 font-medium cursor-pointer hover:bg-gray-100 transition-colors select-none" onClick={() => handleSort('name')}>
