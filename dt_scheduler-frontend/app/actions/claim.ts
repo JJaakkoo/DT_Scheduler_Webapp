@@ -17,7 +17,7 @@ export async function getAvailableStaff() {
 
     const { data, error } = await adminSupabase
       .from('staff')
-      .select('id, name')
+      .select('id:staff_id, name')
       .is('claimed_by', null)
       .order('name');
 
@@ -69,8 +69,8 @@ export async function requestClaim(staffId: string) {
     // 2. Check if staff exists and is unclaimed
     const { data: staffData, error: staffError } = await adminSupabase
       .from('staff')
-      .select('id, claimed_by, temp_email, name')
-      .eq('id', staffId)
+      .select('id:staff_id, claimed_by, temp_email, name')
+      .eq('staff_id', staffId)
       .single();
 
     if (staffError || !staffData) {
@@ -93,7 +93,7 @@ export async function requestClaim(staffId: string) {
         claim_otp: otp,
         otp_expires_at: expiresAt.toISOString(),
       })
-      .eq('id', staffData.id);
+      .eq('staff_id', staffData.id);
 
     if (updateError) {
       console.error('Failed to update OTP:', updateError);
@@ -144,8 +144,8 @@ export async function verifyClaim(staffId: string, otp: string) {
     // 2. Query staff for matching ID and OTP
     const { data: staffData, error: staffError } = await adminSupabase
       .from('staff')
-      .select('id, otp_expires_at, claimed_by, s_name, email')
-      .eq('id', staffId)
+      .select('id:staff_id, otp_expires_at, claimed_by, s_name, email')
+      .eq('staff_id', staffId)
       .eq('claim_otp', otp)
       .single();
 
@@ -172,7 +172,7 @@ export async function verifyClaim(staffId: string, otp: string) {
         otp_expires_at: null,
         role: 'staff', // Set their role to staff since they claimed the identity
       })
-      .eq('id', staffData.id);
+      .eq('staff_id', staffData.id);
 
     if (claimError) {
       console.error('Failed to claim identity:', claimError);

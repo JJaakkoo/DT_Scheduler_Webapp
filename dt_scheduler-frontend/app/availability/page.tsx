@@ -174,14 +174,14 @@ export default function AvailabilityPage() {
     setMaxTargetPeriod({ year: targetYear, month: targetMonth, period: targetPeriodNum });
     calculateValidDates(targetYear, targetMonth, targetPeriodNum);
     
-    // 2. Fetch custom user_id from staff table instead of auth.users
-    const { data: userData } = await supabase.from('staff').select('id').eq('claimed_by', authUserId).single();
+    // 2. Fetch custom staff_id from staff table instead of auth.users
+    const { data: userData } = await supabase.from('staff').select('staff_id').eq('claimed_by', authUserId).single();
     if (!userData) return;
     
     // 3. Fetch availability for target period
     const { data: availData } = await supabase.from('availability')
       .select('schedule_data, updated_at')
-      .eq('user_id', userData.id)
+      .eq('staff_id', userData.staff_id)
       .eq('year', targetYear)
       .eq('month', targetMonth)
       .eq('period', targetPeriodNum)
@@ -210,7 +210,7 @@ export default function AvailabilityPage() {
        // No data for this period and no local draft. Fetch most recent as a template!
        const { data: latestAvail } = await supabase.from('availability')
          .select('schedule_data')
-         .eq('user_id', userData.id)
+         .eq('staff_id', userData.staff_id)
          .order('year', { ascending: false })
          .order('month', { ascending: false })
          .order('period', { ascending: false })
@@ -516,8 +516,8 @@ export default function AvailabilityPage() {
         }
       });
       
-      // 2. We need the custom `user_id` from the `staff` table
-      const { data: userData, error: userError } = await supabase.from('staff').select('id').eq('claimed_by', (await supabase.auth.getUser()).data.user?.id).single();
+      // 2. We need the custom `staff_id` from the `staff` table
+      const { data: userData, error: userError } = await supabase.from('staff').select('staff_id').eq('claimed_by', (await supabase.auth.getUser()).data.user?.id).single();
       
       if (userError || !userData) {
          alert("Could not find your staff record. Please contact the manager to get your account linked.");
@@ -527,13 +527,13 @@ export default function AvailabilityPage() {
       
       // 3. Upsert into `availability` table
       const { error: upsertError } = await supabase.from('availability').upsert({
-         user_id: userData.id,
+         staff_id: userData.staff_id,
          year: targetPeriod.year,
          month: targetPeriod.month,
          period: targetPeriod.period,
          schedule_data: schedule_data,
          updated_at: new Date().toISOString()
-      }, { onConflict: 'user_id, year, month, period' });
+      }, { onConflict: 'staff_id, year, month, period' });
       
       if (upsertError) {
          console.error(upsertError);
