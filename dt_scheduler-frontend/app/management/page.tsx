@@ -311,13 +311,9 @@ function StaffRow({ staff, onSave }: { staff: any, onSave: () => void }) {
         {formatDate(staff.created_at)}
       </td>
       <td className="px-4 py-3">
-        {(!staff.availabilityRaw || staff.availabilityRaw.length === 0) ? (
-           <span className="text-red-500 text-xs font-medium bg-red-50 px-2.5 py-1 rounded whitespace-nowrap">Availability not Submitted</span>
-        ) : staff.hasCurrentAvailability ? (
-           <span className="text-green-600 text-xs font-medium bg-green-50 px-2.5 py-1 rounded cursor-pointer hover:bg-green-100 transition-colors whitespace-nowrap">check availability</span>
-        ) : (
-           <span className="text-orange-500 text-xs font-medium bg-orange-50 px-2.5 py-1 rounded whitespace-nowrap">Past Availability Only</span>
-        )}
+        <span className={`text-[13px] font-medium whitespace-nowrap ${staff.statusColor} ${staff.isClickable ? 'cursor-pointer hover:underline' : ''}`}>
+           {staff.statusText}
+        </span>
       </td>
       <td className="px-4 py-3 text-right">
         {isEditing ? (
