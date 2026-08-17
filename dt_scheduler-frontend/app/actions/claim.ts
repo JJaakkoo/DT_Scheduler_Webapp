@@ -48,9 +48,9 @@ export async function getCurrentUserRole() {
       return { role: staffData.role };
     }
 
-    return { role: 'employee' };
+    return { role: 'unclaimed' };
   } catch (err) {
-    return { role: 'employee' };
+    return { role: 'unclaimed' };
   }
 }
 
@@ -144,7 +144,7 @@ export async function verifyClaim(staffId: string, otp: string) {
     // 2. Query staff for matching ID and OTP
     const { data: staffData, error: staffError } = await adminSupabase
       .from('staff')
-      .select('id, otp_expires_at, staff_id, s_name, email')
+      .select('id, otp_expires_at, staff_id, s_name, email, role')
       .eq('id', staffId)
       .eq('claim_otp', otp)
       .single();
@@ -170,7 +170,7 @@ export async function verifyClaim(staffId: string, otp: string) {
         email: user.email, // Optionally set their real email here
         claim_otp: null,
         otp_expires_at: null,
-        role: 'staff', // Set their role to staff since they claimed the identity
+        role: staffData.role === 'admin' ? 'admin' : 'staff', // Preserve admin role if they already have it
       })
       .eq('id', staffData.id);
 
