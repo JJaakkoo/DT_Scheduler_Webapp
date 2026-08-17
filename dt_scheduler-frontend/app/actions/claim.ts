@@ -40,24 +40,15 @@ export async function getCurrentUserRole() {
     // Check if they claimed a staff identity
     const { data: staffData } = await adminSupabase
       .from('staff')
-      .select('id')
+      .select('role')
       .eq('claimed_by', user.id)
       .single();
 
     if (staffData) {
-      return { role: 'staff' };
+      return { role: staffData.role };
     }
 
-    const { data, error } = await adminSupabase
-      .from('users')
-      .select('role')
-      .eq('auth_user_id', user.id)
-      .single();
-
-    if (error || !data) {
-      return { role: 'employee' };
-    }
-    return { role: data.role };
+    return { role: 'employee' };
   } catch (err) {
     return { role: 'employee' };
   }
@@ -179,27 +170,13 @@ export async function verifyClaim(staffId: string, otp: string) {
         email: user.email, // Optionally set their real email here
         claim_otp: null,
         otp_expires_at: null,
+        role: 'staff', // Set their role to staff since they claimed the identity
       })
       .eq('id', staffData.id);
 
     if (claimError) {
       console.error('Failed to claim identity:', claimError);
       return { error: 'Failed to claim account. Please try again.' };
-    }
-
-    // 4. Update user's role and schedule_name in the public.users table
-    const { error: roleError } = await adminSupabase
-      .from('users')
-      .update({ 
-        role: 'staff',
-        schedule_name: staffData.s_name 
-      })
-      .eq('auth_user_id', user.id);
-
-    if (roleError) {
-      console.error('Failed to update role:', roleError);
-      // We don't rollback the claim here, but we could. For now, just return success anyway, 
-      // as they technically claimed it, but role failed to update. Ideally, use a transaction or RPC.
     }
 
     return { success: true };

@@ -174,8 +174,8 @@ export default function AvailabilityPage() {
     setMaxTargetPeriod({ year: targetYear, month: targetMonth, period: targetPeriodNum });
     calculateValidDates(targetYear, targetMonth, targetPeriodNum);
     
-    // 2. Fetch custom user ID
-    const { data: userData } = await supabase.from('users').select('id').eq('auth_user_id', authUserId).single();
+    // 2. Fetch custom user_id from staff table instead of auth.users
+    const { data: userData } = await supabase.from('staff').select('id').eq('claimed_by', authUserId).single();
     if (!userData) return;
     
     // 3. Fetch availability for target period
@@ -516,8 +516,8 @@ export default function AvailabilityPage() {
         }
       });
       
-      // 2. We need the custom `user_id` from the `users` table
-      const { data: userData, error: userError } = await supabase.from('users').select('id').eq('auth_user_id', (await supabase.auth.getUser()).data.user?.id).single();
+      // 2. We need the custom `user_id` from the `staff` table
+      const { data: userData, error: userError } = await supabase.from('staff').select('id').eq('claimed_by', (await supabase.auth.getUser()).data.user?.id).single();
       
       if (userError || !userData) {
          alert("Could not find your staff record. Please contact the manager to get your account linked.");
