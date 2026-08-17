@@ -406,12 +406,12 @@ export default function ManagementPage() {
                         key={day.toISOString()}
                         onClick={() => setSelectedDate(day)}
                         className={`
-                          aspect-square p-1 sm:p-2 flex flex-col items-center justify-start relative transition-all bg-white hover:bg-gray-50 border rounded-xl
-                          ${isSelected ? 'border-sky-500 bg-sky-50/50 shadow-sm' : 'border-gray-100'}
+                          aspect-square p-1 sm:p-2 flex flex-col items-center justify-start relative transition-all bg-white hover:bg-gray-50 rounded-xl
+                          ${isSelected ? 'border-2 border-black bg-sky-50/50 shadow-sm' : 'border border-gray-100'}
                         `}
                       >
-                        <div className={`w-8 h-8 flex items-center justify-center flex-shrink-0 ${isSelected ? 'border-2 rounded-lg border-sky-600 font-bold' : ''}`}>
-                           <span className={`text-sm ${isSelected ? 'text-sky-700' : 'text-gray-700'}`}>{day.getDate()}</span>
+                        <div className={`w-8 h-8 flex items-center justify-center flex-shrink-0 ${isSelected ? 'font-bold' : ''}`}>
+                           <span className={`text-sm ${isSelected ? 'text-black' : 'text-gray-700'}`}>{day.getDate()}</span>
                         </div>
                       </button>
                     )
