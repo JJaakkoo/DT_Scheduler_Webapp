@@ -866,7 +866,7 @@ export default function Dashboard() {
               )}
             </h3>
             
-            <div className="w-full bg-white rounded-[32px] shadow-[0_4px_24px_rgba(0,0,0,0.1)] flex flex-col overflow-hidden border-4 border-white max-h-[70vh] flex-shrink-0">
+            <div className="w-full bg-white rounded-[32px] shadow-[0_4px_24px_rgba(0,0,0,0.1)] flex flex-col overflow-hidden border-4 border-white max-h-[85vh] flex-shrink-0">
               
               <div className="px-8 pt-8 pb-4 shrink-0 bg-white z-20">
                 <div className="flex justify-center mb-6">
