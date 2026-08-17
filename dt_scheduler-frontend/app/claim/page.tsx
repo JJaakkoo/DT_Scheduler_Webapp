@@ -2,31 +2,31 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { requestClaim, verifyClaim, getAvailableEmails } from '@/app/actions/claim';
+import { requestClaim, verifyClaim, getAvailableStaff } from '@/app/actions/claim';
 
 export default function ClaimAccountPage() {
   const router = useRouter();
   
   const [step, setStep] = useState<1 | 2>(1);
-  const [email, setEmail] = useState('');
-  const [availableEmails, setAvailableEmails] = useState<string[]>([]);
-  const [isLoadingEmails, setIsLoadingEmails] = useState(true);
+  const [staffId, setStaffId] = useState('');
+  const [availableStaff, setAvailableStaff] = useState<{id: string, name: string}[]>([]);
+  const [isLoadingStaff, setIsLoadingStaff] = useState(true);
   const [otp, setOtp] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
 
   useEffect(() => {
-    async function fetchEmails() {
-      const result = await getAvailableEmails();
-      if (result.emails) {
-        setAvailableEmails(result.emails);
+    async function fetchStaff() {
+      const result = await getAvailableStaff();
+      if (result.staff) {
+        setAvailableStaff(result.staff);
       } else {
-        setError(result.error || 'Failed to load available emails.');
+        setError(result.error || 'Failed to load available staff.');
       }
-      setIsLoadingEmails(false);
+      setIsLoadingStaff(false);
     }
-    fetchEmails();
+    fetchStaff();
   }, []);
 
   const handleRequest = async (e: React.FormEvent) => {
@@ -34,14 +34,14 @@ export default function ClaimAccountPage() {
     setError('');
     setSuccessMsg('');
     
-    if (!email) {
-      setError('Please select your email from the list.');
+    if (!staffId) {
+      setError('Please select your name from the list.');
       return;
     }
 
     setIsLoading(true);
     try {
-      const result = await requestClaim(email);
+      const result = await requestClaim(staffId);
       if (result.error) {
         setError(result.error);
       } else {
@@ -66,7 +66,7 @@ export default function ClaimAccountPage() {
 
     setIsLoading(true);
     try {
-      const result = await verifyClaim(email, otp);
+      const result = await verifyClaim(staffId, otp);
       if (result.error) {
         setError(result.error);
       } else {
@@ -105,25 +105,25 @@ export default function ClaimAccountPage() {
             </h1>
             <h2 className="font-bold text-[14px] text-text-secondary text-center mb-8 px-4">
               {step === 1 
-                ? "Select the email where you receive your schedule to link your account." 
-                : `Enter the 6-digit code sent to ${email}`}
+                ? "Select your name from the list to link your account." 
+                : `Enter the 6-digit code sent to your email`}
             </h2>
 
             <form onSubmit={step === 1 ? handleRequest : handleVerify} className="w-full flex flex-col items-center gap-4">
               
               {step === 1 ? (
-                isLoadingEmails ? (
+                isLoadingStaff ? (
                   <div className="w-full max-w-[280px] h-11 bg-gray-100 animate-pulse rounded-xl" />
                 ) : (
                   <select
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    value={staffId}
+                    onChange={(e) => setStaffId(e.target.value)}
                     className="input-nexus w-full max-w-[280px] appearance-none cursor-pointer"
                     style={{ backgroundImage: 'url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23131313%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right .7em top 50%', backgroundSize: '.65em auto' }}
                   >
-                    <option value="" disabled>Select your email</option>
-                    {availableEmails.map(e => (
-                      <option key={e} value={e}>{e}</option>
+                    <option value="" disabled>Select your name</option>
+                    {availableStaff.map(s => (
+                      <option key={s.id} value={s.id}>{s.name}</option>
                     ))}
                   </select>
                 )
