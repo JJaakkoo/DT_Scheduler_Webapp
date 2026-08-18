@@ -309,7 +309,7 @@ export function AvailabilityTab({
             })()}
           </div>
           
-          <div className="grid grid-cols-7 gap-1 sm:gap-2 w-full">
+          <div className="grid grid-cols-7 gap-2 sm:gap-3 w-full">
             {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
               <div key={day} className="text-center font-bold text-[10px] sm:text-xs text-gray-400 uppercase tracking-wider mb-2">
                 {day}
@@ -325,10 +325,10 @@ export function AvailabilityTab({
                   key={idx}
                   onClick={() => setSelectedDate(date)}
                   className={`
-                    flex items-center justify-center p-3 rounded-2xl text-sm font-bold transition-all shadow-sm
+                    flex flex-col items-center justify-start pt-3 sm:pt-4 p-2 min-h-[80px] sm:min-h-[100px] rounded-2xl text-sm font-bold transition-all focus:outline-none border
                     ${isSelected 
-                      ? 'bg-[#8ab4f8] text-white border-none scale-105' 
-                      : 'bg-white border border-gray-100 text-gray-700 hover:bg-gray-50 hover:border-gray-300'
+                      ? 'bg-[#8ab4f8] border-[#8ab4f8] text-white shadow-md scale-[1.02]' 
+                      : 'bg-white border-gray-100/80 text-gray-700 hover:border-gray-300 hover:shadow-sm'
                     }
                   `}
                 >
