@@ -841,19 +841,19 @@ function StaffRow({ staff, onSave }: { staff: any, onSave: () => void }) {
       <td className="px-3 py-3 text-right w-[140px]">
         {isEditing ? (
           <div className="flex items-center justify-end gap-2">
-            <button onClick={handleSave} disabled={isSaving} className="text-green-600 hover:text-green-800 text-xs font-medium disabled:opacity-50 whitespace-nowrap">
+            <button onClick={handleSave} disabled={isSaving} className="text-teal-500 hover:text-teal-600 text-xs font-medium disabled:opacity-50 whitespace-nowrap">
               {isSaving ? 'Saving...' : 'Save'}
             </button>
-            <button onClick={handleCancel} disabled={isSaving} className="text-gray-500 hover:text-gray-700 text-xs font-medium whitespace-nowrap">
+            <button onClick={handleCancel} disabled={isSaving} className="text-gray-400 hover:text-gray-600 text-xs font-medium whitespace-nowrap">
               Cancel
             </button>
           </div>
         ) : (
           <div className="flex items-center justify-end gap-3">
-            <button onClick={() => setIsEditing(true)} className="text-blue-600 hover:text-blue-800 text-xs font-medium whitespace-nowrap">
+            <button onClick={() => setIsEditing(true)} className="text-[#8ab4f8] hover:text-sky-400 text-xs font-medium whitespace-nowrap">
               Edit
             </button>
-            <button onClick={() => setIsDeleteDialogOpen(true)} className="text-red-500 hover:text-red-700 text-xs font-medium whitespace-nowrap">
+            <button onClick={() => setIsDeleteDialogOpen(true)} className="text-rose-400 hover:text-rose-500 text-xs font-medium whitespace-nowrap">
               Delete
             </button>
           </div>

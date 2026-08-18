@@ -82,7 +82,7 @@ export async function getStaffTableData() {
     
     const formattedStaff = staff.map(s => {
         let statusText = "No Availability Found";
-        let statusColor = "text-red-500";
+        let statusColor = "text-rose-400";
         let isClickable = false;
         
         let staffAvails = (availRecordsByStaff[s.id] || [])
@@ -108,10 +108,10 @@ export async function getStaffTableData() {
             statusText = `${MONTHS[latest.month - 1]} - Period ${latest.period}${!hasAvailableShift ? ' (Unavailable)' : ''}`;
             
             if (availScore === targetScore) {
-                statusColor = "text-emerald-500";
+                statusColor = "text-teal-400";
                 isClickable = true;
             } else if (availScore === releasedScore) {
-                statusColor = "text-amber-500";
+                statusColor = "text-amber-400";
                 isClickable = true;
             } else {
                 statusColor = "text-gray-500";
