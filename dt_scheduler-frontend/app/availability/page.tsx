@@ -894,12 +894,11 @@ export default function AvailabilityPage() {
                        }
                     }}
                     className={`
-                      aspect-square p-1 sm:p-2 flex flex-col items-center justify-start relative transition-all bg-white
+                      aspect-square p-1 sm:p-2 flex flex-col items-center justify-start relative transition-all rounded-xl
+                      ${isSelected ? 'bg-[#8ab4f8] text-white shadow-md' : 'bg-white hover:bg-gray-50 text-gray-700'}
                     `}
                   >
-                    <div className={`w-8 h-8 flex items-center justify-center flex-shrink-0 ${isSelected ? 'border-2 rounded-lg border-gray-800 font-bold' : ''}`}>
-                       <span className={`text-sm ${isSelected ? 'text-gray-800' : 'text-gray-700'}`}>{day.getDate()}</span>
-                    </div>
+                    <span className="text-sm font-medium">{day.getDate()}</span>
                     {isCompleted && !cacheData.isUnavailable && (
                        <div className="flex flex-col w-full mt-1 items-center gap-0.5">
                          {cacheData.locationTimes && Object.entries(cacheData.locationTimes).map(([loc, times]: [string, any]) => {
@@ -910,7 +909,7 @@ export default function AvailabilityPage() {
                            const fmtStart = `${startH.toString().padStart(2, '0')}:${startM}`;
                            const fmtEnd = `${endH.toString().padStart(2, '0')}:${endM}`;
                            return (
-                             <span key={loc} className={`text-[10px] font-bold whitespace-nowrap overflow-hidden text-ellipsis max-w-full px-1 ${getLocationTheme(loc).text}`}>
+                             <span key={loc} className={`text-[10px] font-bold whitespace-nowrap overflow-hidden text-ellipsis max-w-full px-1 ${isSelected ? 'text-white drop-shadow-sm' : getLocationTheme(loc).text}`}>
                                {loc.charAt(0)}: {fmtStart}-{fmtEnd}
                              </span>
                            );
@@ -919,7 +918,7 @@ export default function AvailabilityPage() {
                     )}
                     {isCompleted && cacheData.isUnavailable && (
                        <div className="flex flex-col w-full mt-1 items-center justify-center">
-                         <span className="text-[10px] font-bold text-red-400 mt-1 whitespace-nowrap px-1">
+                         <span className={`text-[10px] font-bold mt-1 whitespace-nowrap px-1 ${isSelected ? 'text-white drop-shadow-sm' : 'text-red-400'}`}>
                            Unavailable
                          </span>
                        </div>
