@@ -507,20 +507,21 @@ export default function ManagementPage() {
                        </div>
                       
                       {/* Gantt Chart Container */}
-                      <div className="relative flex-1 bg-gray-50/50 rounded-xl border border-gray-100 p-4 pt-10 min-h-[300px] overflow-x-auto">
+                      <div className="relative flex-1 bg-gray-50/50 rounded-xl border border-gray-100 p-4 min-h-[300px] overflow-x-auto overflow-y-hidden">
                          
-                         {/* X-Axis Timeline (10am to 10pm) */}
-                         <div className="absolute top-0 bottom-0 left-32 right-0 min-w-[400px] pointer-events-none" style={{ zIndex: 0 }}>
-                            {[10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22].map((hour) => (
-                               <div key={hour} className={`absolute top-0 bottom-0 flex flex-col items-center pointer-events-none ${(hour === 12 || hour === 17 || hour === 22) ? 'z-10' : ''}`} style={{ left: `${((hour - 10) / 12) * 100}%`, transform: 'translateX(-50%)' }}>
-                                  <span className={`text-xs font-bold mt-2 bg-gray-50/50 px-1 rounded ${(hour === 12 || hour === 17 || hour === 22) ? 'text-gray-600' : 'text-gray-400'}`}>{hour > 12 ? hour - 12 : hour}{hour === 12 ? 'p' : hour > 12 ? 'p' : 'a'}</span>
-                                  <div className={`flex-1 mt-2 ${(hour === 12 || hour === 17 || hour === 22) ? 'w-[2px] bg-gray-400/80' : 'w-px bg-gray-200'}`} />
-                               </div>
-                            ))}
-                         </div>
-                         
-                         {/* Gantt Rows */}
-                         <div className="mt-4 flex flex-col gap-3 relative z-10 min-w-[500px]">
+                         <div className="min-w-[700px] relative flex flex-col">
+                            {/* X-Axis Timeline (10am to 10pm) */}
+                            <div className="ml-32 relative h-10 pointer-events-none" style={{ zIndex: 0 }}>
+                               {[10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22].map((hour) => (
+                                  <div key={hour} className={`absolute top-0 flex flex-col items-center pointer-events-none ${(hour === 12 || hour === 17 || hour === 22) ? 'z-10' : ''}`} style={{ left: `${((hour - 10) / 12) * 100}%`, transform: 'translateX(-50%)', height: '2000px' }}>
+                                     <span className={`text-xs font-bold mt-1 bg-gray-50 px-1 rounded ${(hour === 12 || hour === 17 || hour === 22) ? 'text-gray-600' : 'text-gray-400'}`}>{hour > 12 ? hour - 12 : hour}{hour === 12 ? 'p' : hour > 12 ? 'p' : 'a'}</span>
+                                     <div className={`flex-1 mt-1 ${(hour === 12 || hour === 17 || hour === 22) ? 'w-[2px] bg-gray-400/80' : 'w-px bg-gray-200'}`} />
+                                  </div>
+                               ))}
+                            </div>
+                            
+                            {/* Gantt Rows */}
+                            <div className="mt-4 flex flex-col gap-3 relative z-10 w-full">
                             {(() => {
                                const dayStr = selectedDate.toISOString().split('T')[0];
                                let rows: any[] = [];
