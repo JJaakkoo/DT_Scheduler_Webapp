@@ -601,11 +601,24 @@ export default function ManagementPage() {
                                               endH: endD.getHours() > 12 ? endD.getHours() - 12 : endD.getHours(),
                                               endM: endD.getMinutes().toString().padStart(2,'0'),
                                               endP: endD.getHours() >= 12 ? 'p' : 'a',
+                                              startTime: startHour
                                            });
                                         });
                                      }
                                   }
                                });
+                               
+                               if (selectedLocation === 'All') {
+                                  const locOrder: Record<string, number> = { 'whyte': 1, 'downtown': 2, 'heritage': 3 };
+                                  rows.sort((a, b) => {
+                                     const locA = (a.loc || '').toLowerCase();
+                                     const locB = (b.loc || '').toLowerCase();
+                                     const orderA = locOrder[locA] || 99;
+                                     const orderB = locOrder[locB] || 99;
+                                     if (orderA !== orderB) return orderA - orderB;
+                                     return (a.startTime || 0) - (b.startTime || 0);
+                                  });
+                               }
                                
                                if (rows.length === 0) {
                                   return (
@@ -841,19 +854,19 @@ function StaffRow({ staff, onSave }: { staff: any, onSave: () => void }) {
       <td className="px-3 py-3 text-right w-[140px]">
         {isEditing ? (
           <div className="flex items-center justify-end gap-2">
-            <button onClick={handleSave} disabled={isSaving} className="text-teal-500 hover:text-teal-600 text-xs font-medium disabled:opacity-50 whitespace-nowrap">
+            <button onClick={handleSave} disabled={isSaving} className="text-teal-500 hover:text-teal-600 text-xs font-medium disabled:opacity-50 whitespace-nowrap cursor-pointer disabled:cursor-default">
               {isSaving ? 'Saving...' : 'Save'}
             </button>
-            <button onClick={handleCancel} disabled={isSaving} className="text-gray-400 hover:text-gray-600 text-xs font-medium whitespace-nowrap">
+            <button onClick={handleCancel} disabled={isSaving} className="text-gray-400 hover:text-gray-600 text-xs font-medium whitespace-nowrap cursor-pointer disabled:cursor-default">
               Cancel
             </button>
           </div>
         ) : (
           <div className="flex items-center justify-end gap-3">
-            <button onClick={() => setIsEditing(true)} className="text-[#8ab4f8] hover:text-sky-400 text-xs font-medium whitespace-nowrap">
+            <button onClick={() => setIsEditing(true)} className="text-[#8ab4f8] hover:text-sky-400 text-xs font-medium whitespace-nowrap cursor-pointer">
               Edit
             </button>
-            <button onClick={() => setIsDeleteDialogOpen(true)} className="text-rose-400 hover:text-rose-500 text-xs font-medium whitespace-nowrap">
+            <button onClick={() => setIsDeleteDialogOpen(true)} className="text-rose-400 hover:text-rose-500 text-xs font-medium whitespace-nowrap cursor-pointer">
               Delete
             </button>
           </div>
