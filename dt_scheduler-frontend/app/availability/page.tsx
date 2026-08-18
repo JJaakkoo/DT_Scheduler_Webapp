@@ -103,6 +103,7 @@ export default function AvailabilityPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [allSaved, setAllSaved] = useState(false);
   const [actionIndicator, setActionIndicator] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
 
   useEffect(() => {
     // Auth Check
@@ -539,14 +540,17 @@ export default function AvailabilityPage() {
       
       if (upsertError || !upsertData) {
          console.error(upsertError);
-         alert("Failed to submit availability. " + (upsertError?.message || ""));
+         setToastMessage({ text: "Failed to submit availability. " + (upsertError?.message || ""), type: 'error' });
+         setTimeout(() => setToastMessage(null), 3000);
       } else {
          // (Redundant availability_ids update removed - Dashboard now fetches directly via staff_id)
-         alert("Availability successfully submitted!");
+         setToastMessage({ text: "Availability successfully submitted!", type: 'success' });
+         setTimeout(() => setToastMessage(null), 3000);
       }
     } catch (err) {
       console.error(err);
-      alert("An unexpected error occurred.");
+      setToastMessage({ text: "An unexpected error occurred.", type: 'error' });
+      setTimeout(() => setToastMessage(null), 3000);
     } finally {
       setIsSubmitting(false);
     }
@@ -556,6 +560,17 @@ export default function AvailabilityPage() {
 
   return (
     <main className="min-h-[100dvh] w-screen flex flex-col bg-[#c2e2f5] font-sans overflow-x-hidden overflow-y-auto relative">
+      {/* TOAST */}
+      {toastMessage && (
+        <div className={`fixed top-6 left-1/2 -translate-x-1/2 z-[200] ${toastMessage.type === 'success' ? 'bg-[#8ab4f8]' : 'bg-rose-400'} text-white px-6 py-3 rounded-xl shadow-xl font-bold animate-in slide-in-from-top-4 fade-in duration-300 flex items-center gap-2`}>
+          {toastMessage.type === 'success' ? (
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>
+          ) : (
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+          )}
+          {toastMessage.text}
+        </div>
+      )}
       {!STAFF_ROLES.includes(role || '') && (
         <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl">
