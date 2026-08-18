@@ -83,19 +83,19 @@ const ShiftTimeline = ({ searchedShifts, masterShifts, searchIdentifier, isLoadi
             </h4>
             
             <div className="flex flex-row flex-wrap gap-3">
-              <div className={`bg-gray-50 border-2 ${locTheme.border} rounded-xl p-3 min-w-[140px] shadow-sm`}>
-                <p className="font-medium text-black text-sm">
+              <div className="bg-[#8ab4f8]/20 border-2 border-transparent rounded-xl p-3 min-w-[140px] shadow-sm">
+                <p className="font-medium text-gray-800 text-sm">
                   {formatShiftTime(new Date(timeline.userShift.start.dateTime))} - {formatShiftTime(new Date(timeline.userShift.end.dateTime))}
                 </p>
-                <p className="text-xs font-bold text-black mt-1 capitalize">You</p>
+                <p className="text-xs font-bold text-gray-800 mt-1 capitalize">You</p>
               </div>
 
               {timeline.coworkers.length > 0 ? timeline.coworkers.map((coworker: any, cIdx: number) => (
                 <div key={cIdx} className={`bg-white border-2 ${locTheme.border} rounded-xl p-3 min-w-[140px] shadow-sm`}>
-                  <p className="font-medium text-black text-sm">
+                  <p className="font-medium text-gray-800 text-sm">
                     {formatShiftTime(new Date(coworker.start.dateTime))} - {formatShiftTime(new Date(coworker.end.dateTime))}
                   </p>
-                  <p className="text-xs font-bold text-black mt-1 capitalize">{coworker.employee}</p>
+                  <p className="text-xs font-bold text-gray-800 mt-1 capitalize">{coworker.employee}</p>
                 </div>
               )) : (
                 <div className="flex items-center justify-center bg-gray-50 border border-dashed border-gray-200 rounded-xl p-3 min-w-[140px] text-xs font-medium text-gray-400 italic">
@@ -278,8 +278,8 @@ const LocationCalendar = ({ activeQuery, masterShifts: initialMasterShifts, sear
               className={`
                 aspect-square p-1 sm:p-2 rounded-xl flex flex-col items-center justify-center relative transition-all 
                 ${isDayInteractable ? 'cursor-pointer' : 'cursor-not-allowed opacity-40'}
-                ${isSelected ? 'bg-blue-500 text-white shadow-md' : (isDayInteractable ? 'hover:bg-gray-50 text-gray-700' : 'text-gray-400')}
-                ${isToday && !isSelected ? 'ring-2 ring-blue-500/50 font-bold' : ''}
+                ${isSelected ? 'bg-[#8ab4f8] text-white shadow-md' : (isDayInteractable ? 'hover:bg-gray-50 text-gray-700' : 'text-gray-400')}
+                ${isToday && !isSelected ? 'ring-2 ring-[#8ab4f8]/50 font-bold' : ''}
               `}
             >
               <span className="text-sm font-medium">{day.getDate()}</span>
@@ -356,15 +356,13 @@ const LocationCalendar = ({ activeQuery, masterShifts: initialMasterShifts, sear
                           return (
                             <React.Fragment key={idx}>
                               {showDivider && (
-                                <div className="col-span-full my-2 flex items-center gap-4">
-                                  <div className="h-[2px] bg-gray-200 flex-1 rounded-full"></div>
-                                  <span className="text-xs font-bold text-gray-400 tracking-widest uppercase">Closing Shifts</span>
-                                  <div className="h-[2px] bg-gray-200 flex-1 rounded-full"></div>
+                                <div className="col-span-full my-2">
+                                  <div className="h-[2px] bg-gray-200 w-full rounded-full"></div>
                                 </div>
                               )}
                               <div className={`bg-white border-2 ${locTheme.border} rounded-xl p-3 shadow-sm`}>
                                 <div className="flex justify-between items-start mb-1">
-                                  <p className="font-bold text-black capitalize truncate">{shift.employee || 'Unknown'}</p>
+                                  <p className="font-bold text-gray-800 capitalize truncate">{shift.employee || 'Unknown'}</p>
                                 </div>
                                 <p className="font-medium text-gray-600 text-sm mb-2">
                                   {formatShiftTime(new Date(shift.start.dateTime || shift.start.date))} - {formatShiftTime(new Date(shift.end.dateTime || shift.end.date))}
@@ -748,7 +746,7 @@ export default function Dashboard() {
 
       <div className="w-full bg-white/90 backdrop-blur-md shadow-sm z-50 px-4 py-3 sm:px-8 flex justify-between items-center shrink-0">
         <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
-          
+          <img src="/dreamtealogo.svg" alt="Dream Tea" className="hidden sm:block h-8 w-auto mr-2 opacity-90" />
           {/* DESKTOP NAV (Hidden on mobile) */}
           <div className="relative hidden sm:block">
             <button onClick={() => setIsNavOpen(!isNavOpen)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors focus:outline-none">
@@ -1106,7 +1104,7 @@ export default function Dashboard() {
                           {data.now.length > 0 ? (
                             <div className="flex flex-wrap gap-2">
                               {data.now.map((s, i) => (
-                                <span key={i} className="bg-white px-3 py-1.5 rounded-lg shadow-[0_2px_8px_rgba(0,0,0,0.04)] text-[13px] font-bold text-gray-800 capitalize border border-gray-100 flex items-center gap-1.5 whitespace-nowrap">
+                                <span key={i} className={`bg-white px-3 py-1.5 rounded-lg shadow-[0_2px_8px_rgba(0,0,0,0.04)] text-[13px] font-bold text-gray-800 capitalize border ${theme.border} flex items-center gap-1.5 whitespace-nowrap`}>
                                   {s.name} 
                                   <span className="text-gray-400 font-medium text-[10px]">
                                     Until {s.end.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Edmonton' })}
