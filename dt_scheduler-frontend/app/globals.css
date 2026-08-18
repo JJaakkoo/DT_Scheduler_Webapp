@@ -62,10 +62,10 @@
     animation: shimmer 2s infinite linear;
   }
 
-  .time-wheel::-webkit-scrollbar { 
+  .time-wheel::-webkit-scrollbar, .no-scrollbar::-webkit-scrollbar { 
     display: none; 
   }
-  .time-wheel { 
+  .time-wheel, .no-scrollbar { 
     -ms-overflow-style: none; 
     scrollbar-width: none; 
   }

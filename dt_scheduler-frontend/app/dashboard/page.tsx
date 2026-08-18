@@ -1,407 +1,13 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { createClient } from "../../utils/supabase/client";
+import { createClient } from "@/utils/supabase/client";
 import { getCurrentUserRole } from "@/app/actions/claim";
-
-const getLocationTheme = (location: string) => {
-  const loc = (location || "").toLowerCase();
-  if (loc.includes("whyte")) return { text: "text-[#CAB1E3]", border: "border-[#CAB1E3]", icon: "text-[#CAB1E3]", leftBar: "bg-[#CAB1E3]", fill: "bg-[#CAB1E3]" };
-  if (loc.includes("heritage")) return { text: "text-[#ED9BB4]", border: "border-[#ED9BB4]", icon: "text-[#ED9BB4]", leftBar: "bg-[#ED9BB4]", fill: "bg-[#ED9BB4]" };
-  if (loc.includes("downtown") || loc.includes("dt")) return { text: "text-[#A0B99B]", border: "border-[#A0B99B]", icon: "text-[#A0B99B]", leftBar: "bg-[#A0B99B]", fill: "bg-[#A0B99B]" };
-  if (loc.includes("north")) return { text: "text-purple-500", border: "border-purple-200", icon: "text-purple-300", leftBar: "bg-purple-300", fill: "bg-purple-300" };
-  return { text: "text-sky-500", border: "border-sky-200", icon: "text-sky-300", leftBar: "bg-[#8ab4f8]", fill: "bg-[#8ab4f8]" };
-};
-
-function useOverlappingShifts(searchedShifts: any[], masterShifts: any[], searchIdentifier: string) {
-  return useMemo(() => {
-    if (!searchedShifts || searchedShifts.length === 0) return [];
-
-    return searchedShifts.map(userShift => {
-      const userStart = new Date(userShift.start.dateTime);
-      const userEnd = new Date(userShift.end.dateTime);
-      const userLocation = (userShift.location || userShift.summary.replace("Work at ", "")).trim();
-      const userDay = userStart.toDateString();
-
-      const overlappingCoworkers = masterShifts.filter(coworkerShift => {
-        const coworkerStart = new Date(coworkerShift.start.dateTime);
-        const coworkerEnd = new Date(coworkerShift.end.dateTime);
-        const coworkerLocation = (coworkerShift.location || coworkerShift.summary.replace("Work at ", "")).trim();
-        const coworkerDay = coworkerStart.toDateString();
-
-        if (coworkerDay !== userDay || coworkerLocation !== userLocation) return false;
-        if (coworkerShift.employee?.toLowerCase() === searchIdentifier.toLowerCase()) return false;
-        if (coworkerStart >= userEnd) return false;
-        if (coworkerEnd <= userStart) return false;
-
-        return true;
-      });
-
-      overlappingCoworkers.sort((a, b) => new Date(a.start.dateTime).getTime() - new Date(b.start.dateTime).getTime());
-
-      return { userShift, coworkers: overlappingCoworkers };
-    });
-  }, [searchedShifts, masterShifts, searchIdentifier]);
-}
-
-const ShiftTimeline = ({ searchedShifts, masterShifts, searchIdentifier, isLoadingMaster }: { searchedShifts: any[], masterShifts: any[], searchIdentifier: string, isLoadingMaster?: boolean }) => {
-  const timelines = useOverlappingShifts(searchedShifts, masterShifts, searchIdentifier);
-
-  if (!searchedShifts || searchedShifts.length === 0) return null;
-
-  const formatShiftTime = (date: Date) => {
-    const minutes = date.getMinutes();
-    if (minutes === 0) {
-      return date.toLocaleTimeString('en-US', { hour: 'numeric' });
-    }
-    return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-  };
-
-  return (
-    <div className="w-full max-w-[850px] mx-auto mt-8 bg-white rounded-[32px] border-4 border-white p-6 md:p-8 shadow-[0_4px_24px_rgba(0,0,0,0.1)] relative z-10">
-      <h3 className="font-bold text-[#628ebf] text-sm uppercase tracking-widest mb-6 pl-2 flex items-center">
-        Who you are working with
-        {isLoadingMaster && (
-          <div className="ml-2 flex items-center justify-center">
-            <svg className="animate-spin h-4 w-4 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-          </div>
-        )}
-      </h3>
-      
-      <div className="flex flex-col gap-8">
-        {timelines.map((timeline, idx) => {
-          const locTheme = getLocationTheme(timeline.userShift.location || timeline.userShift.summary.replace("Work at ", ""));
-          
-          let showDivider = false;
-          if (idx > 0) {
-            const now = new Date();
-            now.setHours(0, 0, 0, 0);
-            const prevStart = new Date(timelines[idx - 1].userShift.start.dateTime);
-            const currStart = new Date(timeline.userShift.start.dateTime);
-            if (prevStart < now && currStart >= now) {
-              showDivider = true;
-            }
-          }
-
-          return (
-          <React.Fragment key={idx}>
-            {showDivider && (
-              <div className="w-full border-t border-gray-100 my-6"></div>
-            )}
-            <div className="flex flex-col">
-            <h4 className="font-bold text-gray-700 text-sm mb-4 border-b border-gray-100 pb-2 pl-2">
-              {new Date(timeline.userShift.start.dateTime).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })} @ {timeline.userShift.location || timeline.userShift.summary.replace("Work at ", "")}
-            </h4>
-            
-            <div className="flex flex-row flex-wrap gap-3">
-              <div className="bg-[#8ab4f8]/20 border-2 border-transparent rounded-xl p-3 min-w-[140px] shadow-sm">
-                <p className="font-medium text-gray-700 text-sm">
-                  {formatShiftTime(new Date(timeline.userShift.start.dateTime))} - {formatShiftTime(new Date(timeline.userShift.end.dateTime))}
-                </p>
-                <p className="text-xs font-bold text-gray-700 mt-1 capitalize">You</p>
-              </div>
-
-              {timeline.coworkers.length > 0 ? timeline.coworkers.map((coworker: any, cIdx: number) => (
-                <div key={cIdx} className={`bg-white border-2 ${locTheme.border} rounded-xl p-3 min-w-[140px] shadow-sm`}>
-                  <p className="font-medium text-gray-700 text-sm">
-                    {formatShiftTime(new Date(coworker.start.dateTime))} - {formatShiftTime(new Date(coworker.end.dateTime))}
-                  </p>
-                  <p className="text-xs font-bold text-gray-700 mt-1 capitalize">{coworker.employee}</p>
-                </div>
-              )) : (
-                <div className="flex items-center justify-center bg-gray-50 border border-dashed border-gray-200 rounded-xl p-3 min-w-[140px] text-xs font-medium text-gray-400 italic">
-                  No coworkers
-                </div>
-              )}
-            </div>
-          </div>
-          </React.Fragment>
-        )})}
-      </div>
-    </div>
-  );
-};
-
-const LocationCalendar = ({ activeQuery, masterShifts: initialMasterShifts, searchedShifts: initialSearchedShifts }: { activeQuery: string, masterShifts: any[], searchedShifts: any[] }) => {
-  const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [masterShifts, setMasterShifts] = useState(initialMasterShifts);
-  const [searchedShifts, setSearchedShifts] = useState(initialSearchedShifts);
-  const [isLoadingMonth, setIsLoadingMonth] = useState(false);
-  const [selectedLocation, setSelectedLocation] = useState<string>("All Locations");
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const detailsRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const now = new Date();
-    if (currentMonth.getMonth() === now.getMonth() && currentMonth.getFullYear() === now.getFullYear()) {
-      setMasterShifts(initialMasterShifts);
-      setSearchedShifts(initialSearchedShifts);
-    }
-  }, [initialMasterShifts, initialSearchedShifts, currentMonth]);
-
-  useEffect(() => {
-    const fetchMonthData = async () => {
-      const now = new Date();
-      if (currentMonth.getMonth() === now.getMonth() && currentMonth.getFullYear() === now.getFullYear()) {
-        return;
-      }
-      setIsLoadingMonth(true);
-      try {
-        const token = localStorage.getItem("google_access_token");
-        const headers: HeadersInit = {};
-        if (token) headers['Authorization'] = `Bearer ${token}`;
-
-        const month = currentMonth.getMonth() + 1;
-        const year = currentMonth.getFullYear();
-        
-        const masterRes = await fetch(`/api/schedule?name=MASTER&month=${month}&year=${year}`, { headers });
-        const masterData = await masterRes.json();
-        if (masterRes.ok) setMasterShifts(masterData.shifts || []);
-
-        if (activeQuery) {
-          const searchRes = await fetch(`/api/schedule?name=${encodeURIComponent(activeQuery)}&month=${month}&year=${year}`, { headers });
-          const searchData = await searchRes.json();
-          if (searchRes.ok) setSearchedShifts(searchData.shifts || []);
-        }
-      } catch (e) {
-        console.error("Failed to load historical schedule", e);
-      } finally {
-        setIsLoadingMonth(false);
-      }
-    };
-    fetchMonthData();
-  }, [currentMonth, activeQuery]);
-
-  useEffect(() => {
-    if (selectedDate && detailsRef.current) {
-      setTimeout(() => {
-        detailsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }, 50);
-    }
-  }, [selectedDate]);
-
-  const locations = useMemo(() => {
-    const locs = new Set<string>();
-    masterShifts.forEach(s => {
-      const loc = (s.location || s.summary.replace("Work at ", "")).trim();
-      if (loc) locs.add(loc);
-    });
-    return ["All Locations", ...Array.from(locs).sort()];
-  }, [masterShifts]);
-
-  const daysInMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate();
-  const firstDayOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1).getDay();
-
-  const days = Array.from({ length: daysInMonth }, (_, i) => new Date(currentMonth.getFullYear(), currentMonth.getMonth(), i + 1));
-
-  const getShiftsForDay = (date: Date) => {
-    return masterShifts.filter(s => {
-      if (!s.start || (!s.start.dateTime && !s.start.date)) return false;
-      const shiftDate = new Date(s.start.dateTime || s.start.date);
-      if (shiftDate.getDate() !== date.getDate() || shiftDate.getMonth() !== date.getMonth() || shiftDate.getFullYear() !== date.getFullYear()) {
-        return false;
-      }
-      if (selectedLocation !== "All Locations") {
-        const loc = (s.location || s.summary.replace("Work at ", "")).trim();
-        if (loc !== selectedLocation) return false;
-      }
-      return true;
-    });
-  };
-
-  const nextMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
-  const prevMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
-  
-  const formatShiftTime = (date: Date) => {
-    const minutes = date.getMinutes();
-    if (minutes === 0) {
-      return date.toLocaleTimeString('en-US', { hour: 'numeric' });
-    }
-    return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-  };
-
-  return (
-    <div className="w-full max-w-[850px] mx-auto mt-8 bg-white rounded-[32px] border-4 border-white p-6 md:p-8 shadow-[0_4px_24px_rgba(0,0,0,0.1)] relative z-10 mb-8">
-      <div className="flex flex-col sm:flex-row justify-end items-start sm:items-center mb-6 gap-4">
-        <select 
-          value={selectedLocation}
-          onChange={(e) => setSelectedLocation(e.target.value)}
-          className="bg-gray-50 border-2 border-gray-100 rounded-xl px-4 py-2 text-sm font-medium outline-none focus:border-blue-500 transition-colors cursor-pointer"
-        >
-          {locations.map(loc => (
-            <option key={loc} value={loc}>{loc}</option>
-          ))}
-        </select>
-      </div>
-
-      <div className="flex justify-between items-center mb-4 px-2">
-        <button onClick={prevMonth} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 text-gray-600"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" /></svg>
-        </button>
-        <h4 className="font-bold text-gray-800 text-lg flex items-center justify-center relative">
-          {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-          {isLoadingMonth && (
-            <div className="absolute -right-7 flex items-center justify-center">
-              <svg className="animate-spin h-4 w-4 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-            </div>
-          )}
-        </h4>
-        <button onClick={nextMonth} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 text-gray-600"><path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" /></svg>
-        </button>
-      </div>
-
-      <div className="grid grid-cols-7 gap-1 sm:gap-2 mb-6">
-        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-          <div key={day} className="text-center text-xs font-bold text-gray-400 py-2">
-            {day}
-          </div>
-        ))}
-        {Array.from({ length: firstDayOfMonth }).map((_, i) => (
-          <div key={`empty-${i}`} className="p-2"></div>
-        ))}
-        {days.map(day => {
-          const personShiftsThisDay = searchedShifts.filter(s => {
-            if (!s.start || (!s.start.dateTime && !s.start.date)) return false;
-            const shiftDate = new Date(s.start.dateTime || s.start.date);
-            if (shiftDate.getDate() !== day.getDate() || shiftDate.getMonth() !== day.getMonth() || shiftDate.getFullYear() !== day.getFullYear()) {
-              return false;
-            }
-            if (selectedLocation !== "All Locations") {
-              const loc = (s.location || s.summary.replace("Work at ", "")).trim();
-              if (loc !== selectedLocation) return false;
-            }
-            return true;
-          });
-
-          const hasPersonalShifts = personShiftsThisDay.length > 0;
-          const isDayInteractable = getShiftsForDay(day).length > 0;
-          const isSelected = selectedDate?.toDateString() === day.toDateString();
-          const isToday = new Date().toDateString() === day.toDateString();
-
-          return (
-            <button
-              key={day.toISOString()}
-              onClick={() => isDayInteractable && setSelectedDate(day)}
-              disabled={!isDayInteractable}
-              className={`
-                aspect-square p-1 sm:p-2 rounded-xl flex flex-col items-center justify-center relative transition-all 
-                ${isDayInteractable ? 'cursor-pointer' : 'cursor-not-allowed opacity-40'}
-                ${isSelected ? 'bg-[#8ab4f8] text-white shadow-md' : (isDayInteractable ? 'hover:bg-gray-50 text-gray-700' : 'text-gray-400')}
-                ${isToday && !isSelected ? 'ring-2 ring-[#8ab4f8]/50 font-bold' : ''}
-              `}
-            >
-              <span className="text-sm font-medium">{day.getDate()}</span>
-              {hasPersonalShifts && (
-                <div className="absolute bottom-1 left-0 right-0 flex flex-col items-center gap-[2px] w-full px-0.5">
-                  {personShiftsThisDay.map((ps, idx) => {
-                    const loc = (ps.location || ps.summary.replace("Work at ", "")).trim();
-                    const theme = getLocationTheme(loc);
-                    const formatMin = (dtStr: string) => {
-                      const d = new Date(dtStr);
-                      return d.toLocaleTimeString('en-GB', { hour: 'numeric', minute: '2-digit' });
-                    };
-                    return (
-                      <span key={idx} className={`text-[8.5px] leading-none sm:text-[10px] font-bold tracking-tighter ${isSelected ? 'text-white drop-shadow-sm' : theme.text}`}>
-                        {formatMin(ps.start.dateTime || ps.start.date)}-{formatMin(ps.end.dateTime || ps.end.date)}
-                      </span>
-                    );
-                  })}
-                </div>
-              )}
-            </button>
-          );
-        })}
-      </div>
-
-      {selectedDate && (
-        <div ref={detailsRef} className="mt-6 border-t border-gray-100 pt-6">
-          <h4 className="font-bold text-gray-800 mb-4 pl-2">
-            Shifts for {selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-          </h4>
-          <div className="flex flex-col gap-3">
-            {(() => {
-              const dayShifts = getShiftsForDay(selectedDate);
-              if (dayShifts.length === 0) {
-                return (
-                  <div className="text-center py-8 text-gray-500 text-sm italic bg-gray-50 rounded-xl border border-dashed border-gray-200">
-                    No shifts scheduled for this location on this date.
-                  </div>
-                );
-              }
-
-              // Sort by start time
-              const sortedShifts = [...dayShifts].sort((a, b) => {
-                return new Date(a.start.dateTime || a.start.date).getTime() - new Date(b.start.dateTime || b.start.date).getTime();
-              });
-
-              // Group by location
-              const groupedShifts = sortedShifts.reduce((acc, shift) => {
-                const loc = (shift.location || shift.summary.replace("Work at ", "")).trim();
-                if (!acc[loc]) acc[loc] = [];
-                acc[loc].push(shift);
-                return acc;
-              }, {} as Record<string, any[]>);
-
-              // Render groups
-              return Object.entries(groupedShifts)
-                .sort(([locA], [locB]) => locA.localeCompare(locB))
-                .map(([loc, shifts]: [string, any], gIdx) => {
-                  const locTheme = getLocationTheme(loc);
-                  return (
-                    <div key={gIdx} className="mb-4 last:mb-0">
-                      <h5 className={`font-bold text-sm mb-3 pl-1 ${locTheme.text}`}>{loc}</h5>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                        {shifts.map((shift: any, idx: number) => {
-                          let showDivider = false;
-                          if (idx > 0) {
-                            const prevStartHour = new Date(shifts[idx - 1].start.dateTime || shifts[idx - 1].start.date).getHours();
-                            const currStartHour = new Date(shift.start.dateTime || shift.start.date).getHours();
-                            if (prevStartHour < 17 && currStartHour >= 17) {
-                              showDivider = true;
-                            }
-                          }
-
-                          return (
-                            <React.Fragment key={idx}>
-                              {showDivider && (
-                                <div className="col-span-full my-2">
-                                  <div className="h-[2px] bg-gray-200 w-full rounded-full"></div>
-                                </div>
-                              )}
-                              <div className={`bg-white border-2 ${locTheme.border} rounded-xl p-3 shadow-sm`}>
-                                <div className="flex justify-between items-start mb-1">
-                                  <p className="font-bold text-gray-700 capitalize truncate">{shift.employee || 'Unknown'}</p>
-                                </div>
-                                <p className="font-medium text-gray-600 text-sm mb-2">
-                                  {formatShiftTime(new Date(shift.start.dateTime || shift.start.date))} - {formatShiftTime(new Date(shift.end.dateTime || shift.end.date))}
-                                </p>
-                                <span className={`text-xs font-bold px-2 py-1 rounded-md border ${locTheme.border} ${locTheme.text}`}>
-                                  {loc}
-                                </span>
-                              </div>
-                            </React.Fragment>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                });
-            })()}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
+import { getLocationTheme } from "@/utils/theme";
+import { ShiftTimeline } from "@/components/dashboard/ShiftTimeline";
+import { LocationCalendar } from "@/components/dashboard/LocationCalendar";
 
 // Types
 type SchedulePeriod = {
@@ -783,32 +389,30 @@ export default function Dashboard() {
           {/* DESKTOP NAV (Hidden on mobile) */}
           <div className="relative hidden sm:block">
             <button onClick={() => setIsNavOpen(!isNavOpen)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors focus:outline-none">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6 text-gray-700">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-              </svg>
+              <MenuIcon />
             </button>
             {isNavOpen && (
               <div className="absolute top-full left-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50">
                  <Link href="/availability" className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2 border-b border-gray-50 mb-1">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-gray-500"><path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5m-9-6h.008v.008H12v-.008ZM12 15h.008v.008H12V15Zm0 2.25h.008v.008H12v-.008ZM9.75 15h.008v.008H9.75V15Zm0 2.25h.008v.008H9.75v-.008ZM7.5 15h.008v.008H7.5V15Zm0 2.25h.008v.008H7.5v-.008Zm6.75-4.5h.008v.008h-.008v-.008Zm0 2.25h.008v.008h-.008V15Zm0 2.25h.008v.008h-.008v-.008Zm2.25-4.5h.008v.008H16.5v-.008Zm0 2.25h.008v.008H16.5V15Z" /></svg>
+                    <AvailabilityIcon />
                     My Availability
                  </Link>
                  {role === 'admin' && (
                     <Link href="/management" className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2 border-b border-gray-50 mb-1">
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-gray-500"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>
+                      <ManagementIcon />
                       Management
                     </Link>
                  )}
                  <Link href="/privacy-policy" className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2 border-b border-gray-50 mb-1">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-gray-500"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" /></svg>
+                    <PrivacyIcon />
                     Privacy Policy
                  </Link>
                  <Link href="/terms-of-service" className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2 border-b border-gray-50 mb-1">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-gray-500"><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>
+                    <TermsIcon />
                     Terms of Service
                  </Link>
                  <button onClick={handleLogOut} disabled={isLoggingOut} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2 disabled:opacity-50 text-red-600">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" /></svg>
+                    <LogoutIcon />
                     {isLoggingOut ? "Logging out..." : "Log Out"}
                  </button>
               </div>
@@ -825,22 +429,14 @@ export default function Dashboard() {
                 <span className="truncate max-w-[180px] sm:max-w-[250px] lg:max-w-none">{email}</span>
                 {STAFF_ROLES.includes(role || '') && (
                   <div className={`font-medium text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-1.5 rounded-full flex items-center gap-1 sm:gap-2 ${role === 'admin' ? 'bg-sky-50 text-sky-700 border border-sky-100/50' : 'bg-gray-100/80 text-gray-600'}`}>
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className={`w-3 h-3 sm:w-4 sm:h-4 ${role === 'admin' ? 'text-sky-600' : 'text-gray-500'}`}>
-                      {role === 'admin' ? (
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.562.562 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557l-4.204-3.602a.562.562 0 0 1 .321-.988l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z" />
-                      ) : (
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
-                      )}
-                    </svg>
+                    {role === 'admin' ? <AdminBadgeIcon /> : <LinkedBadgeIcon />}
                     {role === 'admin' ? 'Admin' : 'Linked'}
                   </div>
                 )}
               </div>
             ) : null}
             <div className="text-gray-600 font-medium text-sm bg-gray-100/80 px-3 py-1.5 rounded-full hidden sm:flex items-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-gray-500">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-              </svg>
+              <ClockIcon />
               {currentTime.toLocaleString('en-US', { month: 'long', day: 'numeric' })}, {currentTime.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit' })}
             </div>
           </div>
@@ -848,35 +444,33 @@ export default function Dashboard() {
           {/* MOBILE NAV (Hidden on desktop) */}
           <div className="relative block sm:hidden">
             <button onClick={() => setIsNavOpen(!isNavOpen)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors focus:outline-none">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6 text-gray-700">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-              </svg>
+              <MenuIcon />
             </button>
             {isNavOpen && (
               <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50">
                  {/* Email moved to top left on mobile */}
                  {role !== 'guest' && (
                    <Link href="/availability" className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2 border-b border-gray-50 mb-1">
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-gray-500"><path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5m-9-6h.008v.008H12v-.008ZM12 15h.008v.008H12V15Zm0 2.25h.008v.008H12v-.008ZM9.75 15h.008v.008H9.75V15Zm0 2.25h.008v.008H9.75v-.008ZM7.5 15h.008v.008H7.5V15Zm0 2.25h.008v.008H7.5v-.008Zm6.75-4.5h.008v.008h-.008v-.008Zm0 2.25h.008v.008h-.008V15Zm0 2.25h.008v.008h-.008v-.008Zm2.25-4.5h.008v.008H16.5v-.008Zm0 2.25h.008v.008H16.5V15Z" /></svg>
+                      <AvailabilityIcon />
                       My Availability
                    </Link>
                  )}
                  {role === 'admin' && (
                    <Link href="/management" className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2 border-b border-gray-50 mb-1">
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-gray-500"><path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.99l1.005.828c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /></svg>
+                      <ManagementMobileIcon />
                       Management
                    </Link>
                  )}
                  <Link href="/privacy-policy" className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2 border-b border-gray-50 mb-1">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-gray-500"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" /></svg>
+                    <PrivacyIcon />
                     Privacy Policy
                  </Link>
                  <Link href="/terms-of-service" className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2 border-b border-gray-50 mb-1">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-gray-500"><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>
+                    <TermsIcon />
                     Terms of Service
                  </Link>
                  <button onClick={handleLogOut} disabled={isLoggingOut} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2 disabled:opacity-50 text-red-600">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" /></svg>
+                    <LogoutIcon />
                     {isLoggingOut ? "Logging out..." : "Log Out"}
                  </button>
               </div>
@@ -909,10 +503,7 @@ export default function Dashboard() {
               Schedule Lookup
               {isLoading && (
                 <div className="ml-2 flex items-center justify-center">
-                  <svg className="animate-spin h-4 w-4 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
+                  <SpinnerIcon />
                 </div>
               )}
             </h3>
@@ -990,9 +581,7 @@ export default function Dashboard() {
                               {startDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Edmonton' })} - {endDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Edmonton' })}
                             </div>
                             <div className="text-xs text-gray-500 font-medium flex items-center gap-1.5 mt-1 pl-2">
-                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className={`w-3.5 h-3.5 ${theme.icon}`}>
-                                <path fillRule="evenodd" d="M9.69 18.933l.003.001C9.89 19.02 10 19 10 19s.11.02.308-.066l.002-.001.006-.003.018-.008a5.741 5.741 0 00.281-.14c.186-.096.446-.24.757-.433.62-.384 1.445-.966 2.274-1.765C15.302 14.988 17 12.493 17 9A7 7 0 103 9c0 3.492 1.698 5.988 3.355 7.584a13.731 13.731 0 002.273 1.765 11.842 11.842 0 00.976.544l.062.029.018.008.006.003zM10 11.25a2.25 2.25 0 100-4.5 2.25 2.25 0 000 4.5z" clipRule="evenodd" />
-                              </svg>
+                              <LocationPinIcon className={theme.icon} />
                               {shift.location || shift.summary.replace("Work at ", "")}
                             </div>
                           </div>
@@ -1003,7 +592,6 @@ export default function Dashboard() {
                 )}
               </div>
 
-              {}
               <div className="shrink-0 bg-white px-8 pb-8 pt-4 z-20 border-t border-gray-50">
                 {metadata && (
                   <div className="flex flex-col gap-0.5 text-center mb-4">
@@ -1026,16 +614,12 @@ export default function Dashboard() {
                   >
                     {isDownloaded ? (
                       <>
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                        </svg>
+                        <CheckIcon />
                         Downloaded!
                       </>
                     ) : (
                       <>
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
-                        </svg>
+                        <SaveCalendarIcon />
                         Save to Calendar
                       </>
                     )}
@@ -1047,14 +631,9 @@ export default function Dashboard() {
                     className="w-full h-[40px] bg-white border-2 border-gray-200 text-gray-500 font-semibold rounded-full hover:bg-gray-50 hover:border-gray-300 transition-colors text-[13px] flex items-center justify-center gap-1.5 disabled:opacity-50 focus:outline-none"
                   >
                     {isSyncing ? (
-                        <svg className="animate-spin h-3.5 w-3.5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
+                        <SpinnerIcon />
                     ) : (
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
-                      </svg>
+                      <SyncIcon />
                     )}
                     Force Sync Update
                   </button>
@@ -1065,7 +644,6 @@ export default function Dashboard() {
           )}
         </div>
 
-        {}
         {/* === RIGHT COLUMN: LIVE STORE STATUS CARDS (3D FLIP) === */}
         {(isMasterLoading || hasLiveStatus) && (
           <div className="w-full max-w-[400px] flex flex-col gap-4 pb-12 md:pb-0 shrink-0">
@@ -1079,8 +657,8 @@ export default function Dashboard() {
                     <div className="absolute left-0 top-0 bottom-0 w-2 bg-gray-200"></div>
                     
                     <div className="flex justify-between items-start ml-2">
-                      <div className="h-6 w-24 skeleton-shimmer rounded-md"></div>
-                      <div className="h-5 w-20 skeleton-shimmer rounded-full"></div>
+                       <div className="h-6 w-24 skeleton-shimmer rounded-md"></div>
+                       <div className="h-5 w-20 skeleton-shimmer rounded-full"></div>
                     </div>
                     
                     <div className="ml-2">
@@ -1122,16 +700,14 @@ export default function Dashboard() {
                         <div className="flex justify-between items-start ml-2">
                           <h4 className="font-semibold text-lg text-gray-700">{loc}</h4>
                           <div className="flex items-center gap-1 text-[10px] uppercase font-bold text-gray-400 bg-gray-50 px-2 py-1 rounded-full group-hover:bg-gray-100 transition-colors">
-                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3"><path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
+                             <FlipIcon />
                              Flip to Next
                           </div>
                         </div>
                         
                         <div className="ml-2">
                           <div className="text-[11px] font-bold text-gray-400 mb-2 flex items-center gap-1.5 uppercase tracking-wider">
-                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className={`w-3.5 h-3.5 ${data.now.length > 0 ? 'text-emerald-500' : 'text-gray-400'}`}>
-                               <path fillRule="evenodd" d="M16.403 12.652a3 3 0 000-5.304 3 3 0 00-3.75-3.751 3 3 0 00-5.305 0 3 3 0 00-3.751 3.75 3 3 0 000 5.305 3 3 0 003.75 3.751 3 3 0 005.305 0 3 3 0 003.751-3.75zm-2.546-4.46a.75.75 0 00-1.214-.883l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
-                             </svg>
+                             <StaffIcon className={data.now.length > 0 ? 'text-emerald-500' : 'text-gray-400'} />
                              {data.now.length > 0 ? "On Shift Now" : "Closed By"}
                           </div>
                           {data.now.length > 0 ? (
@@ -1168,7 +744,7 @@ export default function Dashboard() {
                         
                         <div className="flex justify-between items-start mr-2">
                           <div className="flex items-center gap-1 text-[10px] uppercase font-bold text-gray-400 bg-gray-50 px-2 py-1 rounded-full group-hover:bg-gray-100 transition-colors">
-                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3"><path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" /></svg>
+                             <BackToNowIcon />
                              Back to Now
                           </div>
                           <h4 className="font-semibold text-lg text-gray-700">{loc}</h4>
@@ -1177,9 +753,7 @@ export default function Dashboard() {
                         <div className="mr-2">
                            <div className="text-[11px] font-bold text-gray-400 mb-2 flex items-center gap-1.5 uppercase tracking-wider justify-end">
                              Up Next
-                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5 text-[#8ab4f8]">
-                               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-13a.75.75 0 00-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 000-1.5h-3.25V5z" clipRule="evenodd" />
-                             </svg>
+                             <UpNextIcon />
                           </div>
                           {data.next.length > 0 ? (
                             <div className="flex flex-wrap gap-2 justify-end">
@@ -1222,16 +796,123 @@ export default function Dashboard() {
       )}
 
       </div>
-
-      <style dangerouslySetInnerHTML={{__html: `
-        .no-scrollbar::-webkit-scrollbar {
-          display: none;
-        }
-        .no-scrollbar {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-      `}} />
     </main>
   );
 }
+
+// Icon Components
+const SpinnerIcon = () => (
+  <svg className="animate-spin h-4 w-4 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+  </svg>
+);
+
+const MenuIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6 text-gray-700">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+  </svg>
+);
+
+const AvailabilityIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-gray-500">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5m-9-6h.008v.008H12v-.008ZM12 15h.008v.008H12V15Zm0 2.25h.008v.008H12v-.008ZM9.75 15h.008v.008H9.75V15Zm0 2.25h.008v.008H9.75v-.008ZM7.5 15h.008v.008H7.5V15Zm0 2.25h.008v.008H7.5v-.008Zm6.75-4.5h.008v.008h-.008v-.008Zm0 2.25h.008v.008h-.008V15Zm0 2.25h.008v.008h-.008v-.008Zm2.25-4.5h.008v.008H16.5v-.008Zm0 2.25h.008v.008H16.5V15Z" />
+  </svg>
+);
+
+const ManagementIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-gray-500">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+  </svg>
+);
+
+const ManagementMobileIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-gray-500">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.99l1.005.828c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+  </svg>
+);
+
+const PrivacyIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-gray-500">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+  </svg>
+);
+
+const TermsIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-gray-500">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+  </svg>
+);
+
+const LogoutIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
+  </svg>
+);
+
+const AdminBadgeIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3 sm:w-4 sm:h-4 text-sky-600">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.562.562 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557l-4.204-3.602a.562.562 0 0 1 .321-.988l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z" />
+  </svg>
+);
+
+const LinkedBadgeIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
+  </svg>
+);
+
+const ClockIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-gray-500">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+  </svg>
+);
+
+const LocationPinIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className={`w-3.5 h-3.5 ${className || ''}`}>
+    <path fillRule="evenodd" d="M9.69 18.933l.003.001C9.89 19.02 10 19 10 19s.11.02.308-.066l.002-.001.006-.003.018-.008a5.741 5.741 0 00.281-.14c.186-.096.446-.24.757-.433.62-.384 1.445-.966 2.274-1.765C15.302 14.988 17 12.493 17 9A7 7 0 103 9c0 3.492 1.698 5.988 3.355 7.584a13.731 13.731 0 002.273 1.765 11.842 11.842 0 00.976.544l.062.029.018.008.006.003zM10 11.25a2.25 2.25 0 100-4.5 2.25 2.25 0 000 4.5z" clipRule="evenodd" />
+  </svg>
+);
+
+const CheckIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+  </svg>
+);
+
+const SaveCalendarIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+  </svg>
+);
+
+const SyncIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+  </svg>
+);
+
+const StaffIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className={`w-3.5 h-3.5 ${className || ''}`}>
+    <path fillRule="evenodd" d="M16.403 12.652a3 3 0 000-5.304 3 3 0 00-3.75-3.751 3 3 0 00-5.305 0 3 3 0 00-3.751 3.75 3 3 0 000 5.305 3 3 0 003.75 3.751 3 3 0 005.305 0 3 3 0 003.751-3.75zm-2.546-4.46a.75.75 0 00-1.214-.883l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
+  </svg>
+);
+
+const BackToNowIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
+  </svg>
+);
+
+const UpNextIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5 text-[#8ab4f8]">
+    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-13a.75.75 0 00-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 000-1.5h-3.25V5z" clipRule="evenodd" />
+  </svg>
+);
+
+const FlipIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+  </svg>
+);
