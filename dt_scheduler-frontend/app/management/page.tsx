@@ -62,6 +62,35 @@ export default function ManagementPage() {
   const [periodAvailability, setPeriodAvailability] = useState<any[]>([]);
   const [isFetchingAvail, setIsFetchingAvail] = useState(false);
 
+  // Add Staff Modal State
+  const [isAddStaffModalOpen, setIsAddStaffModalOpen] = useState(false);
+  const [addName, setAddName] = useState('');
+  const [addEmail, setAddEmail] = useState('');
+  const [addSName, setAddSName] = useState('');
+  const [isAddingStaff, setIsAddingStaff] = useState(false);
+
+  const handleAddStaff = async () => {
+    if (!addName || !addEmail || !addSName) return alert("Please fill out all fields.");
+    setIsAddingStaff(true);
+    const { error } = await supabase.from('staff').insert({
+      name: addName,
+      temp_email: addEmail,
+      s_name: addSName,
+      role: 'employee'
+    });
+    if (error) {
+      console.error(error);
+      alert("Error adding staff.");
+    } else {
+      setIsAddStaffModalOpen(false);
+      setAddName('');
+      setAddEmail('');
+      setAddSName('');
+      fetchData();
+    }
+    setIsAddingStaff(false);
+  };
+
   useEffect(() => {
     const cachedLoc = localStorage.getItem("nexus_management_loc");
     if (cachedLoc) setSelectedLocation(cachedLoc);
@@ -327,6 +356,12 @@ export default function ManagementPage() {
           
           {activeTab === 'staff' && (
             <div className="overflow-x-auto w-full pb-4">
+            <div className="flex justify-end mb-4 min-w-[700px]">
+              <button onClick={() => setIsAddStaffModalOpen(true)} className="bg-sky-500 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-sm hover:bg-sky-600 hover:shadow transition-all flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+                Add New Staff
+              </button>
+            </div>
             <table className="w-full text-left text-[13px] text-gray-600 border-collapse whitespace-nowrap">
               <thead className="bg-gray-50 text-gray-700 text-xs uppercase border-b border-gray-200">
                 <tr>
@@ -664,6 +699,35 @@ export default function ManagementPage() {
           )}
         </div>
       </div>
+
+      {/* ADD STAFF MODAL */}
+      {isAddStaffModalOpen && (
+        <div className="fixed inset-0 z-[110] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl relative animate-in fade-in zoom-in duration-200">
+            <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">Add New Staff</h2>
+            <div className="flex flex-col gap-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 ml-1">Full Name</label>
+                <input type="text" value={addName} onChange={e => setAddName(e.target.value)} className="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50" placeholder="e.g. John Doe" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 ml-1">Temp Email</label>
+                <input type="email" value={addEmail} onChange={e => setAddEmail(e.target.value)} className="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50" placeholder="e.g. john@example.com" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 ml-1">Schedule Name</label>
+                <input type="text" value={addSName} onChange={e => setAddSName(e.target.value)} className="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50" placeholder="e.g. John D." />
+              </div>
+              <div className="flex gap-3 mt-4">
+                <button onClick={() => setIsAddStaffModalOpen(false)} className="flex-1 bg-gray-100 text-gray-600 font-bold py-3 rounded-xl hover:bg-gray-200 transition-colors">Cancel</button>
+                <button onClick={handleAddStaff} disabled={isAddingStaff} className="flex-1 bg-sky-500 text-white font-bold py-3 rounded-xl hover:bg-sky-600 transition-colors disabled:opacity-50">
+                  {isAddingStaff ? "Adding..." : "Add Staff"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
