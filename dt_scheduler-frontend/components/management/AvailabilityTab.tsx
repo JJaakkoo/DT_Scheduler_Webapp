@@ -457,6 +457,7 @@ export function AvailabilityTab({
                   onClick={() => {
                     setSelectedDate(date);
                     setIsIndividualView(false);
+                    setSearchQuery('');
                   }}
                   className={`
                     flex flex-col items-center justify-start pt-3 sm:pt-4 p-2 min-h-[80px] sm:min-h-[100px] rounded-2xl text-sm font-bold transition-all focus:outline-none border
