@@ -84,18 +84,18 @@ const ShiftTimeline = ({ searchedShifts, masterShifts, searchIdentifier, isLoadi
             
             <div className="flex flex-row flex-wrap gap-3">
               <div className="bg-[#8ab4f8]/20 border-2 border-transparent rounded-xl p-3 min-w-[140px] shadow-sm">
-                <p className="font-medium text-gray-800 text-sm">
+                <p className="font-medium text-gray-700 text-sm">
                   {formatShiftTime(new Date(timeline.userShift.start.dateTime))} - {formatShiftTime(new Date(timeline.userShift.end.dateTime))}
                 </p>
-                <p className="text-xs font-bold text-gray-800 mt-1 capitalize">You</p>
+                <p className="text-xs font-bold text-gray-700 mt-1 capitalize">You</p>
               </div>
 
               {timeline.coworkers.length > 0 ? timeline.coworkers.map((coworker: any, cIdx: number) => (
                 <div key={cIdx} className={`bg-white border-2 ${locTheme.border} rounded-xl p-3 min-w-[140px] shadow-sm`}>
-                  <p className="font-medium text-gray-800 text-sm">
+                  <p className="font-medium text-gray-700 text-sm">
                     {formatShiftTime(new Date(coworker.start.dateTime))} - {formatShiftTime(new Date(coworker.end.dateTime))}
                   </p>
-                  <p className="text-xs font-bold text-gray-800 mt-1 capitalize">{coworker.employee}</p>
+                  <p className="text-xs font-bold text-gray-700 mt-1 capitalize">{coworker.employee}</p>
                 </div>
               )) : (
                 <div className="flex items-center justify-center bg-gray-50 border border-dashed border-gray-200 rounded-xl p-3 min-w-[140px] text-xs font-medium text-gray-400 italic">
@@ -362,7 +362,7 @@ const LocationCalendar = ({ activeQuery, masterShifts: initialMasterShifts, sear
                               )}
                               <div className={`bg-white border-2 ${locTheme.border} rounded-xl p-3 shadow-sm`}>
                                 <div className="flex justify-between items-start mb-1">
-                                  <p className="font-bold text-gray-800 capitalize truncate">{shift.employee || 'Unknown'}</p>
+                                  <p className="font-bold text-gray-700 capitalize truncate">{shift.employee || 'Unknown'}</p>
                                 </div>
                                 <p className="font-medium text-gray-600 text-sm mb-2">
                                   {formatShiftTime(new Date(shift.start.dateTime || shift.start.date))} - {formatShiftTime(new Date(shift.end.dateTime || shift.end.date))}
@@ -950,7 +950,7 @@ export default function Dashboard() {
                         >
                           <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${theme.leftBar}`}></div>
                           <div>
-                            <div className="font-bold text-gray-800 text-sm mb-1 pl-2">
+                            <div className="font-bold text-gray-700 text-sm mb-1 pl-2">
                               {startDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', timeZone: 'America/Edmonton' })}
                             </div>
                             <div className={`font-medium text-lg mb-1 pl-2 ${theme.text}`}>
@@ -1081,13 +1081,13 @@ export default function Dashboard() {
                       
                       {/* === FRONT FACE (WORKING NOW) === */}
                       <div 
-                        className={`bg-white border-2 border-transparent p-5 shadow-[0_4px_24px_rgba(0,0,0,0.05)] rounded-3xl flex flex-col gap-3 relative overflow-hidden`}
+                        className={`bg-white border-2 ${theme.border} p-5 shadow-[0_4px_24px_rgba(0,0,0,0.05)] rounded-3xl flex flex-col gap-3 relative overflow-hidden`}
                         style={{ gridArea: '1 / 1', backfaceVisibility: 'hidden' }}
                       >
                         <div className={`absolute left-0 top-0 bottom-0 w-2 ${theme.leftBar}`}></div>
                         
                         <div className="flex justify-between items-start ml-2">
-                          <h4 className="font-semibold text-lg text-gray-800">{loc}</h4>
+                          <h4 className="font-semibold text-lg text-gray-700">{loc}</h4>
                           <div className="flex items-center gap-1 text-[10px] uppercase font-bold text-gray-400 bg-gray-50 px-2 py-1 rounded-full group-hover:bg-gray-100 transition-colors">
                              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3"><path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
                              Flip to Next
@@ -1104,7 +1104,7 @@ export default function Dashboard() {
                           {data.now.length > 0 ? (
                             <div className="flex flex-wrap gap-2">
                               {data.now.map((s, i) => (
-                                <span key={i} className={`bg-white px-3 py-1.5 rounded-lg shadow-[0_2px_8px_rgba(0,0,0,0.04)] text-[13px] font-bold text-gray-800 capitalize border ${theme.border} flex items-center gap-1.5 whitespace-nowrap`}>
+                                <span key={i} className={`bg-white px-3 py-1.5 rounded-lg shadow-[0_2px_8px_rgba(0,0,0,0.04)] text-[13px] font-bold text-gray-700 capitalize border ${theme.border} flex items-center gap-1.5 whitespace-nowrap`}>
                                   {s.name} 
                                   <span className="text-gray-400 font-medium text-[10px]">
                                     Until {s.end.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Edmonton' })}
@@ -1128,7 +1128,7 @@ export default function Dashboard() {
 
                       {/* === BACK FACE (UP NEXT) === */}
                       <div 
-                        className={`bg-white border-2 border-transparent p-5 shadow-[0_4px_24px_rgba(0,0,0,0.05)] rounded-3xl flex flex-col gap-3 relative overflow-hidden`}
+                        className={`bg-white border-2 ${theme.border} p-5 shadow-[0_4px_24px_rgba(0,0,0,0.05)] rounded-3xl flex flex-col gap-3 relative overflow-hidden`}
                         style={{ gridArea: '1 / 1', backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
                       >
                         <div className={`absolute right-0 top-0 bottom-0 w-2 ${theme.leftBar}`}></div>
@@ -1138,7 +1138,7 @@ export default function Dashboard() {
                              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3"><path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" /></svg>
                              Back to Now
                           </div>
-                          <h4 className="font-semibold text-lg text-gray-800">{loc}</h4>
+                          <h4 className="font-semibold text-lg text-gray-700">{loc}</h4>
                         </div>
                         
                         <div className="mr-2">
@@ -1151,7 +1151,7 @@ export default function Dashboard() {
                           {data.next.length > 0 ? (
                             <div className="flex flex-wrap gap-2 justify-end">
                               {data.next.map((s, i) => (
-                                <span key={i} className="bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100 text-[13px] font-bold text-gray-800 capitalize flex items-center gap-1.5 whitespace-nowrap shadow-sm">
+                                <span key={i} className="bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100 text-[13px] font-bold text-gray-700 capitalize flex items-center gap-1.5 whitespace-nowrap shadow-sm">
                                   {s.name} 
                                   <span className="text-gray-400 font-medium text-[10px]">
                                     {formatFutureTime(s.start)}
