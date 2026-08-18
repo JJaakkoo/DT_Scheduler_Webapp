@@ -343,19 +343,39 @@ const LocationCalendar = ({ activeQuery, masterShifts: initialMasterShifts, sear
                     <div key={gIdx} className="mb-4 last:mb-0">
                       <h5 className={`font-bold text-sm mb-3 pl-1 ${locTheme.text}`}>{loc}</h5>
                       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                        {shifts.map((shift: any, idx: number) => (
-                          <div key={idx} className={`bg-white border-2 ${locTheme.border} rounded-xl p-3 shadow-sm`}>
-                            <div className="flex justify-between items-start mb-1">
-                              <p className="font-bold text-black capitalize truncate">{shift.employee || 'Unknown'}</p>
-                            </div>
-                            <p className="font-medium text-gray-600 text-sm mb-2">
-                              {formatShiftTime(new Date(shift.start.dateTime || shift.start.date))} - {formatShiftTime(new Date(shift.end.dateTime || shift.end.date))}
-                            </p>
-                            <span className={`text-xs font-bold px-2 py-1 rounded-md border ${locTheme.border} ${locTheme.text}`}>
-                              {loc}
-                            </span>
-                          </div>
-                        ))}
+                        {shifts.map((shift: any, idx: number) => {
+                          let showDivider = false;
+                          if (idx > 0) {
+                            const prevStartHour = new Date(shifts[idx - 1].start.dateTime || shifts[idx - 1].start.date).getHours();
+                            const currStartHour = new Date(shift.start.dateTime || shift.start.date).getHours();
+                            if (prevStartHour < 17 && currStartHour >= 17) {
+                              showDivider = true;
+                            }
+                          }
+
+                          return (
+                            <React.Fragment key={idx}>
+                              {showDivider && (
+                                <div className="col-span-full my-2 flex items-center gap-4">
+                                  <div className="h-[2px] bg-gray-200 flex-1 rounded-full"></div>
+                                  <span className="text-xs font-bold text-gray-400 tracking-widest uppercase">Closing Shifts</span>
+                                  <div className="h-[2px] bg-gray-200 flex-1 rounded-full"></div>
+                                </div>
+                              )}
+                              <div className={`bg-white border-2 ${locTheme.border} rounded-xl p-3 shadow-sm`}>
+                                <div className="flex justify-between items-start mb-1">
+                                  <p className="font-bold text-black capitalize truncate">{shift.employee || 'Unknown'}</p>
+                                </div>
+                                <p className="font-medium text-gray-600 text-sm mb-2">
+                                  {formatShiftTime(new Date(shift.start.dateTime || shift.start.date))} - {formatShiftTime(new Date(shift.end.dateTime || shift.end.date))}
+                                </p>
+                                <span className={`text-xs font-bold px-2 py-1 rounded-md border ${locTheme.border} ${locTheme.text}`}>
+                                  {loc}
+                                </span>
+                              </div>
+                            </React.Fragment>
+                          );
+                        })}
                       </div>
                     </div>
                   );
