@@ -205,6 +205,7 @@ export async function getStaffTableData(): Promise<StaffTableDataResponse> {
         
         return {
             id: s.id,
+            staff_id: s.staff_id,
             name: s.name,
             temp_email: s.temp_email,
             email: s.email,
