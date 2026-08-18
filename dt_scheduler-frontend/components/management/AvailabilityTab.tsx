@@ -112,7 +112,7 @@ export function AvailabilityTab({
                  if (matchedStaffRecords.length === 0) {
                     return (
                        <div className="flex-1 flex flex-col items-center justify-center text-gray-400">
-                         <p className="text-lg font-medium">No staff found matching "{searchQuery}"</p>
+                         <p className="text-lg font-medium">No staff found matching &quot;{searchQuery}&quot;</p>
                        </div>
                     )
                  }
@@ -121,7 +121,7 @@ export function AvailabilityTab({
                  const record = matchedStaffRecords[0];
                  return (
                     <div className="flex-1 flex flex-col">
-                       <h2 className="text-2xl font-bold text-gray-800 mb-4">{record.staff.name}'s Availability</h2>
+                       <h2 className="text-2xl font-bold text-gray-800 mb-4">{record.staff.name}&apos;s Availability</h2>
                        <div className="relative flex-1 bg-gray-50/50 rounded-xl border border-gray-100 p-4 min-h-[300px] overflow-x-auto overflow-y-hidden">
                           <div className="min-w-[700px] relative flex flex-col">
                              {/* X-Axis Timeline (10am to 10pm) */}
@@ -137,11 +137,11 @@ export function AvailabilityTab({
                              {/* Gantt Rows */}
                              <div className="mt-4 flex flex-col gap-3 relative z-10 w-full">
                              {(() => {
-                                let rows: any[] = [];
+                                const rows: any[] = [];
                                 validDates.forEach(d => {
                                    const dayStr = d.toISOString().split('T')[0];
                                    const cache = record.schedule_data && record.schedule_data[dayStr];
-                                   let shiftsForDay: any[] = [];
+                                   const shiftsForDay: any[] = [];
                                    
                                    if (cache && !cache.isUnavailable) {
                                       for (const [loc, shifts] of Object.entries(cache.locations || {}) as [string, any[]][]) {
@@ -283,7 +283,7 @@ export function AvailabilityTab({
                     <div className="mt-4 flex flex-col gap-3 relative z-10 w-full">
                     {(() => {
                        const dayStr = selectedDate.toISOString().split('T')[0];
-                       let rows: any[] = [];
+                       const rows: any[] = [];
                        
                        periodAvailability.forEach(record => {
                           if (searchQuery && !record.staff.name.toLowerCase().includes(searchQuery.toLowerCase()) && !record.staff.s_name.toLowerCase().includes(searchQuery.toLowerCase())) return;
