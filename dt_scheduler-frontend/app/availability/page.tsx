@@ -541,12 +541,7 @@ export default function AvailabilityPage() {
          console.error(upsertError);
          alert("Failed to submit availability. " + (upsertError?.message || ""));
       } else {
-         // 4. Update the staff table's availability array
-         let currentAvail = Array.isArray(userData.availability_ids) ? userData.availability_ids : [];
-         if (!currentAvail.includes(upsertData.id)) {
-             currentAvail.push(upsertData.id);
-             await supabase.from('staff').update({ availability_ids: currentAvail }).eq('id', userData.id);
-         }
+         // (Redundant availability_ids update removed - Dashboard now fetches directly via staff_id)
          alert("Availability successfully submitted!");
       }
     } catch (err) {

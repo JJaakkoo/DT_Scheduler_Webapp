@@ -57,19 +57,20 @@ export async function getStaffTableData() {
       .order('name');
     if (error) return { error: 'Failed to fetch staff' };
     
-    // Collect all availability ids
-    const availIds = staff.flatMap(s => s.availability_ids || []);
+    // Collect all staff ids
+    const staffIds = staff.map(s => s.id);
     
-    let availRecords: Record<string, any> = {};
-    if (availIds.length > 0) {
+    let availRecordsByStaff: Record<string, any[]> = {};
+    if (staffIds.length > 0) {
        const { data: availData } = await adminSupabase
           .from('availability')
-          .select('id, year, month, period, schedule_data')
-          .in('id', availIds);
+          .select('id, staff_id, year, month, period, schedule_data')
+          .in('staff_id', staffIds);
           
        if (availData) {
           for (const a of availData) {
-             availRecords[a.id] = a;
+             if (!availRecordsByStaff[a.staff_id]) availRecordsByStaff[a.staff_id] = [];
+             availRecordsByStaff[a.staff_id].push(a);
           }
        }
     }
@@ -84,9 +85,7 @@ export async function getStaffTableData() {
         let statusColor = "text-red-500";
         let isClickable = false;
         
-        let staffAvails = (s.availability_ids || [])
-            .map((id: string) => availRecords[id])
-            .filter(Boolean)
+        let staffAvails = (availRecordsByStaff[s.id] || [])
             .sort((a: any, b: any) => getScore(b.year, b.month, b.period) - getScore(a.year, a.month, a.period));
             
         let statusScore = 0;
