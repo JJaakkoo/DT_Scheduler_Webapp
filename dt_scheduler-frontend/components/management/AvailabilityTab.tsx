@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 
 interface TargetPeriod {
   year: number;
@@ -37,19 +37,34 @@ export function AvailabilityTab({
   handlePrevPeriod,
   handleNextPeriod
 }: AvailabilityTabProps) {
+  const [isIndividualView, setIsIndividualView] = useState(true);
+
   return (
     <div className="w-full flex flex-col gap-6">
       {/* SEARCH & FILTER BAR */}
       <div className="flex flex-col sm:flex-row gap-4 items-center justify-between w-full">
-        <div className="relative w-full sm:w-80">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"><path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" /></svg>
-          <input 
-            type="text" 
-            placeholder="Search staff name..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all text-sm"
-          />
+        <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+          <div className="relative w-full sm:w-80">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"><path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" /></svg>
+            <input 
+              type="text" 
+              placeholder="Search staff name..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all text-sm"
+            />
+          </div>
+          <button 
+            onClick={() => setIsIndividualView(!isIndividualView)}
+            className={`w-full sm:w-auto px-4 py-2 rounded-xl text-sm font-bold transition-all whitespace-nowrap border flex items-center justify-center gap-2 ${
+              isIndividualView 
+                ? 'bg-[#8ab4f8] text-white border-[#8ab4f8] shadow-sm hover:opacity-90' 
+                : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+            }`}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" /></svg>
+            Individual View {isIndividualView ? 'On' : 'Off'}
+          </button>
         </div>
         <div className="w-full sm:w-auto flex items-center gap-2">
            <span className="text-sm font-medium text-gray-500">Location:</span>
@@ -73,11 +88,16 @@ export function AvailabilityTab({
             <div className="flex-1 flex flex-col items-center justify-center text-gray-400">
               <p className="text-lg font-medium animate-pulse">Loading availability data...</p>
             </div>
-         ) : !selectedDate ? (
+         ) : isIndividualView ? (
             !searchQuery.trim() ? (
               <div className="flex-1 flex flex-col items-center justify-center text-gray-400">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-16 h-16 mb-4 opacity-50"><path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5m-9-6h.008v.008H12v-.008ZM12 15h.008v.008H12V15Zm0 2.25h.008v.008H12v-.008ZM9.75 15h.008v.008H9.75V15Zm0 2.25h.008v.008H9.75v-.008ZM7.5 15h.008v.008H7.5V15Zm0 2.25h.008v.008H7.5v-.008Zm6.75-4.5h.008v.008h-.008v-.008Zm0 2.25h.008v.008h-.008V15Zm0 2.25h.008v.008h-.008v-.008Zm2.25-4.5h.008v.008H16.5v-.008Zm0 2.25h.008v.008H16.5V15Z" /></svg>
-                <p className="text-lg font-medium text-center">Please choose a day from the calendar below</p>
+                <p className="text-xl font-medium text-center text-gray-500 mb-2">Search a name</p>
+                <div className="flex items-center gap-4 my-2 opacity-50">
+                   <div className="h-px w-12 bg-gray-300"></div>
+                   <span className="text-sm font-bold uppercase tracking-widest text-gray-400">or</span>
+                   <div className="h-px w-12 bg-gray-300"></div>
+                </div>
+                <p className="text-xl font-medium text-center text-gray-500 mt-2">Choose a day from the calendar below</p>
               </div>
             ) : (
               // Display List of Availability for the searched staff
@@ -140,6 +160,11 @@ export function AvailabilityTab({
                  )
               })()
             )
+         ) : !selectedDate ? (
+            <div className="flex-1 flex flex-col items-center justify-center text-gray-400">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-16 h-16 mb-4 opacity-50"><path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5m-9-6h.008v.008H12v-.008ZM12 15h.008v.008H12V15Zm0 2.25h.008v.008H12v-.008ZM9.75 15h.008v.008H9.75V15Zm0 2.25h.008v.008H9.75v-.008ZM7.5 15h.008v.008H7.5V15Zm0 2.25h.008v.008H7.5v-.008Zm6.75-4.5h.008v.008h-.008v-.008Zm0 2.25h.008v.008h-.008V15Zm0 2.25h.008v.008h-.008v-.008Zm2.25-4.5h.008v.008H16.5v-.008Zm0 2.25h.008v.008H16.5V15Z" /></svg>
+              <p className="text-lg font-medium text-center">Please choose a day from the calendar below</p>
+            </div>
          ) : (
             // GANTT CHART VIEW
             <div className="flex-1 flex flex-col">
@@ -323,7 +348,10 @@ export function AvailabilityTab({
               return (
                 <button
                   key={idx}
-                  onClick={() => setSelectedDate(date)}
+                  onClick={() => {
+                    setSelectedDate(date);
+                    setIsIndividualView(false);
+                  }}
                   className={`
                     flex flex-col items-center justify-start pt-3 sm:pt-4 p-2 min-h-[80px] sm:min-h-[100px] rounded-2xl text-sm font-bold transition-all focus:outline-none border
                     ${isSelected 
