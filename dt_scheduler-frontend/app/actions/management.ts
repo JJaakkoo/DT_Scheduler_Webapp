@@ -154,6 +154,13 @@ export async function addStaffRecord(data: { name: string, temp_email: string, s
     const { error } = await adminSupabase.from('staff').insert(data);
     if (error) return { error: error.message };
     
+    if (data.temp_email) {
+      const { error: whitelistError } = await adminSupabase.from('whitelisted_emails').insert({ email: data.temp_email });
+      if (whitelistError) {
+        console.error("Whitelist insert error (may already exist):", whitelistError);
+      }
+    }
+    
     return { success: true };
   } catch (error) {
     console.error(error);
