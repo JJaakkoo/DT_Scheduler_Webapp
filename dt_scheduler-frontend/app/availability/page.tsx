@@ -619,8 +619,8 @@ export default function AvailabilityPage() {
                <div className="text-gray-700 font-medium text-sm flex items-center gap-2 sm:gap-3">
                  <span className="truncate max-w-[180px] sm:max-w-[250px] lg:max-w-none">{email}</span>
                  {STAFF_ROLES.includes(role || '') && (
-                   <div className={`font-medium text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-1.5 rounded-full flex items-center gap-1 sm:gap-2 ${role === 'admin' ? 'bg-purple-100/80 text-purple-700' : 'bg-gray-100/80 text-gray-600'}`}>
-                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className={`w-3 h-3 sm:w-4 sm:h-4 ${role === 'admin' ? 'text-purple-600' : 'text-gray-500'}`}>
+                   <div className={`font-medium text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-1.5 rounded-full flex items-center gap-1 sm:gap-2 ${role === 'admin' ? 'bg-sky-50 text-sky-700 border border-sky-100/50' : 'bg-gray-100/80 text-gray-600'}`}>
+                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className={`w-3 h-3 sm:w-4 sm:h-4 ${role === 'admin' ? 'text-sky-600' : 'text-gray-500'}`}>
                        {role === 'admin' ? (
                          <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.562.562 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557l-4.204-3.602a.562.562 0 0 1 .321-.988l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z" />
                        ) : (
