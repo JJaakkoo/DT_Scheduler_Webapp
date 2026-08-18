@@ -58,6 +58,7 @@ export default function ManagementPage() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   
   const [searchQuery, setSearchQuery] = useState('');
+  const [staffSearchQuery, setStaffSearchQuery] = useState('');
   const [selectedLocation, setSelectedLocation] = useState('All');
   const [periodAvailability, setPeriodAvailability] = useState<any[]>([]);
   const [isFetchingAvail, setIsFetchingAvail] = useState(false);
@@ -259,6 +260,14 @@ export default function ManagementPage() {
     if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
     if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
     return 0;
+  }).filter(staff => {
+    if (!staffSearchQuery) return true;
+    const q = staffSearchQuery.toLowerCase();
+    return (
+      (staff.name && staff.name.toLowerCase().includes(q)) ||
+      (staff.email && staff.email.toLowerCase().includes(q)) ||
+      (staff.temp_email && staff.temp_email.toLowerCase().includes(q))
+    );
   });
 
   if (!role) return null;
@@ -359,8 +368,20 @@ export default function ManagementPage() {
           
           {activeTab === 'staff' && (
             <div className="overflow-x-auto w-full pb-4">
-            <div className="flex justify-end mb-4 min-w-[700px]">
-              <button onClick={() => setIsAddStaffModalOpen(true)} className="bg-[#8ab4f8] text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-sm hover:opacity-90 hover:shadow transition-all flex items-center gap-2">
+            <div className="flex justify-between items-center mb-4 min-w-[700px] gap-4">
+              <div className="relative max-w-sm w-full">
+                <input
+                  type="text"
+                  placeholder="Search staff by name or email..."
+                  value={staffSearchQuery}
+                  onChange={e => setStaffSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 text-sm"
+                />
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                </svg>
+              </div>
+              <button onClick={() => setIsAddStaffModalOpen(true)} className="bg-[#8ab4f8] text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-sm hover:opacity-90 hover:shadow transition-all flex items-center gap-2 flex-shrink-0">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
                 Add New Staff
               </button>
@@ -396,10 +417,10 @@ export default function ManagementPage() {
                 {sortedStaffData.map(staff => (
                   <StaffRow key={staff.id} staff={staff} onSave={fetchData} />
                 ))}
-                {staffData.length === 0 && !isLoading && (
+                {sortedStaffData.length === 0 && !isLoading && (
                   <tr>
                     <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
-                      No staff records found.
+                      {staffSearchQuery ? "No matching staff found." : "No staff records found."}
                     </td>
                   </tr>
                 )}
