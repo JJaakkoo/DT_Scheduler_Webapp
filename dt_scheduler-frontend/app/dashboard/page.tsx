@@ -623,9 +623,25 @@ export default function Dashboard() {
       const targetIdx = shifts.findIndex(shift => new Date(shift.end.dateTime) >= now);
       
       if (targetIdx !== -1) {
+        // Increase timeout to ensure DOM is fully painted and browser allows scroll on load
         setTimeout(() => {
-          document.getElementById(`shift-${targetIdx}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }, 100);
+          const el = document.getElementById(`shift-${targetIdx}`);
+          if (el) {
+            // Use block: 'nearest' to avoid scrolling the whole page too aggressively, or block: 'center'
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            
+            // Also ensure the schedule lookup section itself is visible on mobile
+            if (window.innerWidth < 768) {
+               const section = document.getElementById('schedule-lookup-section');
+               if (section) {
+                 const rect = section.getBoundingClientRect();
+                 if (rect.top > window.innerHeight) {
+                    section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                 }
+               }
+            }
+          }
+        }, 400);
       }
     }
   }, [shifts, isLoading]);
@@ -878,7 +894,7 @@ export default function Dashboard() {
         
         {/* === LEFT COLUMN: SCHEDULE & SEARCH === */}
         {/* Gap changed to match the right column perfectly */}
-        <div className="w-full max-w-[400px] flex flex-col gap-4 shrink-0">
+        <div id="schedule-lookup-section" className="w-full max-w-[400px] flex flex-col gap-4 shrink-0">
           
           {/* === CONDITIONAL RENDERING: STAFF VS GUEST === */}
           {role === "guest" ? (
