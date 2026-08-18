@@ -47,7 +47,7 @@ export function StaffRow({ staff, onSave, onViewAvailability }: { staff: any, on
   };
 
   const handleUnlink = async () => {
-    if (!confirm("Are you sure you want to unlink this account? They will lose access until re-linked.")) return;
+    if (!confirm("Are you sure you want to unlink this account? This process cannot be undone.")) return;
     setIsUnlinking(true);
     const { unlinkStaffAccount } = await import('@/app/actions/management');
     const { success, error } = await unlinkStaffAccount(staff.id);
