@@ -140,6 +140,27 @@ export async function getStaffTableData() {
   }
 }
 
+export async function addStaffRecord(data: { name: string, temp_email: string, s_name: string, role: string }) {
+  try {
+    const adminSupabase = createAdminClient();
+    const supabase = await createClient();
+    
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: 'Unauthorized' };
+    
+    const { data: staffData } = await adminSupabase.from('staff').select('role').eq('staff_id', user.id).single();
+    if (!staffData || staffData.role !== 'admin') return { error: 'Unauthorized' };
+    
+    const { error } = await adminSupabase.from('staff').insert(data);
+    if (error) return { error: error.message };
+    
+    return { success: true };
+  } catch (error) {
+    console.error(error);
+    return { error: 'Unexpected error occurred' };
+  }
+}
+
 export async function updateStaffRecord(id: string, updates: { name?: string, temp_email?: string, s_name?: string, role?: string }) {
   try {
     const adminSupabase = createAdminClient();

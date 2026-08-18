@@ -72,15 +72,18 @@ export default function ManagementPage() {
   const handleAddStaff = async () => {
     if (!addName || !addEmail || !addSName) return alert("Please fill out all fields.");
     setIsAddingStaff(true);
-    const { error } = await supabase.from('staff').insert({
+    
+    const { addStaffRecord } = await import('../actions/management');
+    const { success, error } = await addStaffRecord({
       name: addName,
       temp_email: addEmail,
       s_name: addSName,
       role: 'employee'
     });
+    
     if (error) {
       console.error(error);
-      alert("Error adding staff.");
+      alert("Error adding staff: " + error);
     } else {
       setIsAddStaffModalOpen(false);
       setAddName('');
