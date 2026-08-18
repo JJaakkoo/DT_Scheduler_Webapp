@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 interface TargetPeriod {
   year: number;
@@ -38,6 +38,17 @@ export function AvailabilityTab({
   handleNextPeriod
 }: AvailabilityTabProps) {
   const [isIndividualView, setIsIndividualView] = useState(true);
+
+  useEffect(() => {
+    const cachedIV = localStorage.getItem("nexus_management_iv");
+    if (cachedIV !== null) {
+      setIsIndividualView(cachedIV === 'true');
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("nexus_management_iv", String(isIndividualView));
+  }, [isIndividualView]);
 
   return (
     <div className="w-full flex flex-col gap-6">

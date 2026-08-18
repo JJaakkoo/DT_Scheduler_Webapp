@@ -81,7 +81,32 @@ export default function ManagementPage() {
   useEffect(() => {
     const cachedLoc = localStorage.getItem("nexus_management_loc");
     if (cachedLoc) setSelectedLocation(cachedLoc);
+
+    const cachedTab = localStorage.getItem("nexus_management_tab");
+    if (cachedTab) setActiveTab(cachedTab as 'staff' | 'scheduling');
+
+    const cachedSearch = localStorage.getItem("nexus_management_search");
+    if (cachedSearch) setSearchQuery(cachedSearch);
+
+    const cachedDate = localStorage.getItem("nexus_management_date");
+    if (cachedDate) setSelectedDate(new Date(cachedDate));
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem("nexus_management_tab", activeTab);
+  }, [activeTab]);
+
+  useEffect(() => {
+    localStorage.setItem("nexus_management_search", searchQuery);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    if (selectedDate) {
+      localStorage.setItem("nexus_management_date", selectedDate.toISOString());
+    } else {
+      localStorage.removeItem("nexus_management_date");
+    }
+  }, [selectedDate]);
 
   const handleLocationChange = (loc: string) => {
     setSelectedLocation(loc);
