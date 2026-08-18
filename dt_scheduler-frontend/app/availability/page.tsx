@@ -1,12 +1,12 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { createClient } from "../../utils/supabase/client";
+import { createClient } from "@/utils/supabase/client";
+import { TimeWheel } from "@/components/ui/TimeWheel";
 
 const STAFF_ROLES = ['staff', 'admin', 'manager', 'supervisor', 'assistant supervisor'];
-
 const LOCATIONS = ["Whyte", "Downtown", "Heritage"];
 
 const getLocationTheme = (location: string) => {
@@ -19,63 +19,6 @@ const getLocationTheme = (location: string) => {
 
 const HOURS = Array.from({length: 13}, (_, i) => (i + 10).toString());
 const MINUTES = ["00", "15", "30", "45"];
-
-const TimeWheel = ({ value, onChange, options, isHour = false }: { value: string, onChange: (v: string) => void, options: string[], isHour?: boolean }) => {
-  const containerRef = React.useRef<HTMLDivElement>(null);
-  const scrollTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
-  const isProgrammaticScroll = React.useRef(false);
-  
-  React.useEffect(() => {
-     if (!containerRef.current) return;
-     const el = containerRef.current.querySelector(`[data-val="${value}"]`) as HTMLElement;
-     if (el) {
-        isProgrammaticScroll.current = true;
-        const top = el.offsetTop - containerRef.current.offsetTop - 50;
-        containerRef.current.scrollTo({ top, behavior: 'smooth' });
-        setTimeout(() => { isProgrammaticScroll.current = false; }, 300);
-     }
-  }, [value]);
-
-  const handleScroll = () => {
-     if (isProgrammaticScroll.current) return;
-     if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
-     scrollTimeoutRef.current = setTimeout(() => {
-        if (!containerRef.current) return;
-        const container = containerRef.current;
-        const center = container.scrollTop + (container.clientHeight / 2);
-        let closestVal = value;
-        let minDiff = Infinity;
-        const children = Array.from(container.querySelectorAll('button'));
-        children.forEach(child => {
-           const childCenter = child.offsetTop + (child.offsetHeight / 2) - container.offsetTop;
-           const diff = Math.abs(childCenter - center);
-           if (diff < minDiff) {
-              minDiff = diff;
-              closestVal = child.dataset.val || value;
-           }
-        });
-        if (closestVal !== value) onChange(closestVal);
-     }, 150);
-  };
-
-  return (
-    <div ref={containerRef} onScroll={handleScroll} className="time-wheel h-[150px] overflow-y-auto overflow-x-hidden w-[70px] sm:w-[90px] flex flex-col items-center snap-y snap-mandatory pt-[50px] pb-[50px]">
-       {options.map(o => {
-         const display = isHour ? (parseInt(o) > 12 ? parseInt(o) - 12 : parseInt(o)).toString() : o;
-         return (
-           <button 
-             key={o} 
-             data-val={o}
-             onClick={() => onChange(o)}
-             className={`w-full h-[50px] shrink-0 snap-center text-2xl sm:text-3xl font-bold transition-all ${value === o ? 'text-[#8ab4f8] scale-110' : 'text-gray-300 hover:text-gray-400'}`}
-           >
-             {display}
-           </button>
-         );
-       })}
-    </div>
-  );
-};
 
 export default function AvailabilityPage() {
   const router = useRouter();
@@ -106,7 +49,6 @@ export default function AvailabilityPage() {
   const [toastMessage, setToastMessage] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
 
   useEffect(() => {
-    // Auth Check
     const checkAuth = async () => {
       const { data } = await supabase.auth.getSession();
       if (!data?.session) {
@@ -121,9 +63,6 @@ export default function AvailabilityPage() {
         return;
       }
       setRole(currentRole);
-
-      // Removed saved locations logic since times are now per-location
-      
       fetchInitialData(data.session.user.id);
     };
     
@@ -205,12 +144,11 @@ export default function AvailabilityPage() {
     const localTime = localDraft?.updated_at ? new Date(localDraft.updated_at).getTime() : 0;
     
     if (dbTime > localTime && availData?.schedule_data) {
-       // Convert JSON back to cache format
        finalCache = transformDBToCache(availData.schedule_data);
     } else if (localDraft?.data && Object.keys(localDraft.data).length > 0) {
        finalCache = localDraft.data;
     } else {
-       // No data for this period and no local draft. Fetch most recent as a template!
+       // No data for this period and no local draft. Fetch most recent as a template
        const { data: latestAvail } = await supabase.from('availability')
          .select('schedule_data')
          .eq('staff_id', userData.id)
@@ -223,7 +161,7 @@ export default function AvailabilityPage() {
        if (latestAvail?.schedule_data) {
           const oldCache = transformDBToCache(latestAvail.schedule_data);
           const dowMap: Record<number, any> = {};
-          // Map each day of the week to its latest occurrence in the previous schedule
+          
           Object.keys(oldCache).sort().forEach(dateStr => {
              const parts = dateStr.split('-');
              const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
@@ -315,16 +253,13 @@ export default function AvailabilityPage() {
     
     if (newTimes[loc]) {
       if (activeLocation === loc) {
-        // Just turn it off and pick another active location if available
         delete newTimes[loc];
         const remaining = Object.keys(newTimes);
         setActiveLocation(remaining.length > 0 ? remaining[0] : null);
       } else {
-        // Turn it off
         delete newTimes[loc];
       }
     } else {
-      // Turn it on
       let st = "12:00";
       let et = "22:00";
       if (activeLocation && newTimes[activeLocation]) {
@@ -337,8 +272,6 @@ export default function AvailabilityPage() {
     
     setLocationTimes(newTimes);
   };
-
-  // useEffect removed to allow linear nav to preserve form state
 
   const saveCurrentDay = () => {
     if (!selectedDate) return availabilityCache;
@@ -465,14 +398,13 @@ export default function AvailabilityPage() {
     }
     setTargetPeriod({ year, month, period });
     calculateValidDates(year, month, period);
-    // Ideally we fetch data for this period from Supabase, but for now we rely on the localStorage cache spanning multiple periods.
   };
 
   const handleNextPeriod = () => {
     if (!targetPeriod || !maxTargetPeriod) return;
     let { year, month, period } = targetPeriod;
     if (year === maxTargetPeriod.year && month === maxTargetPeriod.month && period === maxTargetPeriod.period) {
-       return; // Cannot go past the allowed period
+       return; 
     }
     if (period === 1) {
       period = 2;
@@ -499,7 +431,7 @@ export default function AvailabilityPage() {
       validDates.forEach(day => {
         const dayStr = day.toISOString().split('T')[0];
         const cache = availabilityCache[dayStr];
-        if (!cache) return; // Should be caught by validation
+        if (!cache) return; 
         
         schedule_data[dayStr] = {
            timeZone: "America/Edmonton",
@@ -543,7 +475,6 @@ export default function AvailabilityPage() {
          setToastMessage({ text: "Failed to submit availability. " + (upsertError?.message || ""), type: 'error' });
          setTimeout(() => setToastMessage(null), 3000);
       } else {
-         // (Redundant availability_ids update removed - Dashboard now fetches directly via staff_id)
          setToastMessage({ text: "Availability successfully submitted!", type: 'success' });
          setTimeout(() => setToastMessage(null), 3000);
       }
@@ -563,14 +494,11 @@ export default function AvailabilityPage() {
       {/* TOAST */}
       {toastMessage && (
         <div className={`fixed top-6 left-1/2 -translate-x-1/2 z-[200] ${toastMessage.type === 'success' ? 'bg-[#8ab4f8]' : 'bg-rose-400'} text-white px-6 py-3 rounded-xl shadow-xl font-bold animate-in slide-in-from-top-4 fade-in duration-300 flex items-center gap-2`}>
-          {toastMessage.type === 'success' ? (
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>
-          ) : (
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-          )}
+          {toastMessage.type === 'success' ? <SuccessIcon /> : <ErrorIcon />}
           {toastMessage.text}
         </div>
       )}
+
       {!STAFF_ROLES.includes(role || '') && (
         <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl">
@@ -594,33 +522,30 @@ export default function AvailabilityPage() {
           <img src="/dreamtealogo.svg" alt="Dream Tea" className="hidden sm:block h-8 w-auto mr-2 opacity-90" />
           <div className="relative">
             <button onClick={() => setIsNavOpen(!isNavOpen)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors focus:outline-none">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6 text-gray-700">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-              </svg>
+              <MenuIcon />
             </button>
             {isNavOpen && (
               <div className="absolute top-full right-0 sm:right-auto sm:left-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50">
-                 {/* Email moved to top left on mobile */}
                  <Link href="/dashboard" className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2 border-b border-gray-50 mb-1">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-gray-500"><path strokeLinecap="round" strokeLinejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" /></svg>
+                    <DashboardIcon />
                     Dashboard
                  </Link>
                  {role === 'admin' && (
                    <Link href="/management" className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2 border-b border-gray-50 mb-1">
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-gray-500"><path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.99l1.005.828c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /></svg>
+                      <ManagementIcon />
                       Management
                    </Link>
                  )}
                  <Link href="/privacy-policy" className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2 border-b border-gray-50 mb-1">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-gray-500"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" /></svg>
+                    <PrivacyIcon />
                     Privacy Policy
                  </Link>
                  <Link href="/terms-of-service" className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2 border-b border-gray-50 mb-1">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-gray-500"><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>
+                    <TermsIcon />
                     Terms of Service
                  </Link>
                  <button onClick={handleLogOut} disabled={isLoggingOut} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2 disabled:opacity-50 text-red-600">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" /></svg>
+                    <LogoutIcon />
                     {isLoggingOut ? "Logging out..." : "Log Out"}
                  </button>
               </div>
@@ -636,13 +561,7 @@ export default function AvailabilityPage() {
                  <span className="truncate max-w-[180px] sm:max-w-[250px] lg:max-w-none">{email}</span>
                  {STAFF_ROLES.includes(role || '') && (
                    <div className={`font-medium text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-1.5 rounded-full flex items-center gap-1 sm:gap-2 ${role === 'admin' ? 'bg-sky-50 text-sky-700 border border-sky-100/50' : 'bg-gray-100/80 text-gray-600'}`}>
-                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className={`w-3 h-3 sm:w-4 sm:h-4 ${role === 'admin' ? 'text-sky-600' : 'text-gray-500'}`}>
-                       {role === 'admin' ? (
-                         <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.562.562 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557l-4.204-3.602a.562.562 0 0 1 .321-.988l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z" />
-                       ) : (
-                         <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
-                       )}
-                     </svg>
+                     {role === 'admin' ? <AdminBadgeIcon /> : <LinkedBadgeIcon />}
                      {role === 'admin' ? 'Admin' : 'Linked'}
                    </div>
                  )}
@@ -662,13 +581,13 @@ export default function AvailabilityPage() {
           <div className="w-full bg-white rounded-3xl shadow-xl p-6 sm:p-8 min-h-[300px] flex flex-col relative overflow-hidden transition-all duration-300">
              {allSaved ? (
                <div className="flex-1 flex flex-col items-center justify-center text-green-500">
-                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-16 h-16 mb-4"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
+                 <CircleCheckIcon className="w-16 h-16 mb-4" />
                  <p className="text-2xl font-bold text-gray-800 text-center">All availability saved.</p>
                  <p className="text-gray-500 mt-2 font-medium text-center">You're good to submit.</p>
                </div>
              ) : !selectedDate ? (
                <div className="flex-1 flex flex-col items-center justify-center text-gray-400">
-                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-16 h-16 mb-4 opacity-50"><path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5m-9-6h.008v.008H12v-.008ZM12 15h.008v.008H12V15Zm0 2.25h.008v.008H12v-.008ZM9.75 15h.008v.008H9.75V15Zm0 2.25h.008v.008H9.75v-.008ZM7.5 15h.008v.008H7.5V15Zm0 2.25h.008v.008H7.5v-.008Zm6.75-4.5h.008v.008h-.008v-.008Zm0 2.25h.008v.008h-.008V15Zm0 2.25h.008v.008h-.008v-.008Zm2.25-4.5h.008v.008H16.5v-.008Zm0 2.25h.008v.008H16.5V15Z" /></svg>
+                 <CalendarEmptyIcon className="w-16 h-16 mb-4 opacity-50" />
                  <p className="text-lg font-medium text-center">Please choose a day from the calendar below</p>
                </div>
              ) : (
@@ -685,7 +604,7 @@ export default function AvailabilityPage() {
                       onClick={handleUnavailableToggle}
                       className={`px-4 py-2 rounded-xl font-bold text-sm transition-all shadow-sm flex items-center gap-2 ${isUnavailable ? 'bg-red-500 text-white shadow-red-200' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636" /></svg>
+                      <BanIcon />
                       Unavailable
                     </button>
                   </div>
@@ -700,7 +619,6 @@ export default function AvailabilityPage() {
                           {LOCATIONS.map(loc => {
                             const theme = getLocationTheme(loc);
                             const isSelected = !!locationTimes[loc];
-                            const isActive = activeLocation === loc;
                             return (
                               <button
                                 key={loc}
@@ -722,23 +640,6 @@ export default function AvailabilityPage() {
                             </div>
                          ) : (
                             <>
-                               <style dangerouslySetInnerHTML={{__html: `
-                                 .time-wheel::-webkit-scrollbar { display: none; }
-                                 .time-wheel { -ms-overflow-style: none; scrollbar-width: none; }
-                                 @keyframes fadeOutUp {
-                                   0% { opacity: 0; transform: translate(-50%, 10px); }
-                                   20% { opacity: 1; transform: translate(-50%, 0); }
-                                   80% { opacity: 1; transform: translate(-50%, 0); }
-                                   100% { opacity: 0; transform: translate(-50%, -10px); }
-                                 }
-                                 .animate-fade-out-up { animation: fadeOutUp 1.5s ease-out forwards; }
-                                 @keyframes popIn {
-                                   0% { opacity: 0; transform: scale(0.9); }
-                                   100% { opacity: 1; transform: scale(1); }
-                                 }
-                                 .animate-pop-in { animation: popIn 0.2s ease-out forwards; }
-                               `}} />
-                               
                                <div className="flex-1 bg-gray-50 rounded-2xl p-2 sm:p-4 border border-gray-100 flex flex-col justify-center items-center relative overflow-hidden">
                                  <h3 className="absolute top-2 left-2 sm:top-4 sm:left-4 text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-widest z-10">Start Time</h3>
                                  <div className="flex w-full mt-6 h-[150px] justify-center gap-1 sm:gap-2 relative pr-[20px] sm:pr-0">
@@ -813,7 +714,7 @@ export default function AvailabilityPage() {
 
                   <div className="flex justify-between items-center mt-auto pt-8">
                      <button onClick={handlePrevDay} className="text-gray-400 hover:text-gray-700 font-bold px-4 py-2 flex items-center gap-2">
-                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" /></svg>
+                       <ChevronLeftIcon />
                        <span className="hidden sm:inline">Previous Day</span>
                      </button>
                      <div className="flex items-center gap-2 relative">
@@ -831,7 +732,7 @@ export default function AvailabilityPage() {
                      </div>
                      <button onClick={handleNextDay} className="text-gray-400 hover:text-gray-700 font-bold px-4 py-2 flex items-center gap-2">
                        <span className="hidden sm:inline">Next Day</span>
-                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" /></svg>
+                       <ChevronRightIcon />
                      </button>
                   </div>
                </div>
@@ -842,7 +743,7 @@ export default function AvailabilityPage() {
           <div className="w-full bg-white rounded-3xl shadow-xl p-6 sm:p-8 flex flex-col">
               <div className="flex items-center justify-between mb-6">
                 <button onClick={handlePrevPeriod} className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 transition-colors">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" /></svg>
+                  <ChevronLeftIcon className="w-5 h-5" />
                 </button>
                 {targetPeriod && (
                   <h3 className="text-lg font-bold text-gray-800 text-center">
@@ -853,7 +754,7 @@ export default function AvailabilityPage() {
                   const isAtMaxPeriod = targetPeriod && maxTargetPeriod && targetPeriod.year === maxTargetPeriod.year && targetPeriod.month === maxTargetPeriod.month && targetPeriod.period === maxTargetPeriod.period;
                   return (
                     <button onClick={handleNextPeriod} disabled={!!isAtMaxPeriod} className={`p-2 rounded-lg transition-colors ${isAtMaxPeriod ? 'text-gray-200' : 'text-gray-500 hover:bg-gray-100'}`}>
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" /></svg>
+                      <ChevronRightIcon className="w-5 h-5" />
                     </button>
                   )
                 })()}
@@ -946,13 +847,13 @@ export default function AvailabilityPage() {
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
            <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-xl w-full shadow-2xl relative">
               <button onClick={() => setShowMissingModal(false)} className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 bg-gray-50 rounded-full">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+                <CloseIcon />
               </button>
               <div className={`flex items-center gap-4 mb-4 ${missingDates.length > 0 ? 'text-amber-500' : 'text-green-500'}`}>
                 {missingDates.length > 0 ? (
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-10 h-10"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                  <WarningIcon className="w-10 h-10" />
                 ) : (
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-10 h-10"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
+                  <CircleCheckIcon className="w-10 h-10" />
                 )}
                 <h3 className="text-xl font-bold text-gray-800">{missingDates.length > 0 ? 'Missing Days' : 'Confirm Availability'}</h3>
               </div>
@@ -1007,3 +908,73 @@ export default function AvailabilityPage() {
     </main>
   );
 }
+
+// --------------------------------------------------------------------------------
+// SVGs extracted as lightweight helper components
+// --------------------------------------------------------------------------------
+
+const SuccessIcon = ({ className = "w-5 h-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className={className}><path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>
+);
+
+const ErrorIcon = ({ className = "w-5 h-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className={className}><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+);
+
+const WarningIcon = ErrorIcon;
+
+const CircleCheckIcon = ({ className = "w-5 h-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
+);
+
+const CalendarEmptyIcon = ({ className = "w-5 h-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}><path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5m-9-6h.008v.008H12v-.008ZM12 15h.008v.008H12V15Zm0 2.25h.008v.008H12v-.008ZM9.75 15h.008v.008H9.75V15Zm0 2.25h.008v.008H9.75v-.008ZM7.5 15h.008v.008H7.5V15Zm0 2.25h.008v.008H7.5v-.008Zm6.75-4.5h.008v.008h-.008v-.008Zm0 2.25h.008v.008h-.008V15Zm0 2.25h.008v.008h-.008v-.008Zm2.25-4.5h.008v.008H16.5v-.008Zm0 2.25h.008v.008H16.5V15Z" /></svg>
+);
+
+const BanIcon = ({ className = "w-4 h-4" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className={className}><path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636" /></svg>
+);
+
+const MenuIcon = ({ className = "w-6 h-6 text-gray-700" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className={className}><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" /></svg>
+);
+
+const DashboardIcon = ({ className = "w-4 h-4 text-gray-500" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className={className}><path strokeLinecap="round" strokeLinejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" /></svg>
+);
+
+const ManagementIcon = ({ className = "w-4 h-4 text-gray-500" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className={className}><path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.99l1.005.828c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /></svg>
+);
+
+const PrivacyIcon = ({ className = "w-4 h-4 text-gray-500" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className={className}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" /></svg>
+);
+
+const TermsIcon = ({ className = "w-4 h-4 text-gray-500" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className={className}><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>
+);
+
+const LogoutIcon = ({ className = "w-4 h-4" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className={className}><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" /></svg>
+);
+
+const AdminBadgeIcon = ({ className = "w-3 h-3 sm:w-4 sm:h-4 text-sky-600" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className={className}><path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.562.562 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557l-4.204-3.602a.562.562 0 0 1 .321-.988l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z" /></svg>
+);
+
+const LinkedBadgeIcon = ({ className = "w-3 h-3 sm:w-4 sm:h-4 text-gray-500" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className={className}><path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" /></svg>
+);
+
+const ChevronLeftIcon = ({ className = "w-4 h-4" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className={className}><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" /></svg>
+);
+
+const ChevronRightIcon = ({ className = "w-4 h-4" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className={className}><path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" /></svg>
+);
+
+const CloseIcon = ({ className = "w-5 h-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className={className}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+);

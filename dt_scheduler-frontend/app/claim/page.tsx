@@ -114,13 +114,12 @@ export default function ClaimAccountPage() {
               
               {step === 1 ? (
                 isLoadingStaff ? (
-                  <div className="w-full max-w-[280px] h-11 bg-gray-100 animate-pulse rounded-xl" />
+                  <div className="w-full max-w-[280px] h-[48px] bg-gray-100 animate-pulse rounded-full" />
                 ) : (
                   <select
                     value={staffId}
                     onChange={(e) => setStaffId(e.target.value)}
-                    className="input-nexus w-full max-w-[280px] appearance-none cursor-pointer"
-                    style={{ backgroundImage: 'url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23131313%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right .7em top 50%', backgroundSize: '.65em auto' }}
+                    className="select-nexus w-full max-w-[280px]"
                   >
                     <option value="" disabled>Select your name</option>
                     {availableStaff.map(s => (
@@ -146,13 +145,13 @@ export default function ClaimAccountPage() {
               )}
 
               {error && (
-                <div className="text-red-500 text-xs font-medium w-full max-w-[280px] text-center mt-2 animate-fade-in">
+                <div className="text-red-500 text-xs font-medium w-full max-w-[280px] text-center mt-2 animate-in fade-in">
                   {error}
                 </div>
               )}
 
               {successMsg && !error && step === 2 && (
-                <div className="text-green-500 text-xs font-medium w-full max-w-[280px] text-center mt-2 animate-fade-in">
+                <div className="text-emerald-500 text-xs font-medium w-full max-w-[280px] text-center mt-2 animate-in fade-in">
                   {successMsg}
                 </div>
               )}
@@ -162,12 +161,7 @@ export default function ClaimAccountPage() {
                 disabled={isLoading}
                 className="btn-nexus w-full max-w-[280px] mt-4 flex items-center justify-center gap-2"
               >
-                {isLoading && (
-                  <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                )}
+                {isLoading && <SpinnerIcon />}
                 {step === 1 ? 'Send Code' : 'Verify & Link'}
               </button>
 
@@ -187,3 +181,14 @@ export default function ClaimAccountPage() {
     </main>
   );
 }
+
+// --------------------------------------------------------------------------------
+// SVGs extracted as lightweight helper components
+// --------------------------------------------------------------------------------
+
+const SpinnerIcon = ({ className = "animate-spin h-5 w-5 text-white" }) => (
+  <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+  </svg>
+);

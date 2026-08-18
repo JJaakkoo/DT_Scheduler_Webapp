@@ -7,9 +7,7 @@ export default function PrivacyPolicy() {
       <div className="max-w-3xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden p-8 sm:p-12">
         <div className="mb-8">
           <Link href="/" className="text-dreamtea-blue hover:underline text-sm font-medium flex items-center gap-1">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
-            </svg>
+            <BackIcon />
             Back to Home
           </Link>
         </div>
@@ -68,3 +66,13 @@ export default function PrivacyPolicy() {
     </div>
   );
 }
+
+// --------------------------------------------------------------------------------
+// SVGs extracted as lightweight helper components
+// --------------------------------------------------------------------------------
+
+const BackIcon = ({ className = "w-4 h-4" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className={className}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
+  </svg>
+);

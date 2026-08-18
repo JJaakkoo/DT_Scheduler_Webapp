@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { createClient } from "../utils/supabase/client";
+import { createClient } from "@/utils/supabase/client";
 import Link from "next/link";
 
 function HomeContent() {
@@ -121,7 +121,7 @@ function HomeContent() {
         .maybeSingle();
 
       if (whitelistError || !whitelistData) {
-        throw new Error("Email is not whitelisted. Please contact Jako to get whitelisted.");
+        throw new Error("Email is not whitelisted. Please contact your manager to get whitelisted.");
       }
 
       // Proceed with signup
@@ -137,8 +137,7 @@ function HomeContent() {
         throw error;
       }
       
-      // Bypass Supabase email enumeration protection:
-      // If a user already exists and tries to sign up again, Supabase returns success but with an empty identities array.
+      // Bypass Supabase email enumeration protection
       if (data?.user?.identities && data.user.identities.length === 0) {
         throw new Error("Account already exists. Please log in.");
       }
@@ -209,7 +208,7 @@ function HomeContent() {
     document.cookie = "nexus_role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
     
     try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
+      const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
@@ -257,9 +256,9 @@ function HomeContent() {
             <h1 className="font-bold text-lg text-text-primary">Dream Tea Nexus</h1>
           </div>
 
-          <div key={isForgotPassword ? 'forgot' : isSignUp ? 'signup' : 'login'} className="w-full flex flex-col items-center transition-all duration-500 ease-in-out opacity-100 starting:opacity-0">
-            <h1 className="font-bold text-[36px] text-text-primary">{isForgotPassword ? "Reset Password" : isSignUp ? "Create Account" : "Welcome Back"}</h1>
-            <h2 className="font-bold text-[14px] text-text-secondary mt-2 mb-6">{isForgotPassword ? "Enter your email to receive a reset link" : isSignUp ? "Nexus Portal Registration" : "Nexus Portal Login"}</h2>
+          <div key={isForgotPassword ? 'forgot' : isSignUp ? 'signup' : 'login'} className="w-full flex flex-col items-center transition-all duration-500 ease-in-out opacity-100 starting:opacity-0 animate-in fade-in">
+            <h1 className="font-bold text-[36px] text-text-primary text-center leading-tight">{isForgotPassword ? "Reset Password" : isSignUp ? "Create Account" : "Welcome Back"}</h1>
+            <h2 className="font-bold text-[14px] text-text-secondary mt-2 mb-6 text-center">{isForgotPassword ? "Enter your email to receive a reset link" : isSignUp ? "Nexus Portal Registration" : "Nexus Portal Login"}</h2>
 
           <form onSubmit={isForgotPassword ? handleForgotPassword : isSignUp ? handleSignUp : handleStaffLogin} className="w-full flex flex-col items-center gap-4">
 
@@ -284,12 +283,9 @@ function HomeContent() {
                   type="button" 
                   onClick={() => setShowPassword(!showPassword)}
                   className="text-text-tertiary hover:text-text-secondary focus:outline-none transition-colors"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
                 >
-                  {showPassword ? (
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                  ) : (
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" /></svg>
-                  )}
+                  {showPassword ? <EyeOpenIcon /> : <EyeClosedIcon />}
                 </button>
               </div>
             )}
@@ -303,7 +299,8 @@ function HomeContent() {
                   <span className="text-xs ml-2 text-text-secondary select-none font-medium">Remember me</span>
                 </div>
               )}
-              <button type="submit" disabled={isLoading} className="btn-nexus disabled:opacity-50">
+              <button type="submit" disabled={isLoading} className="btn-nexus disabled:opacity-50 min-w-[120px] flex justify-center items-center gap-2">
+                {isLoading && <SpinnerIcon />}
                 {isLoading ? "Wait..." : (isForgotPassword ? "Send Link" : isSignUp ? "Sign Up" : "Log In")}
               </button>
             </div>
@@ -355,12 +352,7 @@ function HomeContent() {
                   onClick={handleGoogleLogin}
                   className="w-full max-w-[280px] h-[48px] bg-white border border-gray-300 text-gray-700 font-medium text-[14px] rounded-full hover:bg-gray-50 hover:shadow-sm transition-all flex items-center justify-center gap-3 mb-3"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" className="w-5 h-5">
-                    <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-                    <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-                    <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-                    <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-                  </svg>
+                  <GoogleLogoIcon />
                   Sign in with Google
                 </button>
 
@@ -369,9 +361,7 @@ function HomeContent() {
                   onClick={handleGuestLogin}
                   className="w-full max-w-[280px] h-[48px] bg-white border-2 border-gray-200 text-gray-600 font-bold text-[14px] rounded-full hover:bg-gray-50 hover:border-gray-300 transition-colors flex items-center justify-center gap-2 mb-3"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4 text-dreamtea-blue">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
-                  </svg>
+                  <GuestIcon />
                   Sign in as Guest
                 </button>
               </>
@@ -443,3 +433,42 @@ export default function Home() {
     </Suspense>
   );
 }
+
+// --------------------------------------------------------------------------------
+// SVGs extracted as lightweight helper components
+// --------------------------------------------------------------------------------
+
+const EyeOpenIcon = ({ className = "w-5 h-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+  </svg>
+);
+
+const EyeClosedIcon = ({ className = "w-5 h-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
+  </svg>
+);
+
+const GoogleLogoIcon = ({ className = "w-5 h-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" className={className}>
+    <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+    <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+    <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+    <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+  </svg>
+);
+
+const GuestIcon = ({ className = "w-4 h-4 text-dreamtea-blue" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className={className}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+  </svg>
+);
+
+const SpinnerIcon = ({ className = "animate-spin h-5 w-5 text-white" }) => (
+  <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+  </svg>
+);

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { Analytics } from "@vercel/analytics/react";
 import "./globals.css";
@@ -10,7 +10,14 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: "Dream Tea Nexus",
-  description: "Internal Staff Scheduling and Automation Portal",
+  description: "Internal staff scheduling, shift management, and automation portal for Dream Tea.",
+};
+
+export const viewport: Viewport = {
+  themeColor: "#B0E3F6",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
 };
 
 export default function RootLayout({
@@ -21,7 +28,8 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} h-full antialiased`}
+      className={`${inter.variable} h-full`}
+      suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">
         {children}
