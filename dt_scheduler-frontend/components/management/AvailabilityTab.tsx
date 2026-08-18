@@ -55,7 +55,11 @@ export function AvailabilityTab({
             />
           </div>
           <button 
-            onClick={() => setIsIndividualView(!isIndividualView)}
+            onClick={() => {
+              const nextState = !isIndividualView;
+              setIsIndividualView(nextState);
+              if (!nextState) setSearchQuery('');
+            }}
             className={`w-full sm:w-auto px-4 py-2 rounded-xl text-sm font-bold transition-all whitespace-nowrap border flex items-center justify-center gap-2 ${
               isIndividualView 
                 ? 'bg-[#8ab4f8] text-white border-[#8ab4f8] shadow-sm hover:opacity-90' 
@@ -118,43 +122,100 @@ export function AvailabilityTab({
                  return (
                     <div className="flex-1 flex flex-col">
                        <h2 className="text-2xl font-bold text-gray-800 mb-4">{record.staff.name}'s Availability</h2>
-                       <div className="flex-1 overflow-y-auto bg-gray-50 border border-gray-100 rounded-xl p-4">
-                          <ul className="list-disc list-inside font-medium space-y-2 text-sm sm:text-base">
-                             {validDates.map(d => {
-                                const dayStr = d.toISOString().split('T')[0];
-                                const cache = record.schedule_data && record.schedule_data[dayStr];
-                                let suffix = ": No Availability Given";
-                                let color = "text-gray-400";
-                                
-                                if (cache) {
-                                   if (cache.isUnavailable) {
-                                      suffix = ": Unavailable";
-                                      color = "text-gray-700";
-                                   } else {
-                                      const locs = Object.values(cache.locations || {}) as any[];
-                                      if (locs.length > 0) {
-                                         const startD = new Date(locs[0][0].start.dateTime);
-                                         const endD = new Date(locs[0][0].end.dateTime);
-                                         const startH = startD.getHours().toString().padStart(2, '0');
-                                         const startM = startD.getMinutes().toString().padStart(2, '0');
-                                         const endH = endD.getHours().toString().padStart(2, '0');
-                                         const endM = endD.getMinutes().toString().padStart(2, '0');
-                                         suffix = `: ${startH}:${startM}-${endH}:${endM}`;
-                                         color = "text-gray-700";
-                                      } else {
-                                         suffix = ": Available";
-                                         color = "text-gray-700";
+                       <div className="relative flex-1 bg-gray-50/50 rounded-xl border border-gray-100 p-4 min-h-[300px] overflow-x-auto overflow-y-hidden">
+                          <div className="min-w-[700px] relative flex flex-col">
+                             {/* X-Axis Timeline (10am to 10pm) */}
+                             <div className="ml-32 relative h-10 pointer-events-none" style={{ zIndex: 0 }}>
+                                {[10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22].map((hour) => (
+                                   <div key={hour} className={`absolute top-0 flex flex-col items-center pointer-events-none ${(hour === 12 || hour === 17 || hour === 22) ? 'z-10' : ''}`} style={{ left: `${((hour - 10) / 12) * 100}%`, transform: 'translateX(-50%)', height: '2000px' }}>
+                                      <span className={`text-xs font-bold mt-1 bg-gray-50 px-1 rounded ${(hour === 12 || hour === 17 || hour === 22) ? 'text-gray-600' : 'text-gray-400'}`}>{hour > 12 ? hour - 12 : hour}{hour === 12 ? 'p' : hour > 12 ? 'p' : 'a'}</span>
+                                      <div className={`flex-1 mt-1 ${(hour === 12 || hour === 17 || hour === 22) ? 'w-[2px] bg-gray-400/80' : 'w-px bg-gray-200'}`} />
+                                   </div>
+                                ))}
+                             </div>
+                             
+                             {/* Gantt Rows */}
+                             <div className="mt-4 flex flex-col gap-3 relative z-10 w-full">
+                             {(() => {
+                                let rows: any[] = [];
+                                validDates.forEach(d => {
+                                   const dayStr = d.toISOString().split('T')[0];
+                                   const cache = record.schedule_data && record.schedule_data[dayStr];
+                                   let shiftsForDay: any[] = [];
+                                   
+                                   if (cache && !cache.isUnavailable) {
+                                      for (const [loc, shifts] of Object.entries(cache.locations || {}) as [string, any[]][]) {
+                                         if (selectedLocation !== 'All' && loc.toLowerCase() !== selectedLocation.toLowerCase()) continue;
+                                         
+                                         shifts.forEach(shift => {
+                                            const startD = new Date(shift.start.dateTime);
+                                            const endD = new Date(shift.end.dateTime);
+                                            
+                                            const startHour = startD.getHours() + (startD.getMinutes() / 60);
+                                            const endHour = endD.getHours() + (endD.getMinutes() / 60);
+                                            
+                                            if (endHour <= 10 || startHour >= 22) return;
+                                            
+                                            const cStart = Math.max(10, startHour);
+                                            const cEnd = Math.min(22, endHour);
+                                            
+                                            const leftPerc = ((cStart - 10) / 12) * 100;
+                                            const widthPerc = ((cEnd - cStart) / 12) * 100;
+                                            
+                                            let colorClass = "bg-[#A0B99B]/30 border-[#A0B99B] text-[#42523f]";
+                                            if (loc.toLowerCase() === 'whyte') colorClass = "bg-[#CAB1E3]/30 border-[#CAB1E3] text-[#5b4a6e]";
+                                            if (loc.toLowerCase() === 'heritage') colorClass = "bg-[#ED9BB4]/30 border-[#ED9BB4] text-[#8a3e56]";
+                                            
+                                            shiftsForDay.push({
+                                               loc, leftPerc, widthPerc, colorClass,
+                                               startH: startD.getHours() > 12 ? startD.getHours() - 12 : startD.getHours(),
+                                               startM: startD.getMinutes().toString().padStart(2,'0'),
+                                               startP: startD.getHours() >= 12 ? 'p' : 'a',
+                                               endH: endD.getHours() > 12 ? endD.getHours() - 12 : endD.getHours(),
+                                               endM: endD.getMinutes().toString().padStart(2,'0'),
+                                               endP: endD.getHours() >= 12 ? 'p' : 'a'
+                                            });
+                                         });
                                       }
                                    }
-                                }
+                                   
+                                   rows.push({
+                                      date: d,
+                                      isUnavailable: cache?.isUnavailable,
+                                      hasCache: !!cache,
+                                      shifts: shiftsForDay
+                                   });
+                                });
                                 
-                                return (
-                                   <li key={d.toISOString()} className={color}>
-                                      {d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}{suffix}
-                                   </li>
-                                );
-                             })}
-                          </ul>
+                                return rows.map((r, idx) => (
+                                   <div key={idx} className="flex items-center w-full">
+                                      <div className="w-32 flex-shrink-0 text-sm font-semibold text-gray-700 truncate pr-2">
+                                         {r.date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                                      </div>
+                                      <div className="flex-1 relative h-10 bg-transparent rounded-lg">
+                                         {!r.hasCache ? (
+                                            <div className="absolute inset-0 flex items-center px-2 text-xs text-gray-400 font-medium">No Availability Given</div>
+                                         ) : r.isUnavailable ? (
+                                            <div className="absolute inset-0 flex items-center px-2 text-xs text-gray-500 font-medium opacity-60">Unavailable</div>
+                                         ) : r.shifts.length === 0 ? (
+                                            <div className="absolute inset-0 flex items-center px-2 text-xs text-gray-400 font-medium opacity-60">Not Available</div>
+                                         ) : (
+                                            r.shifts.map((shift: any, sIdx: number) => (
+                                               <div key={sIdx} className={`absolute top-1 bottom-1 rounded-md border flex items-center shadow-sm overflow-hidden whitespace-nowrap ${shift.colorClass}`} style={{ left: `${shift.leftPerc}%`, width: `${shift.widthPerc}%` }}>
+                                                  <div className="flex justify-between items-center w-full px-2">
+                                                     <span className="text-[10px] font-medium opacity-70">{shift.startH}:{shift.startM}{shift.startP}</span>
+                                                     <span className="truncate font-bold text-xs px-1">{shift.loc}</span>
+                                                     <span className="text-[10px] font-medium opacity-70">{shift.endH}:{shift.endM}{shift.endP}</span>
+                                                  </div>
+                                               </div>
+                                            ))
+                                         )}
+                                      </div>
+                                   </div>
+                                ));
+                             })()}
+                             </div>
+                          </div>
                        </div>
                     </div>
                  )
