@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-export function StaffRow({ staff, onSave }: { staff: any, onSave: () => void }) {
+export function StaffRow({ staff, onSave, onViewAvailability }: { staff: any, onSave: () => void, onViewAvailability?: (name: string) => void }) {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   
@@ -114,7 +114,10 @@ export function StaffRow({ staff, onSave }: { staff: any, onSave: () => void }) 
         {formatDate(staff.created_at)}
       </td>
       <td className="px-3 py-3">
-        <span className={`text-[13px] font-medium whitespace-nowrap ${staff.statusColor} ${staff.isClickable ? 'cursor-pointer hover:underline' : ''}`}>
+        <span 
+          onClick={() => { if (staff.isClickable && onViewAvailability) onViewAvailability(staff.name); }}
+          className={`text-[13px] font-medium whitespace-nowrap ${staff.statusColor} ${staff.isClickable ? 'cursor-pointer hover:underline' : ''}`}
+        >
            {staff.statusText}
         </span>
       </td>

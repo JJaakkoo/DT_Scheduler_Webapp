@@ -42,6 +42,7 @@ export function AvailabilityTab({
   useEffect(() => {
     const cachedIV = localStorage.getItem("nexus_management_iv");
     if (cachedIV !== null) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsIndividualView(cachedIV === 'true');
     }
   }, []);

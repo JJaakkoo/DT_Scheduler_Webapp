@@ -78,17 +78,27 @@ export default function ManagementPage() {
     fetchData();
   };
 
+  const handleViewAvailability = (name: string) => {
+    setSearchQuery(name);
+    setActiveTab('scheduling');
+    localStorage.setItem("nexus_management_iv", "true");
+  };
+
   useEffect(() => {
     const cachedLoc = localStorage.getItem("nexus_management_loc");
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (cachedLoc) setSelectedLocation(cachedLoc);
 
     const cachedTab = localStorage.getItem("nexus_management_tab");
+     
     if (cachedTab) setActiveTab(cachedTab as 'staff' | 'scheduling');
 
     const cachedSearch = localStorage.getItem("nexus_management_search");
+     
     if (cachedSearch) setSearchQuery(cachedSearch);
 
     const cachedDate = localStorage.getItem("nexus_management_date");
+     
     if (cachedDate) setSelectedDate(new Date(cachedDate));
   }, []);
 
@@ -443,7 +453,7 @@ export default function ManagementPage() {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {visibleStaffData.map(staff => (
-                  <StaffRow key={staff.id} staff={staff} onSave={fetchData} />
+                  <StaffRow key={staff.id} staff={staff} onSave={fetchData} onViewAvailability={handleViewAvailability} />
                 ))}
                 {sortedStaffData.length === 0 && !isLoading && (
                   <tr>
