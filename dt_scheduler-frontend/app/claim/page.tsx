@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { requestClaim, verifyClaim, getAvailableStaff } from '@/app/actions/claim';
+import { requestClaim, verifyClaim, getAvailableStaff, getCurrentUserRole } from '@/app/actions/claim';
 
 export default function ClaimAccountPage() {
   const router = useRouter();
@@ -17,7 +17,13 @@ export default function ClaimAccountPage() {
   const [successMsg, setSuccessMsg] = useState('');
 
   useEffect(() => {
-    async function fetchStaff() {
+    async function init() {
+      const { role } = await getCurrentUserRole();
+      if (role !== 'unclaimed' && role !== 'guest') {
+        router.push('/dashboard');
+        return;
+      }
+
       const result = await getAvailableStaff();
       if (result.staff) {
         setAvailableStaff(result.staff);
@@ -26,8 +32,8 @@ export default function ClaimAccountPage() {
       }
       setIsLoadingStaff(false);
     }
-    fetchStaff();
-  }, []);
+    init();
+  }, [router]);
 
   const handleRequest = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -128,7 +128,7 @@ export async function getStaffTableData(): Promise<StaffTableDataResponse> {
     
     let targetYear = releasedYear;
     let targetMonth = releasedMonth;
-    let targetPeriod = releasedPeriod === 1 ? 2 : 1;
+    const targetPeriod = releasedPeriod === 1 ? 2 : 1;
     if (targetPeriod === 1) {
       targetMonth += 1;
       if (targetMonth > 12) {
@@ -374,6 +374,33 @@ export async function deleteStaffRecord(id: string): Promise<ActionResponse> {
   } catch (error: any) {
     if (error.message === 'Unauthorized') return { error: 'Unauthorized' };
     console.error('deleteStaffRecord error:', error);
+    return { error: 'Unexpected error occurred' };
+  }
+}
+
+export async function unlinkStaffAccount(id: string): Promise<ActionResponse> {
+  if (!id || typeof id !== 'string') return { error: 'Invalid staff ID.' };
+
+  try {
+    const { adminSupabase } = await requireAdminAuth();
+
+    const { error } = await adminSupabase
+      .from('staff')
+      .update({
+        staff_id: null,
+        email: null,
+        role: 'unclaimed',
+        claim_otp: null,
+        otp_expires_at: null
+      })
+      .eq('id', id);
+
+    if (error) return { error: error.message };
+
+    return { success: true };
+  } catch (error: any) {
+    if (error.message === 'Unauthorized') return { error: 'Unauthorized' };
+    console.error('unlinkStaffAccount error:', error);
     return { error: 'Unexpected error occurred' };
   }
 }

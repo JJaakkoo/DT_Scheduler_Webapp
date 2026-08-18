@@ -3,6 +3,7 @@ import React, { useState } from "react";
 export function StaffRow({ staff, onSave, onViewAvailability }: { staff: any, onSave: () => void, onViewAvailability?: (name: string) => void }) {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUnlinking, setIsUnlinking] = useState(false);
   
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -42,6 +43,21 @@ export function StaffRow({ staff, onSave, onViewAvailability }: { staff: any, on
       onSave();
     } else {
       alert("Failed to save: " + error);
+    }
+  };
+
+  const handleUnlink = async () => {
+    if (!confirm("Are you sure you want to unlink this account? They will lose access until re-linked.")) return;
+    setIsUnlinking(true);
+    const { unlinkStaffAccount } = await import('@/app/actions/management');
+    const { success, error } = await unlinkStaffAccount(staff.id);
+    
+    setIsUnlinking(false);
+    if (success) {
+      setIsEditing(false);
+      onSave();
+    } else {
+      alert("Failed to unlink: " + error);
     }
   };
 
@@ -124,7 +140,12 @@ export function StaffRow({ staff, onSave, onViewAvailability }: { staff: any, on
       <td className="px-3 py-3 text-right w-[140px]">
         {isEditing ? (
           <div className="flex items-center justify-end gap-2">
-            <button onClick={handleSave} disabled={isSaving} className="text-teal-500 hover:text-teal-600 text-xs font-medium disabled:opacity-50 whitespace-nowrap cursor-pointer disabled:cursor-default">
+            {staff.staff_id && (
+              <button onClick={handleUnlink} disabled={isSaving || isUnlinking} className="text-orange-400 hover:text-orange-500 text-xs font-medium disabled:opacity-50 whitespace-nowrap cursor-pointer disabled:cursor-default">
+                {isUnlinking ? 'Unlinking...' : 'Unlink'}
+              </button>
+            )}
+            <button onClick={handleSave} disabled={isSaving || isUnlinking} className="text-teal-500 hover:text-teal-600 text-xs font-medium disabled:opacity-50 whitespace-nowrap cursor-pointer disabled:cursor-default">
               {isSaving ? 'Saving...' : 'Save'}
             </button>
             <button onClick={handleCancel} disabled={isSaving} className="text-gray-400 hover:text-gray-600 text-xs font-medium whitespace-nowrap cursor-pointer disabled:cursor-default">
