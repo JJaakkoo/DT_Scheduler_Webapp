@@ -436,13 +436,23 @@ export default function ManagementPage() {
             <div className="overflow-x-auto w-full pb-4">
             <div className="flex justify-between items-center mb-4 min-w-[700px] gap-4">
               <div className="relative max-w-sm w-full">
-                <input
-                  type="text"
-                  placeholder="Search staff by name or email..."
-                  value={staffSearchQuery}
-                  onChange={e => { setStaffSearchQuery(e.target.value); setVisibleCount(10); }}
-                  className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none text-sm"
-                />
+                  <input
+                    type="text"
+                    placeholder="Search staff by name or email..."
+                    value={staffSearchQuery}
+                    onChange={e => { setStaffSearchQuery(e.target.value); setVisibleCount(10); }}
+                    className="w-full pl-10 pr-10 py-2.5 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none text-sm"
+                  />
+                  {staffSearchQuery && (
+                    <button 
+                      onClick={() => { setStaffSearchQuery(''); setVisibleCount(10); }}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-200/50 transition-colors"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  )}
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2">
                   <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
                 </svg>
