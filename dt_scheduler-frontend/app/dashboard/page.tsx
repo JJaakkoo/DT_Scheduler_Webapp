@@ -76,8 +76,24 @@ const ShiftTimeline = ({ searchedShifts, masterShifts, searchIdentifier, isLoadi
       <div className="flex flex-col gap-8">
         {timelines.map((timeline, idx) => {
           const locTheme = getLocationTheme(timeline.userShift.location || timeline.userShift.summary.replace("Work at ", ""));
+          
+          let showDivider = false;
+          if (idx > 0) {
+            const now = new Date();
+            now.setHours(0, 0, 0, 0);
+            const prevStart = new Date(timelines[idx - 1].userShift.start.dateTime);
+            const currStart = new Date(timeline.userShift.start.dateTime);
+            if (prevStart < now && currStart >= now) {
+              showDivider = true;
+            }
+          }
+
           return (
-          <div key={idx} className="flex flex-col">
+          <React.Fragment key={idx}>
+            {showDivider && (
+              <div className="w-full border-t border-gray-100 my-6"></div>
+            )}
+            <div className="flex flex-col">
             <h4 className="font-bold text-gray-700 text-sm mb-4 border-b border-gray-100 pb-2 pl-2">
               {new Date(timeline.userShift.start.dateTime).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })} @ {timeline.userShift.location || timeline.userShift.summary.replace("Work at ", "")}
             </h4>
@@ -104,6 +120,7 @@ const ShiftTimeline = ({ searchedShifts, masterShifts, searchIdentifier, isLoadi
               )}
             </div>
           </div>
+          </React.Fragment>
         )})}
       </div>
     </div>
