@@ -519,7 +519,7 @@ export default function AvailabilityPage() {
       });
       
       // 2. We need the custom `staff_id` from the `staff` table
-      const { data: userData, error: userError } = await supabase.from('staff').select('id, availability_ids').eq('staff_id', (await supabase.auth.getUser()).data.user?.id).single();
+      const { data: userData, error: userError } = await supabase.from('staff').select('id').eq('staff_id', (await supabase.auth.getUser()).data.user?.id).single();
       
       if (userError || !userData) {
          alert("Could not find your staff record. Please contact the manager to get your account linked.");

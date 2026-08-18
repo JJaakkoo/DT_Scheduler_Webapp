@@ -53,7 +53,7 @@ export async function getStaffTableData() {
     
     const { data: staff, error } = await adminSupabase
       .from('staff')
-      .select('id, staff_id, name, temp_email, email, role, s_name, created_at, availability_ids')
+      .select('id, staff_id, name, temp_email, email, role, s_name, created_at')
       .order('name');
     if (error) return { error: 'Failed to fetch staff' };
     

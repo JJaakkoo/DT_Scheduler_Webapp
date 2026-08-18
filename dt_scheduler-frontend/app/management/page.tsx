@@ -63,6 +63,16 @@ export default function ManagementPage() {
   const [isFetchingAvail, setIsFetchingAvail] = useState(false);
 
   useEffect(() => {
+    const cachedLoc = localStorage.getItem("nexus_management_loc");
+    if (cachedLoc) setSelectedLocation(cachedLoc);
+  }, []);
+
+  const handleLocationChange = (loc: string) => {
+    setSelectedLocation(loc);
+    localStorage.setItem("nexus_management_loc", loc);
+  };
+
+  useEffect(() => {
     const fetchAvail = async () => {
       if (!targetPeriod) return;
       setIsFetchingAvail(true);
@@ -386,7 +396,7 @@ export default function ManagementPage() {
                    <span className="text-sm font-medium text-gray-500">Location:</span>
                    <select 
                      value={selectedLocation} 
-                     onChange={(e) => setSelectedLocation(e.target.value)}
+                     onChange={(e) => handleLocationChange(e.target.value)}
                      className="bg-white border border-gray-200 text-gray-700 text-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 py-2 pl-3 pr-8 appearance-none cursor-pointer"
                      style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'%236b7280\' stroke-width=\'2\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' d=\'M19.5 8.25l-7.5 7.5-7.5-7.5\'/%3E%3C/svg%3E")', backgroundPosition: 'right 0.5rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1em 1em' }}
                    >
@@ -472,21 +482,39 @@ export default function ManagementPage() {
                       })()
                     )
                  ) : (
-                   // GANTT CHART VIEW
-                   <div className="flex-1 flex flex-col">
-                      <h2 className="text-2xl font-bold text-gray-800 mb-6">
-                        {selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-                      </h2>
+                    // GANTT CHART VIEW
+                    <div className="flex-1 flex flex-col">
+                       <div className="flex justify-between items-center mb-6">
+                         <h2 className="text-2xl font-bold text-gray-800">
+                           {selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                         </h2>
+                         <div className="flex gap-2">
+                            <button onClick={() => {
+                               if (!selectedDate || validDates.length === 0) return;
+                               const idx = validDates.findIndex(d => d.toDateString() === selectedDate.toDateString());
+                               if (idx > 0) setSelectedDate(validDates[idx - 1]);
+                            }} className="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600 transition-colors shadow-sm disabled:opacity-50" disabled={!selectedDate || validDates.findIndex(d => d.toDateString() === selectedDate.toDateString()) <= 0}>
+                               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" /></svg>
+                            </button>
+                            <button onClick={() => {
+                               if (!selectedDate || validDates.length === 0) return;
+                               const idx = validDates.findIndex(d => d.toDateString() === selectedDate.toDateString());
+                               if (idx >= 0 && idx < validDates.length - 1) setSelectedDate(validDates[idx + 1]);
+                            }} className="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600 transition-colors shadow-sm disabled:opacity-50" disabled={!selectedDate || validDates.findIndex(d => d.toDateString() === selectedDate.toDateString()) >= validDates.length - 1}>
+                               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" /></svg>
+                            </button>
+                         </div>
+                       </div>
                       
                       {/* Gantt Chart Container */}
                       <div className="relative flex-1 bg-gray-50/50 rounded-xl border border-gray-100 p-4 pt-10 min-h-[300px] overflow-x-auto">
                          
                          {/* X-Axis Timeline (10am to 10pm) */}
-                         <div className="absolute top-0 left-32 right-4 h-10 border-b border-gray-200 flex justify-between items-end pb-2 min-w-[400px]">
+                         <div className="absolute top-0 bottom-0 left-32 right-4 min-w-[400px] pointer-events-none" style={{ zIndex: 0 }}>
                             {[10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22].map((hour) => (
-                               <div key={hour} className="text-xs font-bold text-gray-400 relative">
-                                  {hour > 12 ? hour - 12 : hour}{hour === 12 ? 'p' : hour > 12 ? 'p' : 'a'}
-                                  <div className="absolute top-full left-1/2 w-px h-full bg-gray-200 -translate-x-1/2 mt-2 h-[500px]" style={{ zIndex: 0 }} />
+                               <div key={hour} className={`absolute top-0 bottom-0 flex flex-col items-center pointer-events-none ${(hour === 12 || hour === 17 || hour === 22) ? 'z-10' : ''}`} style={{ left: `${((hour - 10) / 12) * 100}%`, transform: 'translateX(-50%)' }}>
+                                  <span className={`text-xs font-bold mt-2 bg-gray-50/50 px-1 rounded ${(hour === 12 || hour === 17 || hour === 22) ? 'text-gray-600' : 'text-gray-400'}`}>{hour > 12 ? hour - 12 : hour}{hour === 12 ? 'p' : hour > 12 ? 'p' : 'a'}</span>
+                                  <div className={`flex-1 mt-2 ${(hour === 12 || hour === 17 || hour === 22) ? 'w-[2px] bg-gray-400/80' : 'w-px bg-gray-200'}`} />
                                </div>
                             ))}
                          </div>
@@ -521,9 +549,9 @@ export default function ManagementPage() {
                                            const leftPerc = ((cStart - 10) / 12) * 100;
                                            const widthPerc = ((cEnd - cStart) / 12) * 100;
                                            
-                                           let colorClass = "bg-blue-500 border-blue-600";
-                                           if (loc.toLowerCase() === 'whyte') colorClass = "bg-rose-500 border-rose-600";
-                                           if (loc.toLowerCase() === 'heritage') colorClass = "bg-emerald-500 border-emerald-600";
+                                           let colorClass = "bg-sky-50 border-sky-500 text-sky-700";
+                                           if (loc.toLowerCase() === 'whyte') colorClass = "bg-rose-50 border-rose-500 text-rose-700";
+                                           if (loc.toLowerCase() === 'heritage') colorClass = "bg-emerald-50 border-emerald-500 text-emerald-700";
                                            
                                            rows.push({
                                               name: record.staff.name,
@@ -531,7 +559,12 @@ export default function ManagementPage() {
                                               left: leftPerc,
                                               width: widthPerc,
                                               colorClass,
-                                              timeText: `${startD.getHours().toString().padStart(2,'0')}:${startD.getMinutes().toString().padStart(2,'0')} - ${endD.getHours().toString().padStart(2,'0')}:${endD.getMinutes().toString().padStart(2,'0')}`
+                                              startH: startD.getHours() > 12 ? startD.getHours() - 12 : startD.getHours(),
+                                              startM: startD.getMinutes().toString().padStart(2,'0'),
+                                              startP: startD.getHours() >= 12 ? 'p' : 'a',
+                                              endH: endD.getHours() > 12 ? endD.getHours() - 12 : endD.getHours(),
+                                              endM: endD.getMinutes().toString().padStart(2,'0'),
+                                              endP: endD.getHours() >= 12 ? 'p' : 'a',
                                            });
                                         });
                                      }
@@ -553,11 +586,15 @@ export default function ManagementPage() {
                                      </div>
                                      <div className="flex-1 relative h-10 bg-transparent rounded-lg">
                                         <div 
-                                           className={`absolute top-1 bottom-1 rounded-md border text-xs text-white font-bold px-2 flex items-center shadow-sm overflow-hidden whitespace-nowrap ${r.colorClass}`}
+                                           className={`absolute top-1 bottom-1 rounded-md border flex items-center shadow-sm overflow-hidden whitespace-nowrap ${r.colorClass}`}
                                            style={{ left: `${r.left}%`, width: `${r.width}%` }}
-                                           title={`${r.name} at ${r.loc} (${r.timeText})`}
+                                           title={`${r.name} at ${r.loc} (${r.startH}:${r.startM}${r.startP} - ${r.endH}:${r.endM}${r.endP})`}
                                         >
-                                           <span className="truncate">{r.loc}</span>
+                                           <div className="flex justify-between items-center w-full px-2">
+                                              <span className="text-[10px] font-medium opacity-70">{r.startH}:{r.startM}{r.startP}</span>
+                                              <span className="truncate font-bold text-xs px-1">{r.loc}</span>
+                                              <span className="text-[10px] font-medium opacity-70">{r.endH}:{r.endM}{r.endP}</span>
+                                           </div>
                                         </div>
                                      </div>
                                   </div>
