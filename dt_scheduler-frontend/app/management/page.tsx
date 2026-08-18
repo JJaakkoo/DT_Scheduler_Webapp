@@ -819,11 +819,23 @@ function StaffRow({ staff, onSave }: { staff: any, onSave: () => void }) {
         {isEditing ? (
           <input type="text" value={tempEmail} onChange={e => setTempEmail(e.target.value)} className="w-full max-w-[120px] p-1 border rounded text-[13px] focus:ring-1 focus:ring-black outline-none" />
         ) : (
-          <div className="text-gray-500 max-w-[120px] truncate" title={staff.temp_email}>{staff.temp_email || '-'}</div>
+          <div 
+            className="text-gray-500 max-w-[120px] truncate cursor-pointer hover:text-sky-500 hover:underline transition-all" 
+            title={staff.temp_email ? "Click to copy" : ""}
+            onClick={() => staff.temp_email && navigator.clipboard.writeText(staff.temp_email)}
+          >
+            {staff.temp_email || '-'}
+          </div>
         )}
       </td>
       <td className="px-3 py-3 text-gray-500">
-        <div className="max-w-[120px] truncate" title={staff.email}>{staff.email || '-'}</div>
+        <div 
+          className="max-w-[120px] truncate cursor-pointer hover:text-sky-500 hover:underline transition-all" 
+          title={staff.email ? "Click to copy" : ""}
+          onClick={() => staff.email && navigator.clipboard.writeText(staff.email)}
+        >
+          {staff.email || '-'}
+        </div>
       </td>
       <td className="px-3 py-3">
         {isEditing ? (
