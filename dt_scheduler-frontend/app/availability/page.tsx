@@ -240,9 +240,11 @@ export default function AvailabilityPage() {
   const handleLogOut = async () => {
     setIsLoggingOut(true);
     await supabase.auth.signOut();
-    localStorage.removeItem("nexus_role");
-    localStorage.removeItem("google_access_token");
-    localStorage.removeItem("nexus_login_time");
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith('nexus_') || key.startsWith('google_')) {
+        localStorage.removeItem(key);
+      }
+    });
     document.cookie = "nexus_role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
     router.push("/");
     router.refresh();
