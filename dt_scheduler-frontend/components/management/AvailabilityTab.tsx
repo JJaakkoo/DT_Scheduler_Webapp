@@ -200,15 +200,29 @@ export function AvailabilityTab({
                                          ) : r.shifts.length === 0 ? (
                                             <div className="absolute inset-0 flex items-center px-2 text-xs text-gray-400 font-medium opacity-60">Not Available</div>
                                          ) : (
-                                            r.shifts.map((shift: any, sIdx: number) => (
-                                               <div key={sIdx} className={`absolute top-1 bottom-1 rounded-md border flex items-center shadow-sm overflow-hidden whitespace-nowrap ${shift.colorClass}`} style={{ left: `${shift.leftPerc}%`, width: `${shift.widthPerc}%` }}>
-                                                  <div className="flex justify-between items-center w-full px-2">
-                                                     <span className="text-[10px] font-medium opacity-70">{shift.startH}:{shift.startM}{shift.startP}</span>
-                                                     <span className="truncate font-bold text-xs px-1">{shift.loc}</span>
-                                                     <span className="text-[10px] font-medium opacity-70">{shift.endH}:{shift.endM}{shift.endP}</span>
+                                            r.shifts.map((shift: any, sIdx: number) => {
+                                               const totalShifts = r.shifts.length;
+                                               const isMulti = totalShifts > 1;
+                                               
+                                               const topStyle = isMulti 
+                                                  ? `calc(4px + ${sIdx} * ((100% - 8px) / ${totalShifts}))` 
+                                                  : '4px';
+                                               const heightStyle = isMulti 
+                                                  ? `calc((100% - 8px) / ${totalShifts})` 
+                                                  : 'calc(100% - 8px)';
+                                               
+                                               return (
+                                                  <div key={sIdx} className={`absolute rounded-md border flex items-center shadow-sm overflow-hidden whitespace-nowrap ${shift.colorClass}`} style={{ left: `${shift.leftPerc}%`, width: `${shift.widthPerc}%`, top: topStyle, height: heightStyle }}>
+                                                     <div className={`flex justify-between items-center w-full ${isMulti ? 'px-1' : 'px-2'}`}>
+                                                        <span className={`${isMulti ? 'text-[8px]' : 'text-[10px]'} font-medium opacity-70`}>{shift.startH}:{shift.startM}{shift.startP}</span>
+                                                        <span className={`truncate font-bold ${isMulti ? 'text-[10px]' : 'text-xs'} px-1`}>
+                                                           {isMulti ? shift.loc.charAt(0).toUpperCase() : shift.loc}
+                                                        </span>
+                                                        <span className={`${isMulti ? 'text-[8px]' : 'text-[10px]'} font-medium opacity-70`}>{shift.endH}:{shift.endM}{shift.endP}</span>
+                                                     </div>
                                                   </div>
-                                               </div>
-                                            ))
+                                               );
+                                            })
                                          )}
                                       </div>
                                    </div>
