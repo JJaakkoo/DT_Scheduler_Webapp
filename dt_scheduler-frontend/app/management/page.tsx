@@ -69,6 +69,7 @@ export default function ManagementPage() {
   const [addEmail, setAddEmail] = useState('');
   const [addSName, setAddSName] = useState('');
   const [isAddingStaff, setIsAddingStaff] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const handleAddStaff = async () => {
     if (!addName || !addEmail || !addSName) return alert("Please fill out all fields.");
@@ -79,7 +80,7 @@ export default function ManagementPage() {
       name: addName,
       temp_email: addEmail,
       s_name: addSName,
-      role: 'employee'
+      role: 'unclaimed'
     });
     
     if (error) {
@@ -90,6 +91,8 @@ export default function ManagementPage() {
       setAddName('');
       setAddEmail('');
       setAddSName('');
+      setToastMessage("Successfully Added!");
+      setTimeout(() => setToastMessage(null), 3000);
       fetchData();
     }
     setIsAddingStaff(false);
@@ -274,6 +277,13 @@ export default function ManagementPage() {
 
   return (
     <main className="min-h-[100dvh] w-screen flex flex-col bg-[#c2e2f5] font-sans overflow-x-hidden overflow-y-auto relative">
+      {/* TOAST */}
+      {toastMessage && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[200] bg-[#8ab4f8] text-white px-6 py-3 rounded-xl shadow-xl font-bold animate-in slide-in-from-top-4 fade-in duration-300 flex items-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>
+          {toastMessage}
+        </div>
+      )}
       {role !== 'admin' && (
         <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl">
