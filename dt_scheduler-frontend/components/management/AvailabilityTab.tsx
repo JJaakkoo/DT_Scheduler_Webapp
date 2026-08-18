@@ -292,10 +292,10 @@ export function AvailabilityTab({
               </h3>
             )}
             {(() => {
-              const isAtMaxPeriod = targetPeriod && maxTargetPeriod
+              const isAtMaxPeriod = Boolean(targetPeriod && maxTargetPeriod
                 && targetPeriod.year === maxTargetPeriod.year
                 && targetPeriod.month === maxTargetPeriod.month
-                && targetPeriod.period === maxTargetPeriod.period;
+                && targetPeriod.period === maxTargetPeriod.period);
               
               return (
                 <button 
