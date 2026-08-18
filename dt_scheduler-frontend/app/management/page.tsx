@@ -601,10 +601,10 @@ export default function ManagementPage() {
                                   </div>
                                ));
                             })()}
-                         </div>
-
-                      </div>
-                   </div>
+                          </div>
+                       </div>
+                    </div>
+                 </div>
                  )}
               </div>
 
