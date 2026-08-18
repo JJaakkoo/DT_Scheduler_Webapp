@@ -7,6 +7,7 @@ interface TargetPeriod {
 }
 
 interface AvailabilityTabProps {
+  staffData?: any[];
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   selectedLocation: string;
@@ -23,6 +24,7 @@ interface AvailabilityTabProps {
 }
 
 export function AvailabilityTab({
+  staffData = [],
   searchQuery,
   setSearchQuery,
   selectedLocation,
@@ -119,18 +121,35 @@ export function AvailabilityTab({
               // Display List of Availability for the searched staff
               (() => {
                  const searchLower = searchQuery.toLowerCase();
-                 const matchedStaffRecords = periodAvailability.filter(r => (r.staff?.name?.toLowerCase().includes(searchLower) || r.staff?.s_name?.toLowerCase().includes(searchLower)));
                  
-                 if (matchedStaffRecords.length === 0) {
+                 // First, search against ALL staff
+                 const matchedStaff = staffData.filter(s => (s.name?.toLowerCase().includes(searchLower) || s.s_name?.toLowerCase().includes(searchLower)));
+
+                 if (matchedStaff.length === 0) {
                     return (
                        <div className="flex-1 flex flex-col items-center justify-center text-gray-400">
                          <p className="text-lg font-medium">No staff found matching &quot;{searchQuery}&quot;</p>
                        </div>
                     )
                  }
+
+                 // Get the first matched staff
+                 const selectedStaff = matchedStaff[0];
                  
-                 // Display the first matched staff's availability
-                 const record = matchedStaffRecords[0];
+                 // Then find if they have submitted availability for this period
+                 const record = periodAvailability.find(r => r.staff_id === selectedStaff.id || r.staff?.id === selectedStaff.id || r.staff?.name === selectedStaff.name);
+
+                 if (!record) {
+                    return (
+                       <div className="flex-1 flex flex-col">
+                          <h2 className="text-2xl font-bold text-gray-800 mb-4">{selectedStaff.name}&apos;s Availability</h2>
+                          <div className="flex-1 flex flex-col items-center justify-center bg-gray-50/50 border border-gray-100 rounded-xl p-4 text-gray-400 min-h-[300px]">
+                             <p className="text-lg font-medium">Availability not submitted for this period</p>
+                          </div>
+                       </div>
+                    )
+                 }
+                 
                  return (
                     <div className="flex-1 flex flex-col">
                        <h2 className="text-2xl font-bold text-gray-800 mb-4">{record.staff.name}&apos;s Availability</h2>

@@ -476,6 +476,7 @@ export default function ManagementPage() {
           
           {activeTab === 'scheduling' && (
              <AvailabilityTab 
+               staffData={staffData}
                searchQuery={searchQuery}
                setSearchQuery={setSearchQuery}
                selectedLocation={selectedLocation}
