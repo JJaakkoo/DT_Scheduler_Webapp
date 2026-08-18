@@ -3,7 +3,76 @@
 import { createAdminClient } from '@/utils/supabase/admin';
 import { createClient } from '@/utils/supabase/server';
 
-export async function getStaffTableData() {
+export interface ActionResponse {
+  success?: boolean;
+  error?: string;
+}
+
+export interface FormattedStaff {
+  id: string;
+  name: string;
+  temp_email: string;
+  email: string | null;
+  created_at: string;
+  s_name: string;
+  role: string;
+  statusText: string;
+  statusColor: string;
+  isClickable: boolean;
+  availabilityScore: number;
+}
+
+export interface StaffTableDataResponse {
+  staff?: FormattedStaff[];
+  error?: string;
+}
+
+export interface StaffInputData {
+  name: string;
+  temp_email: string;
+  s_name: string;
+  role: string;
+}
+
+export interface StaffUpdateData {
+  name?: string;
+  temp_email?: string;
+  s_name?: string;
+  role?: string;
+}
+
+export interface AvailabilityStaffInfo {
+  name: string;
+  s_name: string;
+}
+
+export interface AvailabilityRecord {
+  id: string;
+  staff_id: string;
+  year: number;
+  month: number;
+  period: number;
+  schedule_data?: Record<string, { locations?: Record<string, unknown> }>;
+  staff?: AvailabilityStaffInfo;
+}
+
+export interface AvailabilityResponse {
+  availability?: AvailabilityRecord[];
+  error?: string;
+}
+
+/**
+ * Helper function to calculate a sortable score for a year, month, and period.
+ */
+const getScore = (y: number, m: number, p: number): number => y * 24 + (m - 1) * 2 + (p - 1);
+
+const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+/**
+ * Retrieves formatted staff data with calculated availability statuses.
+ * @returns {Promise<StaffTableDataResponse>} List of formatted staff or error message.
+ */
+export async function getStaffTableData(): Promise<StaffTableDataResponse> {
   try {
     const adminSupabase = createAdminClient();
     const supabase = await createClient();
@@ -12,8 +81,8 @@ export async function getStaffTableData() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { error: 'Unauthorized' };
     
-    const { data: staffData } = await adminSupabase.from('staff').select('role').eq('staff_id', user.id).single();
-    if (!staffData || staffData.role !== 'admin') return { error: 'Unauthorized' };
+    const { data: userStaffData } = await adminSupabase.from('staff').select('role').eq('staff_id', user.id).single();
+    if (!userStaffData || userStaffData.role !== 'admin') return { error: 'Unauthorized' };
     
     // 1. Find the target period
     const { data: schedData, error: schedError } = await adminSupabase
@@ -55,12 +124,13 @@ export async function getStaffTableData() {
       .from('staff')
       .select('id, staff_id, name, temp_email, email, role, s_name, created_at')
       .order('name');
+      
     if (error) return { error: 'Failed to fetch staff' };
     
     // Collect all staff ids
     const staffIds = staff.map(s => s.id);
     
-    let availRecordsByStaff: Record<string, any[]> = {};
+    const availRecordsByStaff: Record<string, AvailabilityRecord[]> = {};
     if (staffIds.length > 0) {
        const { data: availData } = await adminSupabase
           .from('availability')
@@ -68,25 +138,23 @@ export async function getStaffTableData() {
           .in('staff_id', staffIds);
           
        if (availData) {
-          for (const a of availData) {
+          for (const a of availData as AvailabilityRecord[]) {
              if (!availRecordsByStaff[a.staff_id]) availRecordsByStaff[a.staff_id] = [];
              availRecordsByStaff[a.staff_id].push(a);
           }
        }
     }
     
-    const getScore = (y: number, m: number, p: number) => y * 24 + (m - 1) * 2 + (p - 1);
     const releasedScore = getScore(releasedYear, releasedMonth, releasedPeriod);
     const targetScore = getScore(targetYear, targetMonth, targetPeriod);
-    const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
     
-    const formattedStaff = staff.map(s => {
+    const formattedStaff: FormattedStaff[] = staff.map(s => {
         let statusText = "No Availability Found";
         let statusColor = "text-rose-400";
         let isClickable = false;
         
-        let staffAvails = (availRecordsByStaff[s.id] || [])
-            .sort((a: any, b: any) => getScore(b.year, b.month, b.period) - getScore(a.year, a.month, a.period));
+        const staffAvails = (availRecordsByStaff[s.id] || [])
+            .sort((a, b) => getScore(b.year, b.month, b.period) - getScore(a.year, a.month, a.period));
             
         let statusScore = 0;
         
@@ -97,7 +165,7 @@ export async function getStaffTableData() {
             
             let hasAvailableShift = false;
             if (latest.schedule_data) {
-               for (const day of Object.values(latest.schedule_data) as any[]) {
+               for (const day of Object.values(latest.schedule_data)) {
                   if (day.locations && Object.keys(day.locations).length > 0) {
                      hasAvailableShift = true;
                      break;
@@ -135,12 +203,17 @@ export async function getStaffTableData() {
     
     return { staff: formattedStaff };
   } catch (error) {
-    console.error(error);
+    console.error('getStaffTableData error:', error);
     return { error: 'Unexpected error occurred' };
   }
 }
 
-export async function addStaffRecord(data: { name: string, temp_email: string, s_name: string, role: string }) {
+/**
+ * Adds a new staff record to the database and optionally whitelists their email.
+ * @param {StaffInputData} data - The staff details to add.
+ * @returns {Promise<ActionResponse>} Success status or error message.
+ */
+export async function addStaffRecord(data: StaffInputData): Promise<ActionResponse> {
   try {
     const adminSupabase = createAdminClient();
     const supabase = await createClient();
@@ -148,8 +221,8 @@ export async function addStaffRecord(data: { name: string, temp_email: string, s
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { error: 'Unauthorized' };
     
-    const { data: staffData } = await adminSupabase.from('staff').select('role').eq('staff_id', user.id).single();
-    if (!staffData || staffData.role !== 'admin') return { error: 'Unauthorized' };
+    const { data: userStaffData } = await adminSupabase.from('staff').select('role').eq('staff_id', user.id).single();
+    if (!userStaffData || userStaffData.role !== 'admin') return { error: 'Unauthorized' };
     
     const { error } = await adminSupabase.from('staff').insert(data);
     if (error) return { error: error.message };
@@ -163,12 +236,18 @@ export async function addStaffRecord(data: { name: string, temp_email: string, s
     
     return { success: true };
   } catch (error) {
-    console.error(error);
+    console.error('addStaffRecord error:', error);
     return { error: 'Unexpected error occurred' };
   }
 }
 
-export async function updateStaffRecord(id: string, updates: { name?: string, temp_email?: string, s_name?: string, role?: string }) {
+/**
+ * Updates an existing staff record.
+ * @param {string} id - The ID of the staff to update.
+ * @param {StaffUpdateData} updates - The partial updates to apply.
+ * @returns {Promise<ActionResponse>} Success status or error message.
+ */
+export async function updateStaffRecord(id: string, updates: StaffUpdateData): Promise<ActionResponse> {
   try {
     const adminSupabase = createAdminClient();
     const supabase = await createClient();
@@ -176,20 +255,27 @@ export async function updateStaffRecord(id: string, updates: { name?: string, te
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { error: 'Unauthorized' };
     
-    const { data: staffData } = await adminSupabase.from('staff').select('role').eq('staff_id', user.id).single();
-    if (!staffData || staffData.role !== 'admin') return { error: 'Unauthorized' };
+    const { data: userStaffData } = await adminSupabase.from('staff').select('role').eq('staff_id', user.id).single();
+    if (!userStaffData || userStaffData.role !== 'admin') return { error: 'Unauthorized' };
     
     const { error } = await adminSupabase.from('staff').update(updates).eq('id', id);
     if (error) return { error: error.message };
     
     return { success: true };
   } catch (error) {
-    console.error(error);
+    console.error('updateStaffRecord error:', error);
     return { error: 'Unexpected error occurred' };
   }
 }
 
-export async function getAvailabilityForPeriod(year: number, month: number, period: number) {
+/**
+ * Retrieves availability records for a specific period, including staff basic info.
+ * @param {number} year - Target year.
+ * @param {number} month - Target month.
+ * @param {number} period - Target period (1 or 2).
+ * @returns {Promise<AvailabilityResponse>} Availability records or error message.
+ */
+export async function getAvailabilityForPeriod(year: number, month: number, period: number): Promise<AvailabilityResponse> {
   try {
     const adminSupabase = createAdminClient();
     const supabase = await createClient();
@@ -197,8 +283,8 @@ export async function getAvailabilityForPeriod(year: number, month: number, peri
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { error: 'Unauthorized' };
     
-    const { data: staffData } = await adminSupabase.from('staff').select('role').eq('staff_id', user.id).single();
-    if (!staffData || staffData.role !== 'admin') return { error: 'Unauthorized' };
+    const { data: userStaffData } = await adminSupabase.from('staff').select('role').eq('staff_id', user.id).single();
+    if (!userStaffData || userStaffData.role !== 'admin') return { error: 'Unauthorized' };
     
     const { data: availData, error: availError } = await adminSupabase
       .from('availability')
@@ -215,24 +301,29 @@ export async function getAvailabilityForPeriod(year: number, month: number, peri
       
     if (staffError) return { error: staffError.message };
     
-    const staffMap: Record<string, any> = {};
+    const staffMap: Record<string, AvailabilityStaffInfo> = {};
     for (const s of allStaff) {
-       staffMap[s.id] = s;
+       staffMap[s.id] = { name: s.name, s_name: s.s_name };
     }
     
-    const formatted = availData.map(a => ({
+    const formatted: AvailabilityRecord[] = (availData as AvailabilityRecord[]).map(a => ({
        ...a,
        staff: staffMap[a.staff_id] || { name: 'Unknown', s_name: 'Unknown' }
     }));
     
     return { availability: formatted };
   } catch (error) {
-    console.error(error);
+    console.error('getAvailabilityForPeriod error:', error);
     return { error: 'Unexpected error occurred' };
   }
 }
 
-export async function deleteStaffRecord(id: string) {
+/**
+ * Deletes a staff record by ID.
+ * @param {string} id - The ID of the staff to delete.
+ * @returns {Promise<ActionResponse>} Success status or error message.
+ */
+export async function deleteStaffRecord(id: string): Promise<ActionResponse> {
   try {
     const adminSupabase = createAdminClient();
     const supabase = await createClient();
@@ -241,15 +332,15 @@ export async function deleteStaffRecord(id: string) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { error: 'Unauthorized' };
     
-    const { data: staffData } = await adminSupabase.from('staff').select('role').eq('staff_id', user.id).single();
-    if (!staffData || staffData.role !== 'admin') return { error: 'Unauthorized' };
+    const { data: userStaffData } = await adminSupabase.from('staff').select('role').eq('staff_id', user.id).single();
+    if (!userStaffData || userStaffData.role !== 'admin') return { error: 'Unauthorized' };
     
     const { error } = await adminSupabase.from('staff').delete().eq('id', id);
     if (error) return { error: error.message };
     
     return { success: true };
   } catch (error) {
-    console.error(error);
+    console.error('deleteStaffRecord error:', error);
     return { error: 'Unexpected error occurred' };
   }
 }

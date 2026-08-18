@@ -6,12 +6,34 @@ import { Resend } from 'resend';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-export async function getAvailableStaff() {
+export interface StaffBasic {
+  id: string;
+  name: string;
+}
+
+export interface AvailableStaffResponse {
+  staff?: StaffBasic[];
+  error?: string;
+}
+
+export interface CurrentUserRoleResponse {
+  role: string;
+}
+
+export interface ActionResponse {
+  success?: boolean;
+  error?: string;
+}
+
+/**
+ * Retrieves a list of staff members who haven't claimed their accounts.
+ * @returns {Promise<AvailableStaffResponse>} List of available staff or error.
+ */
+export async function getAvailableStaff(): Promise<AvailableStaffResponse> {
   try {
     const supabase = await createClient();
     const adminSupabase = createAdminClient();
 
-    // Must be logged in
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) return { error: 'Unauthorized' };
 
@@ -22,14 +44,18 @@ export async function getAvailableStaff() {
       .order('name');
 
     if (error) return { error: 'Failed to fetch staff list' };
-    return { staff: data };
+    return { staff: data as StaffBasic[] };
   } catch (error) {
-    console.error(error);
+    console.error('getAvailableStaff error:', error);
     return { error: 'Unexpected error occurred' };
   }
 }
 
-export async function getCurrentUserRole() {
+/**
+ * Gets the role of the currently logged-in user based on their claimed staff identity.
+ * @returns {Promise<CurrentUserRoleResponse>} The user's role (e.g., 'admin', 'staff', 'guest', 'unclaimed').
+ */
+export async function getCurrentUserRole(): Promise<CurrentUserRoleResponse> {
   try {
     const supabase = await createClient();
     const adminSupabase = createAdminClient();
@@ -37,7 +63,6 @@ export async function getCurrentUserRole() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { role: 'guest' };
 
-    // Check if they claimed a staff identity
     const { data: staffData } = await adminSupabase
       .from('staff')
       .select('role')
@@ -50,23 +75,26 @@ export async function getCurrentUserRole() {
 
     return { role: 'unclaimed' };
   } catch (err) {
+    console.error('getCurrentUserRole error:', err);
     return { role: 'unclaimed' };
   }
 }
 
-
-export async function requestClaim(staffId: string) {
+/**
+ * Requests an account claim for a specific staff member by sending an OTP.
+ * @param {string} staffId - The ID of the staff member to claim.
+ * @returns {Promise<ActionResponse>} Success status or error message.
+ */
+export async function requestClaim(staffId: string): Promise<ActionResponse> {
   try {
     const supabase = await createClient();
     const adminSupabase = createAdminClient();
 
-    // 1. Check if user is logged in
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
       return { error: 'You must be logged in to request an account claim.' };
     }
 
-    // 2. Check if staff exists and is unclaimed
     const { data: staffData, error: staffError } = await adminSupabase
       .from('staff')
       .select('id, staff_id, temp_email, name')
@@ -81,12 +109,10 @@ export async function requestClaim(staffId: string) {
       return { error: 'This staff identity has already been claimed.' };
     }
 
-    // 3. Generate a 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date();
     expiresAt.setMinutes(expiresAt.getMinutes() + 15); // Valid for 15 minutes
 
-    // 4. Save OTP to database
     const { error: updateError } = await adminSupabase
       .from('staff')
       .update({
@@ -100,7 +126,6 @@ export async function requestClaim(staffId: string) {
       return { error: 'Failed to generate verification code.' };
     }
 
-    // 5. Send Email via Resend
     const { error: emailError } = await resend.emails.send({
       from: 'Dream Tea Nexus <no-reply@dreamteanexus.ca>',
       to: [staffData.temp_email],
@@ -129,19 +154,23 @@ export async function requestClaim(staffId: string) {
   }
 }
 
-export async function verifyClaim(staffId: string, otp: string) {
+/**
+ * Verifies a claim request using the provided OTP and links the user's account.
+ * @param {string} staffId - The ID of the staff member.
+ * @param {string} otp - The 6-digit one-time password.
+ * @returns {Promise<ActionResponse>} Success status or error message.
+ */
+export async function verifyClaim(staffId: string, otp: string): Promise<ActionResponse> {
   try {
     const supabase = await createClient();
     const adminSupabase = createAdminClient();
 
-    // 1. Get current user
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     
     if (userError || !user) {
       return { error: 'You must be logged in to claim an account.' };
     }
 
-    // 2. Query staff for matching ID and OTP
     const { data: staffData, error: staffError } = await adminSupabase
       .from('staff')
       .select('id, otp_expires_at, staff_id, s_name, email, role')
@@ -162,7 +191,9 @@ export async function verifyClaim(staffId: string, otp: string) {
       return { error: 'Verification code has expired. Please request a new one.' };
     }
 
-    // 3. Update staff to claim it
+    const validRoles = ['admin', 'manager', 'supervisor', 'assistant supervisor'];
+    const newRole = validRoles.includes(staffData.role) ? staffData.role : 'staff';
+
     const { error: claimError } = await adminSupabase
       .from('staff')
       .update({
@@ -170,7 +201,7 @@ export async function verifyClaim(staffId: string, otp: string) {
         email: user.email, // Optionally set their real email here
         claim_otp: null,
         otp_expires_at: null,
-        role: ['admin', 'manager', 'supervisor', 'assistant supervisor'].includes(staffData.role) ? staffData.role : 'staff', // Preserve admin/manager roles if they already have it
+        role: newRole,
       })
       .eq('id', staffData.id);
 
