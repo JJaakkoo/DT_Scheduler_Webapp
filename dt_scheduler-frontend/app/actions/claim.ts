@@ -1,5 +1,6 @@
 'use server';
 
+import crypto from 'node:crypto';
 import { createAdminClient } from '@/utils/supabase/admin';
 import { createClient } from '@/utils/supabase/server';
 import { Resend } from 'resend';
@@ -53,7 +54,7 @@ export async function getAvailableStaff(): Promise<AvailableStaffResponse> {
 
 /**
  * Gets the role of the currently logged-in user based on their claimed staff identity.
- * @returns {Promise<CurrentUserRoleResponse>} The user's role (e.g., 'admin', 'staff', 'guest', 'unclaimed').
+ * @returns {Promise<CurrentUserRoleResponse>} The user's role.
  */
 export async function getCurrentUserRole(): Promise<CurrentUserRoleResponse> {
   try {
@@ -69,11 +70,7 @@ export async function getCurrentUserRole(): Promise<CurrentUserRoleResponse> {
       .eq('staff_id', user.id)
       .single();
 
-    if (staffData) {
-      return { role: staffData.role };
-    }
-
-    return { role: 'unclaimed' };
+    return { role: staffData?.role || 'unclaimed' };
   } catch (err) {
     console.error('getCurrentUserRole error:', err);
     return { role: 'unclaimed' };
@@ -86,6 +83,11 @@ export async function getCurrentUserRole(): Promise<CurrentUserRoleResponse> {
  * @returns {Promise<ActionResponse>} Success status or error message.
  */
 export async function requestClaim(staffId: string): Promise<ActionResponse> {
+  // Strict Validation
+  if (!staffId || typeof staffId !== 'string') {
+    return { error: 'Invalid staff identity provided.' };
+  }
+
   try {
     const supabase = await createClient();
     const adminSupabase = createAdminClient();
@@ -109,7 +111,8 @@ export async function requestClaim(staffId: string): Promise<ActionResponse> {
       return { error: 'This staff identity has already been claimed.' };
     }
 
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    // Security: Use native crypto module for OTP generation instead of Math.random()
+    const otp = crypto.randomInt(100000, 1000000).toString();
     const expiresAt = new Date();
     expiresAt.setMinutes(expiresAt.getMinutes() + 15); // Valid for 15 minutes
 
@@ -161,6 +164,11 @@ export async function requestClaim(staffId: string): Promise<ActionResponse> {
  * @returns {Promise<ActionResponse>} Success status or error message.
  */
 export async function verifyClaim(staffId: string, otp: string): Promise<ActionResponse> {
+  // Strict Validation
+  if (!staffId || typeof staffId !== 'string' || !otp || typeof otp !== 'string' || otp.length !== 6) {
+    return { error: 'Invalid verification details provided.' };
+  }
+
   try {
     const supabase = await createClient();
     const adminSupabase = createAdminClient();

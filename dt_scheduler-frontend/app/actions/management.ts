@@ -69,20 +69,37 @@ const getScore = (y: number, m: number, p: number): number => y * 24 + (m - 1) *
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
 /**
+ * Centralized authorization check for admin access.
+ * Enforces security and type safety.
+ * @throws {Error} If user is unauthorized or not an admin.
+ */
+async function requireAdminAuth() {
+  const adminSupabase = createAdminClient();
+  const supabase = await createClient();
+  
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) throw new Error('Unauthorized');
+  
+  const { data: userStaffData, error: staffError } = await adminSupabase
+    .from('staff')
+    .select('role')
+    .eq('staff_id', user.id)
+    .single();
+
+  if (staffError || !userStaffData || userStaffData.role !== 'admin') {
+    throw new Error('Unauthorized');
+  }
+
+  return { adminSupabase, user };
+}
+
+/**
  * Retrieves formatted staff data with calculated availability statuses.
  * @returns {Promise<StaffTableDataResponse>} List of formatted staff or error message.
  */
 export async function getStaffTableData(): Promise<StaffTableDataResponse> {
   try {
-    const adminSupabase = createAdminClient();
-    const supabase = await createClient();
-    
-    // Verify admin
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { error: 'Unauthorized' };
-    
-    const { data: userStaffData } = await adminSupabase.from('staff').select('role').eq('staff_id', user.id).single();
-    if (!userStaffData || userStaffData.role !== 'admin') return { error: 'Unauthorized' };
+    const { adminSupabase } = await requireAdminAuth();
     
     // 1. Find the target period
     const { data: schedData, error: schedError } = await adminSupabase
@@ -202,7 +219,8 @@ export async function getStaffTableData(): Promise<StaffTableDataResponse> {
     });
     
     return { staff: formattedStaff };
-  } catch (error) {
+  } catch (error: any) {
+    if (error.message === 'Unauthorized') return { error: 'Unauthorized' };
     console.error('getStaffTableData error:', error);
     return { error: 'Unexpected error occurred' };
   }
@@ -214,28 +232,39 @@ export async function getStaffTableData(): Promise<StaffTableDataResponse> {
  * @returns {Promise<ActionResponse>} Success status or error message.
  */
 export async function addStaffRecord(data: StaffInputData): Promise<ActionResponse> {
+  // Strict Input Validation
+  if (!data || typeof data !== 'object') return { error: 'Invalid input data.' };
+  if (!data.name || !data.s_name || !data.role || !data.temp_email) {
+    return { error: 'Missing required staff fields.' };
+  }
+
   try {
-    const adminSupabase = createAdminClient();
-    const supabase = await createClient();
+    const { adminSupabase } = await requireAdminAuth();
     
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { error: 'Unauthorized' };
-    
-    const { data: userStaffData } = await adminSupabase.from('staff').select('role').eq('staff_id', user.id).single();
-    if (!userStaffData || userStaffData.role !== 'admin') return { error: 'Unauthorized' };
-    
-    const { error } = await adminSupabase.from('staff').insert(data);
+    // Explicitly destructure to avoid unintended properties being inserted
+    const insertData = {
+      name: data.name,
+      temp_email: data.temp_email,
+      s_name: data.s_name,
+      role: data.role
+    };
+
+    const { error } = await adminSupabase.from('staff').insert(insertData);
     if (error) return { error: error.message };
     
-    if (data.temp_email) {
-      const { error: whitelistError } = await adminSupabase.from('whitelisted_emails').insert({ email: data.temp_email });
+    if (insertData.temp_email) {
+      const { error: whitelistError } = await adminSupabase
+        .from('whitelisted_emails')
+        .insert({ email: insertData.temp_email });
+        
       if (whitelistError) {
         console.error("Whitelist insert error (may already exist):", whitelistError);
       }
     }
     
     return { success: true };
-  } catch (error) {
+  } catch (error: any) {
+    if (error.message === 'Unauthorized') return { error: 'Unauthorized' };
     console.error('addStaffRecord error:', error);
     return { error: 'Unexpected error occurred' };
   }
@@ -248,21 +277,30 @@ export async function addStaffRecord(data: StaffInputData): Promise<ActionRespon
  * @returns {Promise<ActionResponse>} Success status or error message.
  */
 export async function updateStaffRecord(id: string, updates: StaffUpdateData): Promise<ActionResponse> {
+  // Validation
+  if (!id || typeof id !== 'string') return { error: 'Invalid staff ID.' };
+  if (!updates || typeof updates !== 'object') return { error: 'Invalid update data.' };
+
   try {
-    const adminSupabase = createAdminClient();
-    const supabase = await createClient();
+    const { adminSupabase } = await requireAdminAuth();
     
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { error: 'Unauthorized' };
+    // Strip unknown fields
+    const safeUpdates: Partial<StaffUpdateData> = {};
+    if (updates.name !== undefined) safeUpdates.name = updates.name;
+    if (updates.temp_email !== undefined) safeUpdates.temp_email = updates.temp_email;
+    if (updates.s_name !== undefined) safeUpdates.s_name = updates.s_name;
+    if (updates.role !== undefined) safeUpdates.role = updates.role;
     
-    const { data: userStaffData } = await adminSupabase.from('staff').select('role').eq('staff_id', user.id).single();
-    if (!userStaffData || userStaffData.role !== 'admin') return { error: 'Unauthorized' };
-    
-    const { error } = await adminSupabase.from('staff').update(updates).eq('id', id);
+    if (Object.keys(safeUpdates).length === 0) {
+      return { error: 'No valid fields to update.' };
+    }
+
+    const { error } = await adminSupabase.from('staff').update(safeUpdates).eq('id', id);
     if (error) return { error: error.message };
     
     return { success: true };
-  } catch (error) {
+  } catch (error: any) {
+    if (error.message === 'Unauthorized') return { error: 'Unauthorized' };
     console.error('updateStaffRecord error:', error);
     return { error: 'Unexpected error occurred' };
   }
@@ -276,15 +314,13 @@ export async function updateStaffRecord(id: string, updates: StaffUpdateData): P
  * @returns {Promise<AvailabilityResponse>} Availability records or error message.
  */
 export async function getAvailabilityForPeriod(year: number, month: number, period: number): Promise<AvailabilityResponse> {
+  // Input Validation
+  if (typeof year !== 'number' || typeof month !== 'number' || typeof period !== 'number') {
+    return { error: 'Invalid period parameters.' };
+  }
+
   try {
-    const adminSupabase = createAdminClient();
-    const supabase = await createClient();
-    
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { error: 'Unauthorized' };
-    
-    const { data: userStaffData } = await adminSupabase.from('staff').select('role').eq('staff_id', user.id).single();
-    if (!userStaffData || userStaffData.role !== 'admin') return { error: 'Unauthorized' };
+    const { adminSupabase } = await requireAdminAuth();
     
     const { data: availData, error: availError } = await adminSupabase
       .from('availability')
@@ -312,7 +348,8 @@ export async function getAvailabilityForPeriod(year: number, month: number, peri
     }));
     
     return { availability: formatted };
-  } catch (error) {
+  } catch (error: any) {
+    if (error.message === 'Unauthorized') return { error: 'Unauthorized' };
     console.error('getAvailabilityForPeriod error:', error);
     return { error: 'Unexpected error occurred' };
   }
@@ -324,22 +361,18 @@ export async function getAvailabilityForPeriod(year: number, month: number, peri
  * @returns {Promise<ActionResponse>} Success status or error message.
  */
 export async function deleteStaffRecord(id: string): Promise<ActionResponse> {
+  // Input Validation
+  if (!id || typeof id !== 'string') return { error: 'Invalid staff ID.' };
+
   try {
-    const adminSupabase = createAdminClient();
-    const supabase = await createClient();
-    
-    // Verify admin
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { error: 'Unauthorized' };
-    
-    const { data: userStaffData } = await adminSupabase.from('staff').select('role').eq('staff_id', user.id).single();
-    if (!userStaffData || userStaffData.role !== 'admin') return { error: 'Unauthorized' };
+    const { adminSupabase } = await requireAdminAuth();
     
     const { error } = await adminSupabase.from('staff').delete().eq('id', id);
     if (error) return { error: error.message };
     
     return { success: true };
-  } catch (error) {
+  } catch (error: any) {
+    if (error.message === 'Unauthorized') return { error: 'Unauthorized' };
     console.error('deleteStaffRecord error:', error);
     return { error: 'Unexpected error occurred' };
   }
