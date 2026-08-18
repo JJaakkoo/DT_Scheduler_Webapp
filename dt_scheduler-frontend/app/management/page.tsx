@@ -48,6 +48,7 @@ export default function ManagementPage() {
   const [staffData, setStaffData] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<'staff' | 'scheduling'>('staff');
   const [isLoading, setIsLoading] = useState(true);
+  const [visibleCount, setVisibleCount] = useState(10);
   const [sortField, setSortField] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
@@ -242,6 +243,7 @@ export default function ManagementPage() {
       setSortField(field);
       setSortDirection('asc');
     }
+    setVisibleCount(10);
   };
 
   const sortedStaffData = [...staffData].sort((a, b) => {
@@ -272,6 +274,17 @@ export default function ManagementPage() {
       (staff.temp_email && staff.temp_email.toLowerCase().includes(q))
     );
   });
+
+  useEffect(() => {
+    if (visibleCount < sortedStaffData.length) {
+      const timer = setTimeout(() => {
+        setVisibleCount(prev => prev + 10);
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [visibleCount, sortedStaffData.length]);
+
+  const visibleStaffData = sortedStaffData.slice(0, visibleCount);
 
   if (!role) return null;
 
@@ -384,7 +397,7 @@ export default function ManagementPage() {
                   type="text"
                   placeholder="Search staff by name or email..."
                   value={staffSearchQuery}
-                  onChange={e => setStaffSearchQuery(e.target.value)}
+                  onChange={e => { setStaffSearchQuery(e.target.value); setVisibleCount(10); }}
                   className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none text-sm"
                 />
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2">
@@ -424,7 +437,7 @@ export default function ManagementPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {sortedStaffData.map(staff => (
+                {visibleStaffData.map(staff => (
                   <StaffRow key={staff.id} staff={staff} onSave={fetchData} />
                 ))}
                 {sortedStaffData.length === 0 && !isLoading && (
