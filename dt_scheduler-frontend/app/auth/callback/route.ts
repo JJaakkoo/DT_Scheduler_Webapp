@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
+import { autoLinkUser } from '@/app/actions/claim';
 
 /**
  * Handles the OAuth or Email callback from Supabase.
@@ -52,6 +53,9 @@ export async function GET(request: Request): Promise<NextResponse> {
       await supabase.auth.signOut();
       return NextResponse.redirect(`${origin}/?error=not-whitelisted`);
     }
+    
+    // Automatically link their identity if it's currently an unclaimed staff row
+    await autoLinkUser(data.session.user.id, email);
     
     // Authorization successful: proceed to the requested route
     return NextResponse.redirect(`${origin}${next}`);

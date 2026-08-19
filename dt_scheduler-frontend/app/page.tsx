@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import Link from "next/link";
+import { autoLinkUser } from "@/app/actions/claim";
 
 function HomeContent() {
   const supabase = createClient();
@@ -69,6 +70,11 @@ function HomeContent() {
 
       if (error) {
         throw error;
+      }
+      
+      // Auto-link their account if it's an unclaimed whitelisted staff row
+      if (data?.user) {
+        await autoLinkUser(data.user.id, data.user.email || email);
       }
       
       // They logged in manually, so clear any old Google tokens to prevent expired token errors

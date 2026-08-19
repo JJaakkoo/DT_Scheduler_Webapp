@@ -224,3 +224,61 @@ export async function verifyClaim(staffId: string, otp: string): Promise<ActionR
     return { error: 'An unexpected error occurred.' };
   }
 }
+
+/**
+ * Automatically links a user to an unclaimed staff identity if their email matches
+ * a whitelisted temp_email. This runs silently in the background during login.
+ * 
+ * @param {string} userId - The authenticated user's ID from Supabase Auth.
+ * @param {string} email - The authenticated user's email.
+ * @returns {Promise<void>}
+ */
+export async function autoLinkUser(userId: string, email: string): Promise<void> {
+  if (!userId || !email) return;
+
+  try {
+    // Admin client is required to bypass RLS since the user is not yet linked
+    const adminSupabase = createAdminClient();
+
+    // Look for an unlinked staff row matching this email
+    const { data: staffData, error: findError } = await adminSupabase
+      .from('staff')
+      .select('id, role')
+      .eq('temp_email', email)
+      .is('staff_id', null)
+      .maybeSingle();
+
+    if (findError) {
+      console.error('autoLinkUser: Error querying staff table:', findError);
+      return;
+    }
+
+    if (!staffData) {
+      // No unlinked matching row found. This is normal for already-linked users or non-staff.
+      return;
+    }
+
+    const validRoles = ['admin', 'manager', 'supervisor', 'assistant supervisor'];
+    const newRole = validRoles.includes(staffData.role) ? staffData.role : 'staff';
+
+    // Link the identity
+    const { error: linkError } = await adminSupabase
+      .from('staff')
+      .update({
+        staff_id: userId,
+        email: email,
+        claim_otp: null,
+        otp_expires_at: null,
+        role: newRole,
+      })
+      .eq('id', staffData.id);
+
+    if (linkError) {
+      console.error('autoLinkUser: Failed to automatically link identity:', linkError);
+    } else {
+      console.log(`autoLinkUser: Successfully auto-linked user ${email} to staff record ${staffData.id}`);
+    }
+  } catch (err) {
+    console.error('autoLinkUser: Unexpected error:', err);
+  }
+}
