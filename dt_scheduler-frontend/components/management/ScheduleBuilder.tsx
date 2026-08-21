@@ -43,7 +43,10 @@ export function ScheduleBuilder({
   const containerRef = useRef<HTMLDivElement>(null);
   const [dragState, setDragState] = useState<{ originalIndex: number, employee: string, edge: 'left' | 'right', startX: number, initialTime: number } | null>(null);
   const [tempShift, setTempShift] = useState<{ originalIndex: number, startHour: number, endHour: number } | null>(null);
-  const [showAddStaffDrop, setShowAddStaffDrop] = useState(false);
+  
+  // Add Staff Search State
+  const [staffSearchQuery, setStaffSearchQuery] = useState("");
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
 
   // Fetch draft when target period changes
   useEffect(() => {
@@ -290,7 +293,8 @@ export function ScheduleBuilder({
         return newData;
      });
      
-     setShowAddStaffDrop(false);
+     setStaffSearchQuery("");
+     setIsSearchFocused(false);
   };
 
   const handleDeleteShift = (emp: string, originalIndex: number) => {
@@ -378,15 +382,7 @@ export function ScheduleBuilder({
 
   if (!targetPeriod) return <div className="p-8 text-center text-gray-500">Loading period...</div>;
 
-  return (
     <div className="w-full flex flex-col gap-6 relative">
-      {toast && (
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 z-50 bg-emerald-500 text-white px-6 py-2 rounded-full shadow-lg text-sm font-bold animate-in fade-in slide-in-from-top-4">
-          {toast}
-        </div>
-      )}
-
-      {/* TOP HEADER CONTROLS */}
       <div className="flex flex-col sm:flex-row gap-4 items-center justify-between w-full bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
          <h2 className="text-lg font-bold text-gray-800 px-2">
             {selectedDate ? selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }) : 'Select a date'}
@@ -455,7 +451,8 @@ export function ScheduleBuilder({
                    <h3 className="text-gray-800 font-bold text-lg">Shift Builder</h3>
                    <span className="bg-gray-100 text-gray-500 font-semibold px-2 py-0.5 rounded text-xs">{selectedDate ? selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}</span>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 items-center">
+                  {toast && <span className="text-sm font-bold text-emerald-500 mr-2 animate-pulse">{toast}</span>}
                   <button 
                     onClick={handleSaveDraft}
                     disabled={isSaving || isPublishing}
@@ -585,34 +582,51 @@ export function ScheduleBuilder({
              </div>
              
              {/* Add Staff Footer */}
-             <div className="mt-4 flex items-center justify-center relative">
-                {showAddStaffDrop ? (
-                   <div className="flex items-center gap-2 bg-white p-2 border border-gray-200 rounded-xl shadow-lg relative z-20">
-                      <select 
-                        className="bg-gray-50 border border-gray-200 rounded-lg py-2 pl-3 pr-8 text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-sky-500/30"
-                        onChange={(e) => {
-                           if (e.target.value) handleAddStaffToGantt(e.target.value);
-                        }}
-                        defaultValue=""
-                      >
-                         <option value="" disabled>Select Staff...</option>
-                         {staffData.filter(s => !currentShifts.some(shift => shift.employee === s.name)).map(s => (
-                            <option key={s.id} value={s.name}>{s.name}</option>
-                         ))}
-                      </select>
-                      <button onClick={() => setShowAddStaffDrop(false)} className="p-2 text-gray-400 hover:text-gray-700 transition-colors">
-                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5"><path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" /></svg>
-                      </button>
-                   </div>
-                ) : (
-                   <button 
-                     onClick={() => setShowAddStaffDrop(true)}
-                     className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-xl text-sm font-bold shadow-sm hover:shadow-md hover:border-gray-300 transition-all"
-                   >
-                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" /></svg>
-                     Add Staff
-                   </button>
-                )}
+             <div className="mt-4 flex items-center justify-center relative w-full max-w-xs mx-auto">
+                 <div className="relative w-full">
+                     <div className="relative">
+                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 absolute left-3 top-2.5 text-gray-400">
+                             <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                         </svg>
+                         <input 
+                            type="text" 
+                            placeholder="Search & Add Staff..." 
+                            value={staffSearchQuery}
+                            onChange={(e) => setStaffSearchQuery(e.target.value)}
+                            onFocus={() => setIsSearchFocused(true)}
+                            onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
+                            className="w-full bg-white border border-gray-200 text-gray-700 py-2.5 pl-10 pr-4 rounded-xl text-sm font-bold shadow-[0_2px_10px_rgba(0,0,0,0.02)] focus:ring-2 focus:ring-sky-500/30 focus:border-sky-400 outline-none transition-all placeholder:text-gray-400 placeholder:font-semibold"
+                         />
+                     </div>
+                     
+                     {isSearchFocused && (
+                         <div className="absolute bottom-full mb-2 left-0 right-0 bg-white border border-gray-100 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.1)] max-h-60 overflow-y-auto z-50 flex flex-col p-1">
+                            {(() => {
+                               const filtered = staffData.filter(s => 
+                                   !currentShifts.some(shift => shift.employee === s.name) && 
+                                   s.name.toLowerCase().includes(staffSearchQuery.toLowerCase())
+                               );
+                               
+                               if (filtered.length === 0) {
+                                  return <div className="p-3 text-center text-sm font-medium text-gray-400">No available staff found</div>;
+                               }
+                               
+                               return filtered.map(s => (
+                                   <button 
+                                      key={s.id} 
+                                      onMouseDown={(e) => { e.preventDefault(); handleAddStaffToGantt(s.name); }}
+                                      className="w-full text-left px-3 py-2.5 hover:bg-sky-50 rounded-lg text-sm font-bold text-gray-700 transition-colors flex items-center justify-between group"
+                                   >
+                                      {s.name}
+                                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-sky-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                                          <path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm.75-11.25a.75.75 0 0 0-1.5 0v2.5h-2.5a.75.75 0 0 0 0 1.5h2.5v2.5a.75.75 0 0 0 1.5 0v-2.5h2.5a.75.75 0 0 0 0-1.5h-2.5v-2.5Z" clipRule="evenodd" />
+                                      </svg>
+                                   </button>
+                               ));
+                            })()}
+                         </div>
+                     )}
+                 </div>
              </div>
           </div>
 
