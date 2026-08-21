@@ -7,6 +7,7 @@ import { createClient } from "@/utils/supabase/client";
 import { StaffRow } from "@/components/management/StaffRow";
 import { AddStaffModal } from "@/components/management/AddStaffModal";
 import { AvailabilityTab } from "@/components/management/AvailabilityTab";
+import { ScheduleBuilder } from "@/components/management/ScheduleBuilder";
 
 export default function ManagementPage() {
   const router = useRouter();
@@ -51,7 +52,7 @@ export default function ManagementPage() {
   };
 
   const [staffData, setStaffData] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState<'staff' | 'scheduling'>('staff');
+  const [activeTab, setActiveTab] = useState<'staff' | 'scheduling' | 'builder'>('staff');
   const [isLoading, setIsLoading] = useState(true);
   const [visibleCount, setVisibleCount] = useState(10);
   const [sortField, setSortField] = useState<string | null>(null);
@@ -93,7 +94,7 @@ export default function ManagementPage() {
 
     const cachedTab = localStorage.getItem("nexus_management_tab");
      
-    if (cachedTab) setActiveTab(cachedTab as 'staff' | 'scheduling');
+    if (cachedTab) setActiveTab(cachedTab as 'staff' | 'scheduling' | 'builder');
 
     const cachedSearch = localStorage.getItem("nexus_management_search");
      
@@ -418,6 +419,13 @@ export default function ManagementPage() {
                   Availability
                   {activeTab === 'scheduling' && <div className="absolute bottom-[-1px] left-0 right-0 h-[2px] bg-sky-500 rounded-t-full" />}
                 </button>
+                <button
+                  onClick={() => setActiveTab('builder')}
+                  className={`pb-3 text-[15px] font-semibold transition-colors relative ${activeTab === 'builder' ? 'text-sky-500' : 'text-gray-500 hover:text-gray-800'}`}
+                >
+                  Schedule Builder
+                  {activeTab === 'builder' && <div className="absolute bottom-[-1px] left-0 right-0 h-[2px] bg-sky-500 rounded-t-full" />}
+                </button>
               </div>
               <button 
                 onClick={handleRefresh} 
@@ -526,6 +534,20 @@ export default function ManagementPage() {
                periodAvailability={periodAvailability}
                targetPeriod={targetPeriod}
                maxTargetPeriod={maxTargetPeriod}
+               handlePrevPeriod={handlePrevPeriod}
+               handleNextPeriod={handleNextPeriod}
+             />
+          )}
+
+          {activeTab === 'builder' && (
+             <ScheduleBuilder 
+               staffData={staffData}
+               periodAvailability={periodAvailability}
+               targetPeriod={targetPeriod}
+               maxTargetPeriod={maxTargetPeriod}
+               validDates={validDates}
+               selectedDate={selectedDate}
+               setSelectedDate={setSelectedDate}
                handlePrevPeriod={handlePrevPeriod}
                handleNextPeriod={handleNextPeriod}
              />
