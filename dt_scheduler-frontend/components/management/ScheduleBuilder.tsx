@@ -198,7 +198,20 @@ export function ScheduleBuilder({
        for (const [loc, shifts] of Object.entries(dayData.locations)) {
            if ((shifts as any[]).length === 0) continue;
            
-           const times = (shifts as any[]).map((t: any) => `${t.start}-${t.end}`).join(", ");
+           const times = (shifts as any[]).map((t: any) => {
+               if (t.start?.dateTime && t.end?.dateTime) {
+                   const formatTime = (isoString: string) => {
+                       const d = new Date(isoString);
+                       const hr = d.getHours();
+                       const min = d.getMinutes().toString().padStart(2, '0');
+                       const suffix = hr >= 12 ? 'p' : 'a';
+                       const fHr = hr % 12 || 12;
+                       return `${fHr}:${min}${suffix}`;
+                   };
+                   return `${formatTime(t.start.dateTime)} - ${formatTime(t.end.dateTime)}`;
+               }
+               return "Unknown Time";
+           }).join(", ");
            const isSelected = loc.toLowerCase() === selectedLocation.toLowerCase();
            if (isSelected) isAvailableAtSelected = true;
 
