@@ -171,40 +171,59 @@ export function ScheduleBuilder({
   const staffAvailabilityForDate = useMemo(() => {
     if (!selectedDateStr) return [];
     
-    const results: { name: string, status: string, time: string, isAvailable: boolean }[] = [];
+    const results: { 
+       name: string, 
+       status: string, // 'Available', 'Other Location', 'Unavailable'
+       availableLocs: { loc: string, time: string, colorClass: string, isSelected: boolean }[] 
+    }[] = [];
     
     // Default all staff to unavailable unless we find records
     staffData.forEach(staff => {
        const availRecord = periodAvailability.find(a => a.staff_id === staff.id);
-       if (!availRecord || !availRecord.schedule_data || !availRecord.schedule_data[selectedDateStr]) {
-         results.push({ name: staff.name, status: "Unavailable", time: "", isAvailable: false });
+       
+       if (!availRecord || !availRecord.schedule_data || !availRecord.schedule_data[selectedDateStr] || availRecord.schedule_data[selectedDateStr].isUnavailable) {
+         results.push({ name: staff.name, status: "Unavailable", availableLocs: [] });
          return;
        }
        
        const dayData = availRecord.schedule_data[selectedDateStr];
        if (!dayData.locations || Object.keys(dayData.locations).length === 0) {
-         results.push({ name: staff.name, status: "Unavailable", time: "", isAvailable: false });
+         results.push({ name: staff.name, status: "Unavailable", availableLocs: [] });
          return;
        }
        
-       // Check if available at selected location
-       const locData = dayData.locations[selectedLocation];
-       if (locData && locData.length > 0) {
-         const times = locData.map((t: any) => `${t.start}-${t.end}`).join(", ");
-         results.push({ name: staff.name, status: "Available", time: times, isAvailable: true });
+       const availableLocs: { loc: string, time: string, colorClass: string, isSelected: boolean }[] = [];
+       let isAvailableAtSelected = false;
+
+       for (const [loc, shifts] of Object.entries(dayData.locations)) {
+           if ((shifts as any[]).length === 0) continue;
+           
+           const times = (shifts as any[]).map((t: any) => `${t.start}-${t.end}`).join(", ");
+           const isSelected = loc.toLowerCase() === selectedLocation.toLowerCase();
+           if (isSelected) isAvailableAtSelected = true;
+
+           let colorClass = "bg-[#A0B99B]/30 border-[#A0B99B] text-[#42523f]"; // Downtown Green
+           if (loc.toLowerCase() === 'whyte') colorClass = "bg-[#CAB1E3]/30 border-[#CAB1E3] text-[#5b4a6e]"; // Whyte Purple
+           if (loc.toLowerCase() === 'heritage') colorClass = "bg-[#ED9BB4]/30 border-[#ED9BB4] text-[#8a3e56]"; // Heritage Pink
+
+           availableLocs.push({ loc, time: times, colorClass, isSelected });
+       }
+       
+       if (availableLocs.length > 0) {
+           results.push({ 
+             name: staff.name, 
+             status: isAvailableAtSelected ? "Available" : "Other Location", 
+             availableLocs 
+           });
        } else {
-         // Available somewhere else
-         results.push({ name: staff.name, status: "Other Loc", time: "", isAvailable: false });
+           results.push({ name: staff.name, status: "Unavailable", availableLocs: [] });
        }
     });
     
-    // Sort: Available first, then Other Loc, then Unavailable, then alphabetical
+    // Sort: Available first, then Other Location, then Unavailable, then alphabetical
     return results.sort((a, b) => {
-       if (a.isAvailable !== b.isAvailable) return a.isAvailable ? -1 : 1;
-       if (a.status !== b.status) {
-           if (a.status === "Other Loc" && b.status === "Unavailable") return -1;
-           if (b.status === "Other Loc" && a.status === "Unavailable") return 1;
-       }
+       const getRank = (status: string) => status === "Available" ? 1 : status === "Other Location" ? 2 : 3;
+       if (getRank(a.status) !== getRank(b.status)) return getRank(a.status) - getRank(b.status);
        return a.name.localeCompare(b.name);
     });
   }, [selectedDateStr, selectedLocation, periodAvailability, staffData]);
@@ -253,13 +272,30 @@ export function ScheduleBuilder({
              </h3>
              <div className="overflow-y-auto pr-2 space-y-2 no-scrollbar flex-1">
                 {staffAvailabilityForDate.map((s, idx) => (
-                  <div key={idx} className={`p-3 rounded-xl border flex items-center justify-between ${s.isAvailable ? 'bg-teal-50/50 border-teal-100' : 'bg-gray-50 border-gray-100'}`}>
-                     <div className="flex flex-col">
-                        <span className={`font-semibold text-sm ${s.isAvailable ? 'text-teal-900' : 'text-gray-500'}`}>{s.name}</span>
-                        {s.isAvailable && <span className="text-xs text-teal-600 font-medium">{s.time}</span>}
+                  <div key={idx} className={`p-3 rounded-xl border flex flex-col justify-center gap-1.5 ${s.status === 'Available' ? 'bg-teal-50/50 border-teal-100' : 'bg-gray-50 border-gray-100'}`}>
+                     <div className="flex items-center justify-between">
+                        <span className={`font-semibold text-sm ${s.status === 'Available' ? 'text-teal-900' : 'text-gray-500'}`}>{s.name}</span>
+                        {s.status === 'Unavailable' && (
+                           <span className="text-[10px] uppercase font-bold text-gray-400">Unavailable</span>
+                        )}
+                        {s.status === 'Other Location' && (
+                           <span className="text-[10px] uppercase font-bold text-gray-400">Other Location</span>
+                        )}
                      </div>
-                     {!s.isAvailable && (
-                       <span className="text-[10px] uppercase font-bold text-gray-400">{s.status}</span>
+                     
+                     {s.availableLocs.length > 0 && (
+                        <div className="flex flex-col gap-1 mt-1">
+                           {s.availableLocs.map((locInfo, locIdx) => (
+                              <div key={locIdx} className="flex items-center justify-between">
+                                 <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 border rounded-md ${locInfo.colorClass}`}>
+                                    {locInfo.loc}
+                                 </span>
+                                 <span className={`text-xs font-medium ${locInfo.isSelected ? 'text-teal-600' : 'text-gray-500'}`}>
+                                    {locInfo.time}
+                                 </span>
+                              </div>
+                           ))}
+                        </div>
                      )}
                   </div>
                 ))}
