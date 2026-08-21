@@ -597,7 +597,6 @@ export function ScheduleBuilder({
                   >
                     {isSaving ? "Saving..." : "Save Draft"}
                   </button>
-                  </button>
                 </div>
              </div>
 
