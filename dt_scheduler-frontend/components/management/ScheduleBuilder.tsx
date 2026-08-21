@@ -350,9 +350,9 @@ export function ScheduleBuilder({
            const isSelected = loc.toLowerCase() === selectedLocation.toLowerCase();
            if (isSelected) isAvailableAtSelected = true;
 
-           let colorClass = "bg-[#A0B99B]/30 border-[#A0B99B] text-[#42523f]"; // Downtown Green
-           if (loc.toLowerCase() === 'whyte') colorClass = "bg-[#CAB1E3]/30 border-[#CAB1E3] text-[#5b4a6e]"; // Whyte Purple
-           if (loc.toLowerCase() === 'heritage') colorClass = "bg-[#ED9BB4]/30 border-[#ED9BB4] text-[#8a3e56]"; // Heritage Pink
+           let colorClass = "text-[#7b9177]"; // Downtown Green Softer
+           if (loc.toLowerCase() === 'whyte') colorClass = "text-[#8f80a3]"; // Whyte Purple Softer
+           if (loc.toLowerCase() === 'heritage') colorClass = "text-[#b06f84]"; // Heritage Pink Softer
 
            availableLocs.push({ loc, time: times, colorClass, isSelected });
        }
@@ -433,7 +433,7 @@ export function ScheduleBuilder({
                         <div className="flex flex-col gap-1 mt-1">
                            {s.availableLocs.map((locInfo, locIdx) => (
                               <div key={locIdx} className="flex items-center justify-between">
-                                 <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 border rounded-md ${locInfo.colorClass}`}>
+                                 <span className={`text-[11px] font-semibold tracking-wide uppercase ${locInfo.colorClass}`}>
                                     {locInfo.loc}
                                  </span>
                                  <span className={`text-xs font-medium ${locInfo.isSelected ? 'text-teal-600' : 'text-gray-500'}`}>
@@ -488,8 +488,10 @@ export function ScheduleBuilder({
                    {/* Gantt Rows */}
                    <div className="mt-4 flex flex-col gap-3 relative z-10 w-full">
                      {currentShifts.length === 0 && (
-                        <div className="text-gray-400 text-center mt-10 w-full font-medium text-sm">
-                           No shifts scheduled for {selectedLocation} today.
+                        <div className="absolute top-10 bottom-0 left-32 right-0 flex items-start justify-center pointer-events-none z-20">
+                           <span className="text-gray-400 font-bold text-sm bg-white/90 px-5 py-2.5 rounded-2xl shadow-sm border border-gray-100 backdrop-blur-sm">
+                              No shifts scheduled for {selectedLocation} today.
+                           </span>
                         </div>
                      )}
                      
