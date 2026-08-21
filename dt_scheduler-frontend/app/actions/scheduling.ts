@@ -72,7 +72,7 @@ export async function saveDraftSchedule(year: number, month: number, period: num
       // Update existing
       const { error } = await adminSupabase
         .from('draft_schedules')
-        .update({ schedule_data: scheduleData, last_updated: new Date().toISOString() })
+        .update({ schedule_data: scheduleData })
         .eq('id', existingDraft.id);
         
       if (error) throw error;
