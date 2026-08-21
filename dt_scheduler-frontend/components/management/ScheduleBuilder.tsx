@@ -565,25 +565,19 @@ export function ScheduleBuilder({
              <div className="relative flex-1 bg-gray-50/50 rounded-xl border border-gray-100 p-4 min-h-[300px] overflow-x-auto overflow-y-auto no-scrollbar">
                 <div className="min-w-[500px] min-h-full relative flex flex-col" ref={containerRef}>
                    {/* X-Axis Timeline (10am to 10pm) */}
-                   <div className="absolute top-10 bottom-0 left-24 right-24 flex border-l border-gray-200 pointer-events-none z-0">
-                         {[10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22].map((hr, i) => (
-                            <div key={hr} className="flex-1 relative">
-                               <span className="absolute -top-7 left-0 -translate-x-1/2 text-xs font-bold text-gray-400 select-none">
-                                  {hr % 12 || 12}{hr >= 12 ? 'p' : 'a'}
-                               </span>
-                               {hr === 17 ? (
-                                  <div className="absolute top-0 bottom-0 border-l border-gray-200" />
-                               ) : (
-                                  <div className="absolute top-0 bottom-0 border-l border-gray-100" />
-                               )}
-                            </div>
-                         ))}
+                   <div className="ml-32 absolute top-0 bottom-0 left-0 right-0 pointer-events-none" style={{ zIndex: 0 }}>
+                      {[10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22].map((hour) => (
+                         <div key={hour} className={`absolute top-0 bottom-0 flex flex-col items-center pointer-events-none ${(hour === 12 || hour === 17 || hour === 22) ? 'z-10' : ''}`} style={{ left: `${((hour - 10) / 12) * 100}%`, transform: 'translateX(-50%)' }}>
+                            <span className={`text-xs font-bold mt-1 bg-gray-50 px-1 rounded ${(hour === 12 || hour === 17 || hour === 22) ? 'text-gray-600' : 'text-gray-400'}`}>{hour > 12 ? hour - 12 : hour}{hour === 12 ? 'p' : hour > 12 ? 'p' : 'a'}</span>
+                            <div className={`flex-1 mt-1 ${(hour === 12 || hour === 17 || hour === 22) ? 'w-[2px] bg-gray-400/80' : 'w-px bg-gray-200'}`} />
+                         </div>
+                      ))}
                    </div>
-
+                   
                    {/* Gantt Rows */}
                    <div className="mt-4 flex flex-col gap-3 relative z-10 w-full">
                      {currentShifts.length === 0 && (
-                        <div className="absolute top-10 bottom-0 left-24 right-24 flex items-start justify-center pointer-events-none z-20">
+                        <div className="absolute top-10 bottom-0 left-32 right-0 flex items-start justify-center pointer-events-none z-20">
                            <span className="text-gray-400 font-bold text-sm bg-white/90 px-5 py-2.5 rounded-2xl shadow-sm border border-gray-100 backdrop-blur-sm">
                               No shifts scheduled for {selectedLocation} today.
                            </span>
@@ -646,17 +640,13 @@ export function ScheduleBuilder({
                            return `${fHr}:${m}${p}`;
                         };
 
-                        return (
+                         return (
                            <div key={`${shift.employee}-${idx}`} className="flex items-center w-full group relative">
-                              <div className="w-24 flex-shrink-0 text-sm font-bold text-gray-700 truncate pr-4 flex items-center justify-between">
-                                 {shift.startHour < 17 && (
-                                    <>
-                                       {shift.employee.split(' ')[0]}
-                                       <button onClick={() => handleDeleteShift(shift.employee, shift.originalIndex)} className="text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity">
-                                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path fillRule="evenodd" d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 1 0 .23 1.482l.149-.022.841 10.518A2.75 2.75 0 0 0 7.596 19h4.807a2.75 2.75 0 0 0 2.742-2.53l.841-10.52.149.023a.75.75 0 0 0 .23-1.482A41.03 41.03 0 0 0 14 4.193V3.75A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4ZM8.58 7.72a.75.75 0 0 0-1.5.06l.3 7.5a.75.75 0 1 0 1.5-.06l-.3-7.5Zm4.34.06a.75.75 0 1 0-1.5-.06l-.3 7.5a.75.75 0 1 0 1.5.06l.3-7.5Z" clipRule="evenodd" /></svg>
-                                       </button>
-                                    </>
-                                 )}
+                              <div className="w-32 flex-shrink-0 text-sm font-bold text-gray-700 truncate pr-6 flex items-center justify-between">
+                                 {shift.employee}
+                                 <button onClick={() => handleDeleteShift(shift.employee, shift.originalIndex)} className="text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path fillRule="evenodd" d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 1 0 .23 1.482l.149-.022.841 10.518A2.75 2.75 0 0 0 7.596 19h4.807a2.75 2.75 0 0 0 2.742-2.53l.841-10.52.149.023a.75.75 0 0 0 .23-1.482A41.03 41.03 0 0 0 14 4.193V3.75A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4ZM8.58 7.72a.75.75 0 0 0-1.5.06l.3 7.5a.75.75 0 1 0 1.5-.06l-.3-7.5Zm4.34.06a.75.75 0 1 0-1.5-.06l-.3 7.5a.75.75 0 1 0 1.5.06l.3-7.5Z" clipRule="evenodd" /></svg>
+                                 </button>
                               </div>
                               <div className="flex-1 relative h-10 bg-transparent rounded-lg">
                                  <div 
@@ -673,21 +663,21 @@ export function ScheduleBuilder({
                                        <span className="text-[10px] font-bold opacity-80 shrink-0">{formatHr(renderStart)}</span>
                                        
                                        {isOverlapping ? (
-                                          <span className={`absolute inset-0 flex items-center justify-center text-[9px] font-black text-amber-600/90 uppercase truncate px-8 ${width < 33.4 ? 'hidden' : ''}`}>
+                                          <span className={`absolute inset-0 flex items-center justify-center text-[9px] font-black text-amber-600/90 uppercase truncate px-8 ${width < 42 ? 'hidden' : ''}`}>
                                              Overlapping Hours ({overlappingLocation})
                                           </span>
                                        ) : isOutOfBounds ? (
-                                          <span className={`absolute inset-0 flex items-center justify-center text-[9px] font-black text-red-600/80 uppercase truncate px-8 ${width < 33.4 ? 'hidden' : ''}`}>
+                                          <span className={`absolute inset-0 flex items-center justify-center text-[9px] font-black text-red-600/80 uppercase truncate px-8 ${width < 42 ? 'hidden' : ''}`}>
                                              (Outside of Availability)
                                           </span>
                                        ) : null}
 
-                                       {isOverlapping && width < 33.4 && (
+                                       {isOverlapping && width < 42 && (
                                           <span className="absolute inset-0 flex items-center justify-center text-[10px] font-black text-amber-600/90" title={`Overlapping Hours (${overlappingLocation})`}>
                                              (!)
                                           </span>
                                        )}
-                                       {isOutOfBounds && !isOverlapping && width < 33.4 && (
+                                       {isOutOfBounds && !isOverlapping && width < 42 && (
                                           <span className="absolute inset-0 flex items-center justify-center text-[10px] font-black text-red-600/80" title="Outside of Availability">
                                              (!)
                                           </span>
@@ -703,18 +693,8 @@ export function ScheduleBuilder({
                                     />
                                  </div>
                               </div>
-                              <div className="w-24 flex-shrink-0 text-sm font-bold text-gray-700 truncate pl-4 flex items-center justify-between">
-                                 {shift.startHour >= 17 && (
-                                    <>
-                                       <button onClick={() => handleDeleteShift(shift.employee, shift.originalIndex)} className="text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity">
-                                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path fillRule="evenodd" d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 1 0 .23 1.482l.149-.022.841 10.518A2.75 2.75 0 0 0 7.596 19h4.807a2.75 2.75 0 0 0 2.742-2.53l.841-10.52.149.023a.75.75 0 0 0 .23-1.482A41.03 41.03 0 0 0 14 4.193V3.75A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4ZM8.58 7.72a.75.75 0 0 0-1.5.06l.3 7.5a.75.75 0 1 0 1.5-.06l-.3-7.5Zm4.34.06a.75.75 0 1 0-1.5-.06l-.3 7.5a.75.75 0 1 0 1.5.06l.3-7.5Z" clipRule="evenodd" /></svg>
-                                       </button>
-                                       {shift.employee.split(' ')[0]}
-                                    </>
-                                 )}
-                              </div>
                            </div>
-                        )
+                         ))
                      })}
                    </div>
                 </div>
@@ -815,19 +795,51 @@ export function ScheduleBuilder({
             ))}
             {validDates.map((date, idx) => {
               const isSelected = selectedDate?.toDateString() === date.toDateString();
+              
+              const dateStr = getLocalYMD(date);
+              const amStaff: string[] = [];
+              const pmStaff: string[] = [];
+
+              for (const emp in draftData) {
+                 const shifts = draftData[emp] || [];
+                 for (const s of shifts) {
+                    if (s.location === selectedLocation && getLocalYMD(new Date(s.start.dateTime)) === dateStr) {
+                       const startHr = new Date(s.start.dateTime).getHours() + new Date(s.start.dateTime).getMinutes() / 60;
+                       const firstName = emp.split(' ')[0];
+                       if (startHr < 17) {
+                          if (!amStaff.includes(firstName)) amStaff.push(firstName);
+                       } else {
+                          if (!pmStaff.includes(firstName)) pmStaff.push(firstName);
+                       }
+                    }
+                 }
+              }
+
               return (
                 <button
                   key={idx}
                   onClick={() => setSelectedDate(date)}
                   className={`
-                    flex flex-col items-center justify-start pt-3 sm:pt-4 p-2 min-h-[80px] sm:min-h-[100px] rounded-2xl text-sm font-bold transition-all focus:outline-none border
+                    flex flex-col items-center justify-start pt-2 p-1 min-h-[100px] sm:min-h-[120px] rounded-2xl text-sm font-bold transition-all focus:outline-none border relative overflow-hidden
                     ${isSelected 
                       ? 'bg-[#8ab4f8] border-[#8ab4f8] text-white shadow-md scale-[1.02]' 
                       : 'bg-white border-gray-100/80 text-gray-700 hover:border-gray-300 hover:shadow-sm'
                     }
                   `}
                 >
-                  {date.getDate()}
+                  <span className="text-center w-full mb-1 z-10">{date.getDate()}</span>
+                  
+                  {/* Faint Divider */}
+                  <div className={`absolute top-8 bottom-2 left-1/2 w-px -translate-x-1/2 ${isSelected ? 'bg-white/20' : 'bg-gray-100'}`}></div>
+
+                  <div className="flex justify-between w-full text-[10px] sm:text-[11px] px-1 gap-1 z-10 h-full">
+                     <div className="flex flex-col items-start w-1/2 pr-1 h-full">
+                        {amStaff.map((n, i) => <span key={i} className={`truncate w-full text-left font-semibold opacity-90 leading-tight ${isSelected ? 'text-white' : 'text-gray-600'}`}>{n}</span>)}
+                     </div>
+                     <div className="flex flex-col items-end w-1/2 pl-1 h-full">
+                        {pmStaff.map((n, i) => <span key={i} className={`truncate w-full text-right font-semibold opacity-90 leading-tight ${isSelected ? 'text-white' : 'text-gray-600'}`}>{n}</span>)}
+                     </div>
+                  </div>
                 </button>
               );
             })}
