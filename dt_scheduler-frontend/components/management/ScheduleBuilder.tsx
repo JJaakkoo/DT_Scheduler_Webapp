@@ -92,15 +92,7 @@ export function ScheduleBuilder({
     }
   };
 
-  // Helper to format Date to YYYY-MM-DD local
-  const formatDateLocal = (date: Date) => {
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, '0');
-    const d = String(date.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
-  };
-
-  const selectedDateStr = selectedDate ? formatDateLocal(selectedDate) : "";
+  const selectedDateStr = selectedDate ? selectedDate.toISOString().split('T')[0] : "";
 
   // Get shifts for the currently selected date and location
   const currentShifts = useMemo(() => {
@@ -206,10 +198,14 @@ export function ScheduleBuilder({
        }
     });
     
-    // Sort: Available first, then name
+    // Sort: Available first, then Other Loc, then Unavailable, then alphabetical
     return results.sort((a, b) => {
-       if (a.isAvailable === b.isAvailable) return a.name.localeCompare(b.name);
-       return a.isAvailable ? -1 : 1;
+       if (a.isAvailable !== b.isAvailable) return a.isAvailable ? -1 : 1;
+       if (a.status !== b.status) {
+           if (a.status === "Other Loc" && b.status === "Unavailable") return -1;
+           if (b.status === "Other Loc" && a.status === "Unavailable") return 1;
+       }
+       return a.name.localeCompare(b.name);
     });
   }, [selectedDateStr, selectedLocation, periodAvailability, staffData]);
 
@@ -227,49 +223,16 @@ export function ScheduleBuilder({
 
       {/* TOP HEADER CONTROLS */}
       <div className="flex flex-col sm:flex-row gap-4 items-center justify-between w-full bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
-         <div className="flex items-center gap-4 w-full sm:w-auto overflow-x-auto no-scrollbar">
-            <div className="flex items-center bg-gray-50 rounded-xl p-1 border border-gray-200">
-               <button 
-                 onClick={handlePrevPeriod}
-                 className="p-2 hover:bg-white rounded-lg transition-colors text-gray-500 hover:text-gray-800 hover:shadow-sm"
-               >
-                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>
-               </button>
-               <div className="px-4 py-1 text-sm font-bold text-gray-700 min-w-[110px] text-center">
-                 {MONTHS[targetPeriod.month - 1]} P{targetPeriod.period}
-               </div>
-               <button 
-                 onClick={handleNextPeriod}
-                 disabled={maxTargetPeriod?.year === targetPeriod.year && maxTargetPeriod?.month === targetPeriod.month && maxTargetPeriod?.period === targetPeriod.period}
-                 className="p-2 hover:bg-white rounded-lg transition-colors text-gray-500 hover:text-gray-800 hover:shadow-sm disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:shadow-none"
-               >
-                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>
-               </button>
-            </div>
-            
-            <select 
-               value={selectedDateStr}
-               onChange={e => {
-                 const d = validDates.find(vd => formatDateLocal(vd) === e.target.value);
-                 if (d) setSelectedDate(d);
-               }}
-               className="bg-white border border-gray-200 text-gray-700 text-sm font-semibold rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 py-2.5 pl-3 pr-8 cursor-pointer shadow-sm"
-               style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'%236b7280\' stroke-width=\'2\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' d=\'M19.5 8.25l-7.5 7.5-7.5-7.5\'/%3E%3C/svg%3E")', backgroundPosition: 'right 0.5rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1em 1em' }}
-            >
-               {validDates.map((d, i) => (
-                 <option key={i} value={formatDateLocal(d)}>
-                    {d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
-                 </option>
-               ))}
-            </select>
-         </div>
+         <h2 className="text-lg font-bold text-gray-800 px-2">
+            {selectedDate ? selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }) : 'Select a date'}
+         </h2>
 
          <div className="flex items-center gap-3 w-full sm:w-auto">
             <span className="text-sm font-medium text-gray-500 whitespace-nowrap">Location:</span>
             <select 
               value={selectedLocation} 
               onChange={(e) => setSelectedLocation(e.target.value)}
-              className="bg-white border border-gray-200 text-gray-700 text-sm font-semibold rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 py-2 pl-3 pr-8 cursor-pointer w-full sm:w-auto shadow-sm"
+              className="bg-white border border-gray-200 text-gray-700 text-sm font-semibold rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 py-2 pl-3 pr-8 cursor-pointer w-full sm:w-auto shadow-sm appearance-none"
               style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'%236b7280\' stroke-width=\'2\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' d=\'M19.5 8.25l-7.5 7.5-7.5-7.5\'/%3E%3C/svg%3E")', backgroundPosition: 'right 0.5rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1em 1em' }}
             >
               {LOCATIONS.map(loc => <option key={loc} value={loc}>{loc}</option>)}
@@ -380,6 +343,65 @@ export function ScheduleBuilder({
 
         </div>
       )}
+
+      {/* BOTTOM CARD: CALENDAR */}
+      <div className="w-full bg-white rounded-3xl shadow-[0_4px_24px_rgba(0,0,0,0.05)] border border-gray-100 p-6 sm:p-8 flex flex-col">
+          <div className="flex items-center justify-between mb-6">
+            <button onClick={handlePrevPeriod} className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 transition-colors">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" /></svg>
+            </button>
+            {targetPeriod && (
+              <h3 className="text-lg font-bold text-gray-800 text-center">
+                {targetPeriod.year} {new Date(targetPeriod.year, targetPeriod.month - 1).toLocaleString('en-US', { month: 'long' })} {targetPeriod.period === 1 ? '1-15' : '16-31'} (Period {targetPeriod.period})
+              </h3>
+            )}
+            {(() => {
+              const isAtMaxPeriod = Boolean(targetPeriod && maxTargetPeriod
+                && targetPeriod.year === maxTargetPeriod.year
+                && targetPeriod.month === maxTargetPeriod.month
+                && targetPeriod.period === maxTargetPeriod.period);
+              
+              return (
+                <button 
+                  onClick={handleNextPeriod} 
+                  disabled={isAtMaxPeriod}
+                  className={`p-2 rounded-lg transition-colors ${isAtMaxPeriod ? 'text-gray-300 cursor-not-allowed' : 'text-gray-500 hover:bg-gray-100'}`}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" /></svg>
+                </button>
+              );
+            })()}
+          </div>
+          
+          <div className="grid grid-cols-7 gap-2 sm:gap-3 w-full">
+            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+              <div key={day} className="text-center font-bold text-[10px] sm:text-xs text-gray-400 uppercase tracking-wider mb-2">
+                {day}
+              </div>
+            ))}
+            {validDates.length > 0 && Array.from({ length: validDates[0].getDay() }).map((_, i) => (
+              <div key={`empty-${i}`} className="p-2 border border-transparent"></div>
+            ))}
+            {validDates.map((date, idx) => {
+              const isSelected = selectedDate?.toDateString() === date.toDateString();
+              return (
+                <button
+                  key={idx}
+                  onClick={() => setSelectedDate(date)}
+                  className={`
+                    flex flex-col items-center justify-start pt-3 sm:pt-4 p-2 min-h-[80px] sm:min-h-[100px] rounded-2xl text-sm font-bold transition-all focus:outline-none border
+                    ${isSelected 
+                      ? 'bg-[#8ab4f8] border-[#8ab4f8] text-white shadow-md scale-[1.02]' 
+                      : 'bg-white border-gray-100/80 text-gray-700 hover:border-gray-300 hover:shadow-sm'
+                    }
+                  `}
+                >
+                  {date.getDate()}
+                </button>
+              );
+            })}
+          </div>
+      </div>
     </div>
   );
 }
