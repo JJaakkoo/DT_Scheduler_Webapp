@@ -227,9 +227,8 @@ export async function autoLinkUser(userId: string, email: string): Promise<void>
     // Look for an unlinked staff row matching this email
     const { data: staffData, error: findError } = await adminSupabase
       .from('staff')
-      .select('id, role')
+      .select('id, role, staff_id')
       .eq('temp_email', email)
-      .is('staff_id', null)
       .maybeSingle();
 
     if (findError) {
@@ -238,7 +237,12 @@ export async function autoLinkUser(userId: string, email: string): Promise<void>
     }
 
     if (!staffData) {
-      // No unlinked matching row found. This is normal for already-linked users or non-staff.
+      // No matching row found. This is normal for non-staff.
+      return;
+    }
+
+    if (staffData.staff_id === userId) {
+      // Already correctly linked to this user.
       return;
     }
 
