@@ -3,9 +3,6 @@
 import crypto from 'node:crypto';
 import { createAdminClient } from '@/utils/supabase/admin';
 import { createClient } from '@/utils/supabase/server';
-import { Resend } from 'resend';
-
-const resend = new Resend(process.env.RESEND_API_KEY);
 
 export interface StaffBasic {
   id: string;
@@ -129,21 +126,8 @@ export async function requestClaim(staffId: string): Promise<ActionResponse> {
       return { error: 'Failed to generate verification code.' };
     }
 
-    const { error: emailError } = await resend.emails.send({
-      from: 'Dream Tea Nexus <no-reply@dreamteanexus.ca>',
-      to: [staffData.temp_email],
-      subject: 'Verify your Dream Tea Nexus Account',
-      html: `
-        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2>Hello ${staffData.name},</h2>
-          <p>You requested to link your account to the Dream Tea Nexus portal.</p>
-          <p>Your verification code is:</p>
-          <h1 style="font-size: 32px; letter-spacing: 5px; color: #628ebf;">${otp}</h1>
-          <p>This code will expire in 15 minutes.</p>
-          <p>If you did not request this, please ignore this email.</p>
-        </div>
-      `,
-    });
+    const { sendVerificationEmail } = await import('@/utils/email');
+    const { error: emailError } = await sendVerificationEmail(staffData.temp_email, staffData.name, otp);
 
     if (emailError) {
       console.error('Failed to send email:', emailError);
