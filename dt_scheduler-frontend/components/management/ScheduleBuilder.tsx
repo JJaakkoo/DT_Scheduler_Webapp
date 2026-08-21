@@ -521,6 +521,23 @@ export function ScheduleBuilder({
                         const left = timeToPerc(renderStart);
                         const width = widthPerc(renderStart, renderEnd);
                         
+                        let isOverlapping = false;
+                        let overlappingLocation = "";
+                        
+                        const employeeAllShifts = draftData[shift.employee] || [];
+                        for (const s of employeeAllShifts) {
+                            const sDate = new Date(s.start.dateTime).toISOString().split('T')[0];
+                            if (sDate === selectedDateStr && s.location !== selectedLocation) {
+                                const oStartHr = new Date(s.start.dateTime).getHours() + new Date(s.start.dateTime).getMinutes() / 60;
+                                const oEndHr = new Date(s.end.dateTime).getHours() + new Date(s.end.dateTime).getMinutes() / 60;
+                                if (Math.max(renderStart, oStartHr) < Math.min(renderEnd, oEndHr)) {
+                                    isOverlapping = true;
+                                    overlappingLocation = s.location;
+                                    break;
+                                }
+                            }
+                        }
+
                         let colorClass = "bg-[#8ab4f8]/30 border-[#8ab4f8] text-[#3b6bb8]"; // Default Blue
                         if (selectedLocation.toLowerCase() === 'whyte') colorClass = "bg-[#CAB1E3]/30 border-[#CAB1E3] text-[#5b4a6e]";
                         if (selectedLocation.toLowerCase() === 'heritage') colorClass = "bg-[#ED9BB4]/30 border-[#ED9BB4] text-[#8a3e56]";
@@ -554,7 +571,7 @@ export function ScheduleBuilder({
 
                         return (
                            <div key={`${shift.employee}-${idx}`} className="flex items-center w-full group relative">
-                              <div className="w-32 flex-shrink-0 text-sm font-bold text-gray-700 truncate pr-2 flex items-center justify-between">
+                              <div className="w-32 flex-shrink-0 text-sm font-bold text-gray-700 truncate pr-6 flex items-center justify-between">
                                  {shift.employee}
                                  <button onClick={() => handleDeleteShift(shift.employee, shift.originalIndex)} className="text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity">
                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path fillRule="evenodd" d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 1 0 .23 1.482l.149-.022.841 10.518A2.75 2.75 0 0 0 7.596 19h4.807a2.75 2.75 0 0 0 2.742-2.53l.841-10.52.149.023a.75.75 0 0 0 .23-1.482A41.03 41.03 0 0 0 14 4.193V3.75A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4ZM8.58 7.72a.75.75 0 0 0-1.5.06l.3 7.5a.75.75 0 1 0 1.5-.06l-.3-7.5Zm4.34.06a.75.75 0 1 0-1.5-.06l-.3 7.5a.75.75 0 1 0 1.5.06l.3-7.5Z" clipRule="evenodd" /></svg>
@@ -574,12 +591,22 @@ export function ScheduleBuilder({
                                     <div className="flex justify-between items-center w-full px-2 pointer-events-none select-none relative overflow-hidden h-full">
                                        <span className="text-[10px] font-bold opacity-80 shrink-0">{formatHr(renderStart)}</span>
                                        
-                                       {isOutOfBounds && (
+                                       {isOverlapping ? (
+                                          <span className={`absolute inset-0 flex items-center justify-center text-[9px] font-black text-amber-600/90 uppercase truncate px-8 ${width < 35 ? 'hidden' : ''}`}>
+                                             Overlapping Hours ({overlappingLocation})
+                                          </span>
+                                       ) : isOutOfBounds ? (
                                           <span className={`absolute inset-0 flex items-center justify-center text-[9px] font-black text-red-600/80 uppercase truncate px-8 ${width < 25 ? 'hidden' : ''}`}>
                                              (Outside of Availability)
                                           </span>
+                                       ) : null}
+
+                                       {isOverlapping && width < 35 && (
+                                          <span className="absolute inset-0 flex items-center justify-center text-[10px] font-black text-amber-600/90" title={`Overlapping Hours (${overlappingLocation})`}>
+                                             (!)
+                                          </span>
                                        )}
-                                       {isOutOfBounds && width < 25 && (
+                                       {isOutOfBounds && !isOverlapping && width < 25 && (
                                           <span className="absolute inset-0 flex items-center justify-center text-[10px] font-black text-red-600/80" title="Outside of Availability">
                                              (!)
                                           </span>
