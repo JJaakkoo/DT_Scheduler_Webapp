@@ -252,7 +252,7 @@ export function ScheduleBuilder({
         // Try to find availability at selected location
         const locInfo = staffInfo.availableLocs.find(l => l.isSelected);
         if (locInfo && locInfo.time) {
-           const timeMatch = locInfo.time.match(/(\d+):(\d+)([ap])-(\d+):(\d+)([ap])/);
+           const timeMatch = locInfo.time.match(/(\d+):(\d+)([ap])\s*-\s*(\d+):(\d+)([ap])/);
            if (timeMatch) {
               let [_, sH, sM, sP, eH, eM, eP] = timeMatch;
               startHour = (parseInt(sH) % 12) + (sP === 'p' ? 12 : 0) + (parseInt(sM) / 60);
@@ -476,9 +476,9 @@ export function ScheduleBuilder({
              <div className="relative flex-1 bg-gray-50/50 rounded-xl border border-gray-100 p-4 min-h-[300px] overflow-x-auto overflow-y-auto no-scrollbar">
                 <div className="min-w-[500px] relative flex flex-col" ref={containerRef}>
                    {/* X-Axis Timeline (10am to 10pm) */}
-                   <div className="ml-32 relative h-10 pointer-events-none" style={{ zIndex: 0 }}>
+                   <div className="ml-32 absolute top-0 bottom-0 left-0 right-0 pointer-events-none" style={{ zIndex: 0 }}>
                       {[10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22].map((hour) => (
-                         <div key={hour} className={`absolute top-0 flex flex-col items-center pointer-events-none ${(hour === 12 || hour === 17 || hour === 22) ? 'z-10' : ''}`} style={{ left: `${((hour - 10) / 12) * 100}%`, transform: 'translateX(-50%)', height: '2000px' }}>
+                         <div key={hour} className={`absolute top-0 bottom-0 flex flex-col items-center pointer-events-none ${(hour === 12 || hour === 17 || hour === 22) ? 'z-10' : ''}`} style={{ left: `${((hour - 10) / 12) * 100}%`, transform: 'translateX(-50%)' }}>
                             <span className={`text-xs font-bold mt-1 bg-gray-50 px-1 rounded ${(hour === 12 || hour === 17 || hour === 22) ? 'text-gray-600' : 'text-gray-400'}`}>{hour > 12 ? hour - 12 : hour}{hour === 12 ? 'p' : hour > 12 ? 'p' : 'a'}</span>
                             <div className={`flex-1 mt-1 ${(hour === 12 || hour === 17 || hour === 22) ? 'w-[2px] bg-gray-400/80' : 'w-px bg-gray-200'}`} />
                          </div>
@@ -513,7 +513,7 @@ export function ScheduleBuilder({
                         if (staffInfo && staffInfo.availableLocs) {
                            const locInfo = staffInfo.availableLocs.find(l => l.isSelected); // must be available at this location
                            if (locInfo && locInfo.time) {
-                              const timeMatch = locInfo.time.match(/(\d+):(\d+)([ap])-(\d+):(\d+)([ap])/);
+                              const timeMatch = locInfo.time.match(/(\d+):(\d+)([ap])\s*-\s*(\d+):(\d+)([ap])/);
                               if (timeMatch) {
                                  let [_, sH, sM, sP, eH, eM, eP] = timeMatch;
                                  const availStart = (parseInt(sH) % 12) + (sP === 'p' ? 12 : 0) + (parseInt(sM) / 60);
@@ -552,15 +552,20 @@ export function ScheduleBuilder({
                                     />
                                     
                                     <div className="flex justify-between items-center w-full px-2 pointer-events-none select-none relative overflow-hidden h-full">
-                                       <span className="text-[10px] font-bold opacity-80">{formatHr(renderStart)}</span>
+                                       <span className="text-[10px] font-bold opacity-80 shrink-0">{formatHr(renderStart)}</span>
                                        
                                        {isOutOfBounds && (
-                                          <span className="absolute inset-0 flex items-center justify-center text-[9px] font-black text-red-600/80 uppercase">
+                                          <span className={`absolute inset-0 flex items-center justify-center text-[9px] font-black text-red-600/80 uppercase truncate px-8 ${width < 25 ? 'hidden' : ''}`}>
                                              (Outside of Availability)
                                           </span>
                                        )}
+                                       {isOutOfBounds && width < 25 && (
+                                          <span className="absolute inset-0 flex items-center justify-center text-[10px] font-black text-red-600/80" title="Outside of Availability">
+                                             (!)
+                                          </span>
+                                       )}
                                        
-                                       <span className="text-[10px] font-bold opacity-80">{formatHr(renderEnd)}</span>
+                                       <span className={`text-[10px] font-bold opacity-80 shrink-0 ${width < 10 ? 'hidden' : ''}`}>{formatHr(renderEnd)}</span>
                                     </div>
 
                                     {/* Right Handle */}
