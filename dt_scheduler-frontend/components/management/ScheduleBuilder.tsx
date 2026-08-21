@@ -895,29 +895,49 @@ export function ScheduleBuilder({
       {/* RELEASE MODAL */}
       {showReleaseModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-           <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl flex flex-col items-center">
-              <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-4">
-                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8 text-red-500"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+           <div className="bg-white rounded-[24px] p-6 sm:p-8 max-w-md w-full shadow-2xl relative flex flex-col">
+              
+              {/* Close Button */}
+              <button 
+                 onClick={() => setShowReleaseModal(false)}
+                 className="absolute top-4 right-4 p-2 bg-gray-50 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-600 transition-colors focus:outline-none"
+              >
+                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                 </svg>
+              </button>
+
+              {/* Header */}
+              <div className="flex items-center gap-3 mb-4">
+                 <div className="w-8 h-8 rounded-full border-2 border-emerald-500 flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5 text-emerald-500">
+                       <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                    </svg>
+                 </div>
+                 <h3 className="text-[22px] font-extrabold text-[#1a202c]">Release Schedule?</h3>
               </div>
-              <h3 className="text-xl font-bold text-gray-800 mb-2">Release Schedule?</h3>
-              <p className="text-gray-500 text-center text-sm mb-6">
+
+              {/* Body */}
+              <p className="text-gray-600 text-sm mb-6 leading-relaxed">
                  Are you sure you want to release the schedule to all staff? This action will overwrite the currently live schedule and notify staff.
               </p>
-              <div className="flex w-full gap-3">
+
+              {/* Buttons */}
+              <div className="flex w-full gap-3 mt-2">
                  <button 
                     onClick={() => {
                        handlePublish();
                        setShowReleaseModal(false);
                     }}
                     disabled={isPublishing}
-                    className="flex-1 px-4 py-2 bg-red-500 hover:bg-red-400 text-white font-bold rounded-xl transition-colors disabled:opacity-50"
+                    className="flex-1 px-4 py-2.5 bg-[#1e293b] hover:bg-slate-700 text-white font-bold rounded-xl transition-colors disabled:opacity-50 text-sm"
                  >
                     {isPublishing ? "Publishing..." : "Yes, Release"}
                  </button>
                  <button 
                     onClick={() => setShowReleaseModal(false)}
                     disabled={isPublishing}
-                    className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl transition-colors"
+                    className="flex-1 px-4 py-2.5 bg-white border border-gray-200 hover:bg-gray-50 hover:border-gray-300 text-[#1a202c] font-bold rounded-xl transition-colors text-sm"
                  >
                     Cancel
                  </button>
