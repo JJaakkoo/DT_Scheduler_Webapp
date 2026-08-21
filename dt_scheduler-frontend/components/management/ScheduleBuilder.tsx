@@ -79,13 +79,41 @@ export function ScheduleBuilder({
     setTimeout(() => setToast(null), 3000);
   };
 
+  const hasAnyOverlap = () => {
+    for (const employee in draftData) {
+      const shifts = draftData[employee];
+      for (let i = 0; i < shifts.length; i++) {
+        for (let j = i + 1; j < shifts.length; j++) {
+          const s1 = shifts[i];
+          const s2 = shifts[j];
+          const s1Date = getLocalYMD(new Date(s1.start.dateTime));
+          const s2Date = getLocalYMD(new Date(s2.start.dateTime));
+          if (s1Date === s2Date && s1.location !== s2.location) {
+             const s1Start = new Date(s1.start.dateTime).getHours() + new Date(s1.start.dateTime).getMinutes() / 60;
+             const s1End = new Date(s1.end.dateTime).getHours() + new Date(s1.end.dateTime).getMinutes() / 60;
+             const s2Start = new Date(s2.start.dateTime).getHours() + new Date(s2.start.dateTime).getMinutes() / 60;
+             const s2End = new Date(s2.end.dateTime).getHours() + new Date(s2.end.dateTime).getMinutes() / 60;
+             if (Math.max(s1Start, s2Start) < Math.min(s1End, s2End)) {
+                return true;
+             }
+          }
+        }
+      }
+    }
+    return false;
+  };
+
   const handleSaveDraft = async () => {
     if (!targetPeriod) return;
+    if (hasAnyOverlap()) {
+        showToast("Error: Please fix overlapping shifts before saving.");
+        return;
+    }
     setIsSaving(true);
     const res = await saveDraftSchedule(targetPeriod.year, targetPeriod.month, targetPeriod.period, draftData);
     setIsSaving(false);
     if (res.success) {
-      showToast("Draft saved successfully!");
+      showToast("Saved.");
     } else {
       showToast(`Error: ${res.error}`);
     }
@@ -490,7 +518,7 @@ export function ScheduleBuilder({
           <div className="w-full lg:w-2/3 bg-white rounded-3xl shadow-[0_4px_24px_rgba(0,0,0,0.05)] border border-gray-100 p-6 flex flex-col h-[550px]">
              <div className="flex items-center justify-between mb-4 border-b border-gray-50 pb-3">
                 <div className="flex items-center gap-3">
-                   <h2 className="text-xl font-black text-gray-800 tracking-tight">Shift Builder</h2>
+                   <h2 className="text-xl font-bold text-gray-800 tracking-tight">Shift Builder</h2>
                    <div className="flex items-center bg-gray-50 rounded-lg overflow-hidden border border-gray-200 shadow-sm">
                       <button 
                          onClick={handlePrevDay} 
@@ -537,19 +565,26 @@ export function ScheduleBuilder({
              <div className="relative flex-1 bg-gray-50/50 rounded-xl border border-gray-100 p-4 min-h-[300px] overflow-x-auto overflow-y-auto no-scrollbar">
                 <div className="min-w-[500px] min-h-full relative flex flex-col" ref={containerRef}>
                    {/* X-Axis Timeline (10am to 10pm) */}
-                   <div className="ml-32 absolute top-0 bottom-0 left-0 right-0 pointer-events-none" style={{ zIndex: 0 }}>
-                      {[10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22].map((hour) => (
-                         <div key={hour} className={`absolute top-0 bottom-0 flex flex-col items-center pointer-events-none ${(hour === 12 || hour === 17 || hour === 22) ? 'z-10' : ''}`} style={{ left: `${((hour - 10) / 12) * 100}%`, transform: 'translateX(-50%)' }}>
-                            <span className={`text-xs font-bold mt-1 bg-gray-50 px-1 rounded ${(hour === 12 || hour === 17 || hour === 22) ? 'text-gray-600' : 'text-gray-400'}`}>{hour > 12 ? hour - 12 : hour}{hour === 12 ? 'p' : hour > 12 ? 'p' : 'a'}</span>
-                            <div className={`flex-1 mt-1 ${(hour === 12 || hour === 17 || hour === 22) ? 'w-[2px] bg-gray-400/80' : 'w-px bg-gray-200'}`} />
-                         </div>
-                      ))}
-                   </div>
-                   
+                   <div className="mt-8 relative w-full flex-1 min-h-[300px]">
+                      <div className="absolute top-10 bottom-0 left-24 right-24 flex border-l border-gray-200">
+                         {[10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22].map((hr, i) => (
+                            <div key={hr} className="flex-1 relative">
+                               <span className="absolute -top-7 left-0 -translate-x-1/2 text-xs font-bold text-gray-400 select-none">
+                                  {hr % 12 || 12}{hr >= 12 ? 'p' : 'a'}
+                               </span>
+                               {hr === 17 ? (
+                                  <div className="absolute top-0 bottom-0 border-l border-gray-200" />
+                               ) : (
+                                  <div className="absolute top-0 bottom-0 border-l border-gray-100" />
+                               )}
+                            </div>
+                         ))}
+                      </div>
+
                    {/* Gantt Rows */}
                    <div className="mt-4 flex flex-col gap-3 relative z-10 w-full">
                      {currentShifts.length === 0 && (
-                        <div className="absolute top-10 bottom-0 left-32 right-0 flex items-start justify-center pointer-events-none z-20">
+                        <div className="absolute top-10 bottom-0 left-24 right-24 flex items-start justify-center pointer-events-none z-20">
                            <span className="text-gray-400 font-bold text-sm bg-white/90 px-5 py-2.5 rounded-2xl shadow-sm border border-gray-100 backdrop-blur-sm">
                               No shifts scheduled for {selectedLocation} today.
                            </span>
@@ -614,11 +649,15 @@ export function ScheduleBuilder({
 
                         return (
                            <div key={`${shift.employee}-${idx}`} className="flex items-center w-full group relative">
-                              <div className="w-32 flex-shrink-0 text-sm font-bold text-gray-700 truncate pr-6 flex items-center justify-between">
-                                 {shift.employee}
-                                 <button onClick={() => handleDeleteShift(shift.employee, shift.originalIndex)} className="text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path fillRule="evenodd" d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 1 0 .23 1.482l.149-.022.841 10.518A2.75 2.75 0 0 0 7.596 19h4.807a2.75 2.75 0 0 0 2.742-2.53l.841-10.52.149.023a.75.75 0 0 0 .23-1.482A41.03 41.03 0 0 0 14 4.193V3.75A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4ZM8.58 7.72a.75.75 0 0 0-1.5.06l.3 7.5a.75.75 0 1 0 1.5-.06l-.3-7.5Zm4.34.06a.75.75 0 1 0-1.5-.06l-.3 7.5a.75.75 0 1 0 1.5.06l.3-7.5Z" clipRule="evenodd" /></svg>
-                                 </button>
+                              <div className="w-24 flex-shrink-0 text-sm font-bold text-gray-700 truncate pr-4 flex items-center justify-between">
+                                 {shift.startHour < 17 && (
+                                    <>
+                                       {shift.employee.split(' ')[0]}
+                                       <button onClick={() => handleDeleteShift(shift.employee, shift.originalIndex)} className="text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path fillRule="evenodd" d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 1 0 .23 1.482l.149-.022.841 10.518A2.75 2.75 0 0 0 7.596 19h4.807a2.75 2.75 0 0 0 2.742-2.53l.841-10.52.149.023a.75.75 0 0 0 .23-1.482A41.03 41.03 0 0 0 14 4.193V3.75A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4ZM8.58 7.72a.75.75 0 0 0-1.5.06l.3 7.5a.75.75 0 1 0 1.5-.06l-.3-7.5Zm4.34.06a.75.75 0 1 0-1.5-.06l-.3 7.5a.75.75 0 1 0 1.5.06l.3-7.5Z" clipRule="evenodd" /></svg>
+                                       </button>
+                                    </>
+                                 )}
                               </div>
                               <div className="flex-1 relative h-10 bg-transparent rounded-lg">
                                  <div 
@@ -635,21 +674,21 @@ export function ScheduleBuilder({
                                        <span className="text-[10px] font-bold opacity-80 shrink-0">{formatHr(renderStart)}</span>
                                        
                                        {isOverlapping ? (
-                                          <span className={`absolute inset-0 flex items-center justify-center text-[9px] font-black text-amber-600/90 uppercase truncate px-8 ${width < 35 ? 'hidden' : ''}`}>
+                                          <span className={`absolute inset-0 flex items-center justify-center text-[9px] font-black text-amber-600/90 uppercase truncate px-8 ${width < 33.4 ? 'hidden' : ''}`}>
                                              Overlapping Hours ({overlappingLocation})
                                           </span>
                                        ) : isOutOfBounds ? (
-                                          <span className={`absolute inset-0 flex items-center justify-center text-[9px] font-black text-red-600/80 uppercase truncate px-8 ${width < 25 ? 'hidden' : ''}`}>
+                                          <span className={`absolute inset-0 flex items-center justify-center text-[9px] font-black text-red-600/80 uppercase truncate px-8 ${width < 33.4 ? 'hidden' : ''}`}>
                                              (Outside of Availability)
                                           </span>
                                        ) : null}
 
-                                       {isOverlapping && width < 35 && (
+                                       {isOverlapping && width < 33.4 && (
                                           <span className="absolute inset-0 flex items-center justify-center text-[10px] font-black text-amber-600/90" title={`Overlapping Hours (${overlappingLocation})`}>
                                              (!)
                                           </span>
                                        )}
-                                       {isOutOfBounds && !isOverlapping && width < 25 && (
+                                       {isOutOfBounds && !isOverlapping && width < 33.4 && (
                                           <span className="absolute inset-0 flex items-center justify-center text-[10px] font-black text-red-600/80" title="Outside of Availability">
                                              (!)
                                           </span>
@@ -664,6 +703,16 @@ export function ScheduleBuilder({
                                        onPointerDown={(e) => handlePointerDown(e, shift, 'right')}
                                     />
                                  </div>
+                              </div>
+                              <div className="w-24 flex-shrink-0 text-sm font-bold text-gray-700 truncate pl-4 flex items-center justify-between">
+                                 {shift.startHour >= 17 && (
+                                    <>
+                                       <button onClick={() => handleDeleteShift(shift.employee, shift.originalIndex)} className="text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path fillRule="evenodd" d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 1 0 .23 1.482l.149-.022.841 10.518A2.75 2.75 0 0 0 7.596 19h4.807a2.75 2.75 0 0 0 2.742-2.53l.841-10.52.149.023a.75.75 0 0 0 .23-1.482A41.03 41.03 0 0 0 14 4.193V3.75A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4ZM8.58 7.72a.75.75 0 0 0-1.5.06l.3 7.5a.75.75 0 1 0 1.5-.06l-.3-7.5Zm4.34.06a.75.75 0 1 0-1.5-.06l-.3 7.5a.75.75 0 1 0 1.5.06l.3-7.5Z" clipRule="evenodd" /></svg>
+                                       </button>
+                                       {shift.employee.split(' ')[0]}
+                                    </>
+                                 )}
                               </div>
                            </div>
                         )
