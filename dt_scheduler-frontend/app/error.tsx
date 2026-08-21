@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { submitSystemError } from "@/app/actions/feedback";
 
 export default function GlobalError({
   error,
@@ -10,7 +11,44 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
-    // Log the error to an error reporting service
+    const CIRCUIT_BREAKER_KEY = 'nexus_error_circuit_breaker';
+    const MAX_ERRORS = 5;
+    const TIME_WINDOW_MS = 60 * 1000;
+
+    try {
+      const now = Date.now();
+      const stored = sessionStorage.getItem(CIRCUIT_BREAKER_KEY);
+      let errorCount = 1;
+      let timestamp = now;
+
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (now - parsed.timestamp < TIME_WINDOW_MS) {
+          errorCount = parsed.count + 1;
+          timestamp = parsed.timestamp;
+        }
+      }
+
+      sessionStorage.setItem(CIRCUIT_BREAKER_KEY, JSON.stringify({ count: errorCount, timestamp }));
+
+      if (errorCount > MAX_ERRORS) {
+        console.warn('Circuit breaker triggered: Too many errors. Telemetry dropped.');
+        return;
+      }
+
+      submitSystemError(error.message || 'Unknown React Rendering Error', {
+        href: window.location.href,
+        userAgent: navigator.userAgent,
+        stack: error.stack,
+        digest: error.digest,
+        innerWidth: window.innerWidth,
+        innerHeight: window.innerHeight,
+      }).catch(err => console.error('Failed to report telemetry:', err));
+    } catch (e) {
+      console.error('Failed to execute error circuit breaker logic', e);
+    }
+    
+    // Fallback console log for local debugging
     console.error("Caught by Error Boundary:", error);
   }, [error]);
 

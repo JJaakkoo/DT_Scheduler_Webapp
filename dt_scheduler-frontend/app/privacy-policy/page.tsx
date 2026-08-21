@@ -25,7 +25,8 @@ export default function PrivacyPolicy() {
           <ul className="list-disc pl-6 space-y-2">
             <li><strong>Personal Info:</strong> Your email address.</li>
             <li><strong>Credentials:</strong> Passwords and similar security information used for authentication and secure account access.</li>
-            <li><strong>Usage Data:</strong> Scheduling information, shifts, availability, and activity logs within the portal.</li>
+            <li><strong>Usage Information:</strong> Details of how you interact with the Service, including the times and dates of your visits.</li>
+            <li><strong>Diagnostic and Telemetry Data:</strong> We collect anonymous crash reports and error logs (including browser version, URLs, and stack traces) when the application encounters an issue. This data is strictly sanitized to remove personal identifiers and is solely used to identify, debug, and resolve system bugs to improve the stability of our application.</li>
           </ul>
 
           <h2 className="text-xl font-bold mt-8 mb-4">2. Cookies and Session Management</h2>

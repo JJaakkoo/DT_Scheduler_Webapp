@@ -39,22 +39,27 @@ export default function TermsOfService() {
             <li>In any way that infringes upon the rights of others, or is illegal, fraudulent, or harmful to the operations of Dream Tea.</li>
           </ul>
 
-          <h2 className="text-xl font-bold mt-8 mb-4">4. Limitation of Liability</h2>
+          <h2 className="text-xl font-bold mt-8 mb-4">4. User Feedback and Diagnostics</h2>
+          <p>
+            You agree that Dream Tea Nexus securely tracks and collects sanitized diagnostic/telemetry data (including crash reports and error logs) strictly for bug fixing, app stability, and support purposes. By using the Service, you consent to this automated diagnostic tracking.
+          </p>
+
+          <h2 className="text-xl font-bold mt-8 mb-4">5. Limitation of Liability</h2>
           <p>
             In no event shall Dream Tea Nexus, nor its directors, employees, partners, agents, suppliers, or affiliates, be liable for any indirect, incidental, special, consequential or punitive damages, including without limitation, loss of profits, data, use, goodwill, or other intangible losses, resulting from (i) your access to or use of or inability to access or use the Service; (ii) any conduct or content of any third party on the Service; (iii) any content obtained from the Service; and (iv) unauthorized access, use or alteration of your transmissions or content.
           </p>
 
-          <h2 className="text-xl font-bold mt-8 mb-4">5. Intellectual Property</h2>
+          <h2 className="text-xl font-bold mt-8 mb-4">6. Intellectual Property</h2>
           <p>
             The Service and its original content, features, frontend components, and backend functionality are and will remain the exclusive property of Dream Tea Nexus and its licensors.
           </p>
 
-          <h2 className="text-xl font-bold mt-8 mb-4">6. Changes to Terms</h2>
+          <h2 className="text-xl font-bold mt-8 mb-4">7. Changes to Terms</h2>
           <p>
             We reserve the right, at our sole discretion, to modify or replace these Terms at any time. By continuing to access or use our Service after any revisions become effective, you agree to be bound by the revised terms.
           </p>
 
-          <h2 className="text-xl font-bold mt-8 mb-4">7. Contact Us</h2>
+          <h2 className="text-xl font-bold mt-8 mb-4">8. Contact Us</h2>
           <p>
             If you have any questions about these Terms, please contact us at <strong>jakozeng@gmail.com</strong>.
           </p>
