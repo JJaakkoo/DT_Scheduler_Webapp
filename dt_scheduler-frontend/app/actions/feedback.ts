@@ -66,7 +66,8 @@ export async function submitUserFeedback(category: string, message: string) {
     const adminSupabase = createAdminClient();
     
     // Server-side rate limiting by IP (or fallback)
-    const ip = headers().get('x-forwarded-for') || 'unknown';
+    const headersList = await headers();
+    const ip = headersList.get('x-forwarded-for') || 'unknown';
     if (isRateLimited(`feedback_${ip}`)) {
       return { success: false, error: 'Rate limit exceeded. Please try again later.' };
     }
@@ -104,7 +105,8 @@ export async function submitSystemError(message: string, metadata: any) {
     const adminSupabase = createAdminClient();
     
     // Server-side rate limiting by IP (or fallback)
-    const ip = headers().get('x-forwarded-for') || 'unknown';
+    const headersList = await headers();
+    const ip = headersList.get('x-forwarded-for') || 'unknown';
     if (isRateLimited(`error_${ip}`)) {
       return { success: false, error: 'Rate limit exceeded.' };
     }
