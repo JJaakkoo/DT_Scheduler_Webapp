@@ -483,8 +483,14 @@ export function ScheduleBuilder({
                 <span className="text-xs font-semibold bg-gray-100 text-gray-500 px-2 py-1 rounded-md">{selectedLocation}</span>
              </h3>
              <div className="overflow-y-auto pr-2 space-y-2 no-scrollbar flex-1">
-                {staffAvailabilityForDate.map((s, idx) => (
-                  <div key={idx} className={`p-3 rounded-xl border flex flex-col justify-center gap-1.5 ${s.status === 'Available' ? 'bg-teal-50/50 border-teal-100' : 'bg-gray-50 border-gray-100'}`}>
+                 {staffAvailabilityForDate.map((s, idx) => {
+                  const isScheduled = currentShifts.some(shift => shift.employee === s.name);
+                  return (
+                  <button 
+                     key={idx} 
+                     onClick={() => { if (!isScheduled) handleAddStaffToGantt(s.name); }}
+                     className={`w-full text-left p-3 rounded-xl border flex flex-col justify-center gap-1.5 transition-all focus:outline-none ${s.status === 'Available' ? 'bg-teal-50/50 border-teal-100' : 'bg-gray-50 border-gray-100'} ${!isScheduled ? 'hover:shadow-sm hover:border-teal-300 cursor-pointer' : 'opacity-60 cursor-default'}`}
+                  >
                      <div className="flex items-center justify-between">
                         <span className={`font-semibold text-sm ${s.status === 'Available' ? 'text-teal-900' : 'text-gray-500'}`}>{s.name}</span>
                         {s.status === 'Unavailable' && (
@@ -509,8 +515,8 @@ export function ScheduleBuilder({
                            ))}
                         </div>
                      )}
-                  </div>
-                ))}
+                  </button>
+                )})}
              </div>
           </div>
 
@@ -544,7 +550,7 @@ export function ScheduleBuilder({
                   >
                      Sort
                   </button>
-                  {toast && <span className="text-sm font-bold text-emerald-500 mr-2 animate-pulse">{toast}</span>}
+                  {toast && <span className={`text-sm font-bold mr-2 animate-pulse ${toast.includes('Error') ? 'text-red-700' : 'text-emerald-500'}`}>{toast}</span>}
                   <button 
                     onClick={handleSaveDraft}
                     disabled={isSaving || isPublishing}
@@ -673,12 +679,12 @@ export function ScheduleBuilder({
                                        ) : null}
 
                                        {isOverlapping && width < 42 && (
-                                          <span className="absolute inset-0 flex items-center justify-center text-[10px] font-black text-amber-600/90" title={`Overlapping Hours (${overlappingLocation})`}>
+                                          <span className="absolute inset-0 flex items-center justify-center text-[10px] font-black text-red-700/90 pointer-events-auto" title={`Overlapping Hours (${overlappingLocation})`}>
                                              (!)
                                           </span>
                                        )}
                                        {isOutOfBounds && !isOverlapping && width < 42 && (
-                                          <span className="absolute inset-0 flex items-center justify-center text-[10px] font-black text-amber-500/90" title="Outside of Availability">
+                                          <span className="absolute inset-0 flex items-center justify-center text-[10px] font-black text-amber-500/90 pointer-events-auto" title="Outside of Availability">
                                              (!)
                                           </span>
                                        )}
@@ -833,11 +839,11 @@ export function ScheduleBuilder({
                   <div className={`absolute top-8 bottom-2 left-1/2 w-px -translate-x-1/2 ${isSelected ? 'bg-white/20' : 'bg-gray-100'}`}></div>
 
                   <div className="flex justify-between w-full text-[10px] sm:text-[11px] px-1 gap-1 z-10 h-full">
-                     <div className="flex flex-col items-start w-1/2 pr-1 h-full">
-                        {amStaff.map((n, i) => <span key={i} className={`truncate w-full text-left font-semibold opacity-90 leading-tight ${isSelected ? 'text-white' : 'text-gray-600'}`}>{n}</span>)}
+                     <div className="flex flex-col items-start w-1/2 pr-1 h-full gap-0.5 sm:gap-1 mt-1">
+                        {amStaff.map((n, i) => <span key={i} className={`truncate w-full text-left font-semibold opacity-90 ${isSelected ? 'text-white' : 'text-gray-600'}`}>{n}</span>)}
                      </div>
-                     <div className="flex flex-col items-end w-1/2 pl-1 h-full">
-                        {pmStaff.map((n, i) => <span key={i} className={`truncate w-full text-right font-semibold opacity-90 leading-tight ${isSelected ? 'text-white' : 'text-gray-600'}`}>{n}</span>)}
+                     <div className="flex flex-col items-end w-1/2 pl-1 h-full gap-0.5 sm:gap-1 mt-1">
+                        {pmStaff.map((n, i) => <span key={i} className={`truncate w-full text-right font-semibold opacity-90 ${isSelected ? 'text-white' : 'text-gray-600'}`}>{n}</span>)}
                      </div>
                   </div>
                 </button>
