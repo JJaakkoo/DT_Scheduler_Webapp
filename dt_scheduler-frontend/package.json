@@ -37,5 +37,11 @@
       "prettier --write",
       "eslint --fix"
     ]
+  },
+  "lavamoat": {
+    "allowScripts": {
+      "eslint-config-next>eslint-import-resolver-typescript>unrs-resolver#1.12.2": false,
+      "next>sharp#0.34.5": false
+    }
   }
 }
