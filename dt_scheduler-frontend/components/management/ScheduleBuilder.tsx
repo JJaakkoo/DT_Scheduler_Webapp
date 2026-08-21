@@ -47,6 +47,9 @@ export function ScheduleBuilder({
   // Add Staff Search State
   const [staffSearchQuery, setStaffSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [sortTrigger, setSortTrigger] = useState(0);
+
+  const getLocalYMD = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 
   // Fetch draft when target period changes
   useEffect(() => {
@@ -88,6 +91,24 @@ export function ScheduleBuilder({
     }
   };
 
+  const handlePrevDay = () => {
+    if (!selectedDate || validDates.length === 0) return;
+    const currentYMD = getLocalYMD(selectedDate);
+    const currentIndex = validDates.findIndex(d => getLocalYMD(d) === currentYMD);
+    if (currentIndex > 0) {
+      setSelectedDate(validDates[currentIndex - 1]);
+    }
+  };
+
+  const handleNextDay = () => {
+    if (!selectedDate || validDates.length === 0) return;
+    const currentYMD = getLocalYMD(selectedDate);
+    const currentIndex = validDates.findIndex(d => getLocalYMD(d) === currentYMD);
+    if (currentIndex >= 0 && currentIndex < validDates.length - 1) {
+      setSelectedDate(validDates[currentIndex + 1]);
+    }
+  };
+
   const handlePublish = async () => {
     if (!targetPeriod) return;
     if (!confirm("Are you sure you want to publish this schedule? It will overwrite any existing official schedule for this period.")) return;
@@ -101,13 +122,13 @@ export function ScheduleBuilder({
     }
   };
 
-  const selectedDateStr = selectedDate ? selectedDate.toISOString().split('T')[0] : "";
+  const selectedDateStr = selectedDate ? getLocalYMD(selectedDate) : "";
 
   // Stable sort order reference
   const employeeOrderRef = useRef<string[]>([]);
   useEffect(() => {
       employeeOrderRef.current = [];
-  }, [selectedDateStr, selectedLocation]);
+  }, [selectedDateStr, selectedLocation, sortTrigger]);
 
   // Get shifts for the currently selected date and location
   const currentShifts = useMemo(() => {
@@ -119,7 +140,7 @@ export function ScheduleBuilder({
        employeeShifts.forEach((shift, index) => {
           // Check if this shift is for the selected date and location
           const shiftStart = new Date(shift.start.dateTime);
-          const shiftDateStr = shiftStart.toISOString().split('T')[0];
+          const shiftDateStr = getLocalYMD(shiftStart);
           
           if (shiftDateStr === selectedDateStr && shift.location === selectedLocation) {
              const startHour = shiftStart.getHours() + shiftStart.getMinutes() / 60;
@@ -151,7 +172,7 @@ export function ScheduleBuilder({
     employeeOrderRef.current = shifts.map(s => s.employee);
     
     return shifts;
-  }, [draftData, selectedDateStr, selectedLocation]);
+  }, [draftData, selectedDateStr, selectedLocation, sortTrigger]);
 
   // Gantt Chart Time Math Utilities
   const timeToPerc = (hour: number) => {
@@ -468,23 +489,45 @@ export function ScheduleBuilder({
           {/* RIGHT PANEL: INTERACTIVE GANTT CHART BUILDER */}
           <div className="w-full lg:w-2/3 bg-white rounded-3xl shadow-[0_4px_24px_rgba(0,0,0,0.05)] border border-gray-100 p-6 flex flex-col h-[550px]">
              <div className="flex items-center justify-between mb-4 border-b border-gray-50 pb-3">
-                <div className="flex items-center gap-2">
-                   <h3 className="text-gray-800 font-bold text-lg">Shift Builder</h3>
-                   <span className="bg-gray-100 text-gray-500 font-semibold px-2 py-0.5 rounded text-xs">{selectedDate ? selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}</span>
+                <div className="flex items-center gap-3">
+                   <h2 className="text-xl font-black text-gray-800 tracking-tight">Shift Builder</h2>
+                   <div className="flex items-center bg-gray-50 rounded-lg overflow-hidden border border-gray-200 shadow-sm">
+                      <button 
+                         onClick={handlePrevDay} 
+                         className="px-1.5 py-1 text-gray-400 hover:text-gray-800 hover:bg-gray-200 transition-colors active:bg-gray-300"
+                      >
+                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path fillRule="evenodd" d="M11.78 5.22a.75.75 0 0 1 0 1.06L8.06 10l3.72 3.72a.75.75 0 1 1-1.06 1.06l-4.25-4.25a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 0Z" clipRule="evenodd" /></svg>
+                      </button>
+                      <span className="text-gray-600 font-bold px-1 py-0.5 text-xs select-none min-w-[50px] text-center">
+                         {selectedDate ? selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}
+                      </span>
+                      <button 
+                         onClick={handleNextDay} 
+                         className="px-1.5 py-1 text-gray-400 hover:text-gray-800 hover:bg-gray-200 transition-colors active:bg-gray-300"
+                      >
+                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path fillRule="evenodd" d="M8.22 5.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06-1.06L11.94 10 8.22 6.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" /></svg>
+                      </button>
+                   </div>
                 </div>
                 <div className="flex gap-2 items-center">
+                  <button 
+                    onClick={() => setSortTrigger(s => s + 1)}
+                    className="text-gray-500 hover:text-gray-800 border border-gray-200 hover:bg-gray-50 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors"
+                  >
+                     Sort
+                  </button>
                   {toast && <span className="text-sm font-bold text-emerald-500 mr-2 animate-pulse">{toast}</span>}
                   <button 
                     onClick={handleSaveDraft}
                     disabled={isSaving || isPublishing}
-                    className="text-gray-500 hover:text-gray-800 border border-gray-200 hover:bg-gray-50 px-4 py-2 rounded-xl text-sm font-bold transition-colors disabled:opacity-50"
+                    className="bg-sky-500 hover:bg-sky-400 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-sm hover:shadow-md transition-all disabled:opacity-50"
                   >
                     {isSaving ? "Saving..." : "Save Draft"}
                   </button>
                   <button 
                     onClick={handlePublish}
                     disabled={isSaving || isPublishing}
-                    className="bg-[#8ab4f8] hover:bg-blue-400 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-[0_2px_8px_rgba(139,185,217,0.4)] hover:shadow-md transition-all disabled:opacity-50"
+                    className="text-gray-400 hover:text-red-500 border border-gray-100 hover:border-red-200 hover:bg-red-50 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors disabled:opacity-50"
                   >
                     {isPublishing ? "Publishing..." : "Publish Live"}
                   </button>
@@ -526,7 +569,7 @@ export function ScheduleBuilder({
                         
                         const employeeAllShifts = draftData[shift.employee] || [];
                         for (const s of employeeAllShifts) {
-                            const sDate = new Date(s.start.dateTime).toISOString().split('T')[0];
+                            const sDate = getLocalYMD(new Date(s.start.dateTime));
                             if (sDate === selectedDateStr && s.location !== selectedLocation) {
                                 const oStartHr = new Date(s.start.dateTime).getHours() + new Date(s.start.dateTime).getMinutes() / 60;
                                 const oEndHr = new Date(s.end.dateTime).getHours() + new Date(s.end.dateTime).getMinutes() / 60;
