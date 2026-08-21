@@ -896,7 +896,6 @@ export function ScheduleBuilder({
             })}
           </div>
       </div>
-      </div>
 
       {/* RELEASE MODAL */}
       {showReleaseModal && (
