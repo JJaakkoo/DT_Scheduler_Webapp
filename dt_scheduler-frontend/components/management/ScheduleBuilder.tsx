@@ -667,7 +667,7 @@ export function ScheduleBuilder({
                                              Overlapping Hours ({overlappingLocation})
                                           </span>
                                        ) : isOutOfBounds ? (
-                                          <span className={`absolute inset-0 flex items-center justify-center text-[9px] font-black text-red-600/80 uppercase truncate px-8 ${width < 42 ? 'hidden' : ''}`}>
+                                          <span className={`absolute inset-0 flex items-center justify-center text-[9px] font-black text-amber-500/90 uppercase truncate px-8 ${width < 42 ? 'hidden' : ''}`}>
                                              (Outside of Availability)
                                           </span>
                                        ) : null}
@@ -678,7 +678,7 @@ export function ScheduleBuilder({
                                           </span>
                                        )}
                                        {isOutOfBounds && !isOverlapping && width < 42 && (
-                                          <span className="absolute inset-0 flex items-center justify-center text-[10px] font-black text-red-600/80" title="Outside of Availability">
+                                          <span className="absolute inset-0 flex items-center justify-center text-[10px] font-black text-amber-500/90" title="Outside of Availability">
                                              (!)
                                           </span>
                                        )}
@@ -694,7 +694,7 @@ export function ScheduleBuilder({
                                  </div>
                               </div>
                            </div>
-                         ))
+                         )
                      })}
                    </div>
                 </div>
