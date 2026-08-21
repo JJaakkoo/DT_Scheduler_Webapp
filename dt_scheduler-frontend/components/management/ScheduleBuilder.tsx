@@ -474,7 +474,7 @@ export function ScheduleBuilder({
              </div>
 
              <div className="relative flex-1 bg-gray-50/50 rounded-xl border border-gray-100 p-4 min-h-[300px] overflow-x-auto overflow-y-auto no-scrollbar">
-                <div className="min-w-[500px] relative flex flex-col" ref={containerRef}>
+                <div className="min-w-[500px] min-h-full relative flex flex-col" ref={containerRef}>
                    {/* X-Axis Timeline (10am to 10pm) */}
                    <div className="ml-32 absolute top-0 bottom-0 left-0 right-0 pointer-events-none" style={{ zIndex: 0 }}>
                       {[10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22].map((hour) => (
@@ -594,7 +594,7 @@ export function ScheduleBuilder({
                         defaultValue=""
                       >
                          <option value="" disabled>Select Staff...</option>
-                         {staffData.map(s => (
+                         {staffData.filter(s => !currentShifts.some(shift => shift.employee === s.name)).map(s => (
                             <option key={s.id} value={s.name}>{s.name}</option>
                          ))}
                       </select>
