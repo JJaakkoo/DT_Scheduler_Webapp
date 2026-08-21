@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { getDraftSchedule, saveDraftSchedule, publishSchedule } from "@/app/actions/scheduling";
 
 interface TargetPeriod {
@@ -38,6 +38,12 @@ export function ScheduleBuilder({
   const [isSaving, setIsSaving] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+
+  // Gantt Drag State
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [dragState, setDragState] = useState<{ originalIndex: number, employee: string, edge: 'left' | 'right', startX: number, initialTime: number } | null>(null);
+  const [tempShift, setTempShift] = useState<{ originalIndex: number, startHour: number, endHour: number } | null>(null);
+  const [showAddStaffDrop, setShowAddStaffDrop] = useState(false);
 
   // Fetch draft when target period changes
   useEffect(() => {
@@ -96,69 +102,198 @@ export function ScheduleBuilder({
 
   // Get shifts for the currently selected date and location
   const currentShifts = useMemo(() => {
-    const shifts: { employee: string, start: string, end: string, originalIndex: number }[] = [];
+    const shifts: { employee: string, startHour: number, endHour: number, originalIndex: number }[] = [];
     if (!selectedDateStr) return shifts;
-
-    for (const [emp, empShifts] of Object.entries(draftData)) {
-      empShifts.forEach((shift: any, idx: number) => {
-        if (!shift.start || !shift.start.dateTime) return;
-        const shiftDateStr = shift.start.dateTime.split("T")[0];
-        const shiftLoc = shift.location || shift.summary.replace("Work at ", "");
-        
-        if (shiftDateStr === selectedDateStr && shiftLoc.includes(selectedLocation)) {
-           // extract HH:MM
-           const startTime = shift.start.dateTime.split("T")[1].substring(0, 5);
-           const endTime = shift.end.dateTime.split("T")[1].substring(0, 5);
-           shifts.push({ employee: emp, start: startTime, end: endTime, originalIndex: idx });
-        }
-      });
+    
+    for (const employee in draftData) {
+       const employeeShifts = draftData[employee];
+       employeeShifts.forEach((shift, index) => {
+          // Check if this shift is for the selected date and location
+          const shiftStart = new Date(shift.start.dateTime);
+          const shiftDateStr = shiftStart.toISOString().split('T')[0];
+          
+          if (shiftDateStr === selectedDateStr && shift.location === selectedLocation) {
+             const startHour = shiftStart.getHours() + shiftStart.getMinutes() / 60;
+             const shiftEnd = new Date(shift.end.dateTime);
+             const endHour = shiftEnd.getHours() + shiftEnd.getMinutes() / 60;
+             shifts.push({
+                employee,
+                startHour,
+                endHour,
+                originalIndex: index
+             });
+          }
+       });
     }
     
     // Sort by start time
-    return shifts.sort((a, b) => a.start.localeCompare(b.start));
+    return shifts.sort((a, b) => a.startHour - b.startHour);
   }, [draftData, selectedDateStr, selectedLocation]);
 
-  const addShift = () => {
-    const tempEmp = `_NewShift_${Math.random()}`; // Temporary key until user selects someone
-    setDraftData(prev => {
-      const copy = { ...prev };
-      if (!copy[tempEmp]) copy[tempEmp] = [];
-      
-      const newShift = {
-        start: { dateTime: `${selectedDateStr}T09:00:00-06:00` },
-        end: { dateTime: `${selectedDateStr}T17:00:00-06:00` },
-        summary: `Work at ${selectedLocation}`,
-        location: selectedLocation
-      };
-      
-      copy[tempEmp].push(newShift);
-      return copy;
-    });
+  // Gantt Chart Time Math Utilities
+  const timeToPerc = (hour: number) => {
+     const clamped = Math.max(10, Math.min(22, hour));
+     return ((clamped - 10) / 12) * 100;
+  };
+  
+  const widthPerc = (startHour: number, endHour: number) => {
+     const clampedStart = Math.max(10, Math.min(22, startHour));
+     const clampedEnd = Math.max(10, Math.min(22, endHour));
+     return ((clampedEnd - clampedStart) / 12) * 100;
   };
 
-  const updateShift = (oldEmp: string, originalIndex: number, field: 'employee' | 'start' | 'end', value: string) => {
-    setDraftData(prev => {
-      const copy = { ...prev };
-      const shiftToUpdate = copy[oldEmp][originalIndex];
-      
-      if (field === 'employee') {
-        // Move shift to new employee array
-        copy[oldEmp].splice(originalIndex, 1);
-        if (copy[oldEmp].length === 0) delete copy[oldEmp];
-        
-        if (!copy[value]) copy[value] = [];
-        copy[value].push(shiftToUpdate);
-      } else if (field === 'start') {
-        shiftToUpdate.start.dateTime = `${selectedDateStr}T${value}:00-06:00`;
-      } else if (field === 'end') {
-        shiftToUpdate.end.dateTime = `${selectedDateStr}T${value}:00-06:00`;
-      }
-      
-      return copy;
-    });
+  const pxToHourDelta = (pxDelta: number) => {
+     if (!containerRef.current) return 0;
+     const containerWidth = containerRef.current.clientWidth - 128; // Subtract name col width (w-32 is 128px)
+     const hourWidthPx = containerWidth / 12; // 12 hours from 10 to 22
+     
+     // Convert px delta to hour delta
+     const hourDelta = pxDelta / hourWidthPx;
+     
+     // Snap to 15-minute increments (0.25 hours)
+     return Math.round(hourDelta * 4) / 4;
   };
 
-  const deleteShift = (emp: string, originalIndex: number) => {
+  const handlePointerDown = (e: React.PointerEvent, shift: any, edge: 'left' | 'right') => {
+     e.preventDefault();
+     setDragState({
+        originalIndex: shift.originalIndex,
+        employee: shift.employee,
+        edge,
+        startX: e.clientX,
+        initialTime: edge === 'left' ? shift.startHour : shift.endHour
+     });
+     setTempShift({
+        originalIndex: shift.originalIndex,
+        startHour: shift.startHour,
+        endHour: shift.endHour
+     });
+     document.body.style.cursor = 'ew-resize';
+  };
+
+  const handlePointerMove = useCallback((e: PointerEvent) => {
+     if (!dragState || !tempShift) return;
+     
+     const pxDelta = e.clientX - dragState.startX;
+     const hourDelta = pxToHourDelta(pxDelta);
+     
+     let newTime = dragState.initialTime + hourDelta;
+     newTime = Math.max(10, Math.min(22, newTime)); // Clamp to 10am-10pm
+     
+     if (dragState.edge === 'left') {
+        newTime = Math.min(newTime, tempShift.endHour - 0.25); // At least 15 min long
+        setTempShift({ ...tempShift, startHour: newTime });
+     } else {
+        newTime = Math.max(newTime, tempShift.startHour + 0.25); // At least 15 min long
+        setTempShift({ ...tempShift, endHour: newTime });
+     }
+  }, [dragState, tempShift]);
+
+  const updateDraftTime = (employee: string, originalIndex: number, newStartHour: number, newEndHour: number) => {
+     if (!selectedDateStr) return;
+     
+     const dateObj = new Date(selectedDateStr + 'T12:00:00'); // Midday to avoid TZ shifts
+     const year = dateObj.getFullYear();
+     const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+     const day = String(dateObj.getDate()).padStart(2, '0');
+     
+     const formatIso = (hr: number) => {
+        const floorHr = Math.floor(hr);
+        const mins = (hr - floorHr) * 60;
+        const hrStr = String(floorHr).padStart(2, '0');
+        const minStr = String(Math.round(mins)).padStart(2, '0');
+        // We output standard ISO format with timezone matching local
+        const offset = new Date().getTimezoneOffset();
+        const sign = offset > 0 ? "-" : "+";
+        const absOffset = Math.abs(offset);
+        const tzHr = String(Math.floor(absOffset / 60)).padStart(2, '0');
+        const tzMin = String(absOffset % 60).padStart(2, '0');
+        return `${year}-${month}-${day}T${hrStr}:${minStr}:00${sign}${tzHr}:${tzMin}`;
+     };
+
+     setDraftData(prev => {
+        const newData = { ...prev };
+        if (newData[employee] && newData[employee][originalIndex]) {
+           newData[employee][originalIndex].start.dateTime = formatIso(newStartHour);
+           newData[employee][originalIndex].end.dateTime = formatIso(newEndHour);
+        }
+        return newData;
+     });
+  };
+
+  const handlePointerUp = useCallback(() => {
+     if (dragState && tempShift) {
+        updateDraftTime(dragState.employee, dragState.originalIndex, tempShift.startHour, tempShift.endHour);
+     }
+     setDragState(null);
+     setTempShift(null);
+     document.body.style.cursor = 'default';
+  }, [dragState, tempShift]);
+
+  useEffect(() => {
+     if (dragState) {
+        window.addEventListener('pointermove', handlePointerMove);
+        window.addEventListener('pointerup', handlePointerUp);
+        return () => {
+           window.removeEventListener('pointermove', handlePointerMove);
+           window.removeEventListener('pointerup', handlePointerUp);
+        };
+     }
+  }, [dragState, handlePointerMove, handlePointerUp]);
+
+  const handleAddStaffToGantt = (employeeName: string) => {
+     if (!selectedDateStr) return;
+     
+     const staffInfo = staffAvailabilityForDate.find(s => s.name === employeeName);
+     let startHour = 12; // Default 12pm
+     let endHour = 22;   // Default 10pm
+     
+     if (staffInfo && staffInfo.availableLocs) {
+        // Try to find availability at selected location
+        const locInfo = staffInfo.availableLocs.find(l => l.isSelected);
+        if (locInfo && locInfo.time) {
+           const timeMatch = locInfo.time.match(/(\d+):(\d+)([ap])-(\d+):(\d+)([ap])/);
+           if (timeMatch) {
+              let [_, sH, sM, sP, eH, eM, eP] = timeMatch;
+              startHour = (parseInt(sH) % 12) + (sP === 'p' ? 12 : 0) + (parseInt(sM) / 60);
+              endHour = (parseInt(eH) % 12) + (eP === 'p' ? 12 : 0) + (parseInt(eM) / 60);
+           }
+        }
+     }
+     
+     const dateObj = new Date(selectedDateStr + 'T12:00:00'); 
+     const year = dateObj.getFullYear();
+     const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+     const day = String(dateObj.getDate()).padStart(2, '0');
+     
+     const formatIso = (hr: number) => {
+        const floorHr = Math.floor(hr);
+        const mins = (hr - floorHr) * 60;
+        const hrStr = String(floorHr).padStart(2, '0');
+        const minStr = String(Math.round(mins)).padStart(2, '0');
+        const offset = new Date().getTimezoneOffset();
+        const sign = offset > 0 ? "-" : "+";
+        const absOffset = Math.abs(offset);
+        const tzHr = String(Math.floor(absOffset / 60)).padStart(2, '0');
+        const tzMin = String(absOffset % 60).padStart(2, '0');
+        return `${year}-${month}-${day}T${hrStr}:${minStr}:00${sign}${tzHr}:${tzMin}`;
+     };
+
+     setDraftData(prev => {
+        const newData = { ...prev };
+        if (!newData[employeeName]) newData[employeeName] = [];
+        newData[employeeName].push({
+           start: { dateTime: formatIso(startHour) },
+           end: { dateTime: formatIso(endHour) },
+           location: selectedLocation
+        });
+        return newData;
+     });
+     
+     setShowAddStaffDrop(false);
+  };
+
+  const handleDeleteShift = (emp: string, originalIndex: number) => {
     setDraftData(prev => {
       const copy = { ...prev };
       copy[emp].splice(originalIndex, 1);
@@ -243,8 +378,6 @@ export function ScheduleBuilder({
 
   if (!targetPeriod) return <div className="p-8 text-center text-gray-500">Loading period...</div>;
 
-  const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-
   return (
     <div className="w-full flex flex-col gap-6 relative">
       {toast && (
@@ -315,11 +448,14 @@ export function ScheduleBuilder({
              </div>
           </div>
 
-          {/* RIGHT PANEL: SPREADSHEET BUILDER */}
+          {/* RIGHT PANEL: INTERACTIVE GANTT CHART BUILDER */}
           <div className="w-full lg:w-2/3 bg-white rounded-3xl shadow-[0_4px_24px_rgba(0,0,0,0.05)] border border-gray-100 p-6 flex flex-col h-[550px]">
-             <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-100">
-                <h3 className="text-gray-800 font-bold text-lg">Shift Builder</h3>
+             <div className="flex items-center justify-between mb-4 border-b border-gray-50 pb-3">
                 <div className="flex items-center gap-2">
+                   <h3 className="text-gray-800 font-bold text-lg">Shift Builder</h3>
+                   <span className="bg-gray-100 text-gray-500 font-semibold px-2 py-0.5 rounded text-xs">{selectedDate ? selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}</span>
+                </div>
+                <div className="flex gap-2">
                   <button 
                     onClick={handleSaveDraft}
                     disabled={isSaving || isPublishing}
@@ -337,56 +473,139 @@ export function ScheduleBuilder({
                 </div>
              </div>
 
-             <div className="flex-1 overflow-y-auto pr-2 flex flex-col gap-2">
-                {currentShifts.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center h-full text-gray-400 gap-2">
-                     <p className="text-sm">No shifts scheduled for this location today.</p>
-                  </div>
-                ) : (
-                  currentShifts.map((shift, i) => (
-                    <div key={i} className="flex items-center gap-2 bg-gray-50 p-2 rounded-xl border border-gray-100 group transition-colors hover:bg-gray-100/50">
-                      <input 
-                        type="time" 
-                        value={shift.start} 
-                        onChange={(e) => updateShift(shift.employee, shift.originalIndex, 'start', e.target.value)}
-                        className="bg-white border border-gray-200 rounded-lg px-2 py-1.5 text-sm font-medium focus:outline-none focus:border-sky-400 w-28 text-gray-700"
-                      />
-                      <span className="text-gray-400 text-sm font-medium">to</span>
-                      <input 
-                        type="time" 
-                        value={shift.end} 
-                        onChange={(e) => updateShift(shift.employee, shift.originalIndex, 'end', e.target.value)}
-                        className="bg-white border border-gray-200 rounded-lg px-2 py-1.5 text-sm font-medium focus:outline-none focus:border-sky-400 w-28 text-gray-700"
-                      />
-                      <select
-                        value={shift.employee.startsWith("_NewShift_") ? "" : shift.employee}
-                        onChange={(e) => updateShift(shift.employee, shift.originalIndex, 'employee', e.target.value)}
-                        className={`flex-1 bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-sm font-semibold focus:outline-none focus:border-sky-400 cursor-pointer appearance-none ${shift.employee.startsWith("_NewShift_") ? 'text-gray-400' : 'text-gray-700'}`}
-                        style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'%236b7280\' stroke-width=\'2\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' d=\'M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9\'/%3E%3C/svg%3E")', backgroundPosition: 'right 0.5rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1em 1em' }}
+             <div className="relative flex-1 bg-gray-50/50 rounded-xl border border-gray-100 p-4 min-h-[300px] overflow-x-auto overflow-y-auto no-scrollbar">
+                <div className="min-w-[500px] relative flex flex-col" ref={containerRef}>
+                   {/* X-Axis Timeline (10am to 10pm) */}
+                   <div className="ml-32 relative h-10 pointer-events-none" style={{ zIndex: 0 }}>
+                      {[10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22].map((hour) => (
+                         <div key={hour} className={`absolute top-0 flex flex-col items-center pointer-events-none ${(hour === 12 || hour === 17 || hour === 22) ? 'z-10' : ''}`} style={{ left: `${((hour - 10) / 12) * 100}%`, transform: 'translateX(-50%)', height: '2000px' }}>
+                            <span className={`text-xs font-bold mt-1 bg-gray-50 px-1 rounded ${(hour === 12 || hour === 17 || hour === 22) ? 'text-gray-600' : 'text-gray-400'}`}>{hour > 12 ? hour - 12 : hour}{hour === 12 ? 'p' : hour > 12 ? 'p' : 'a'}</span>
+                            <div className={`flex-1 mt-1 ${(hour === 12 || hour === 17 || hour === 22) ? 'w-[2px] bg-gray-400/80' : 'w-px bg-gray-200'}`} />
+                         </div>
+                      ))}
+                   </div>
+                   
+                   {/* Gantt Rows */}
+                   <div className="mt-4 flex flex-col gap-3 relative z-10 w-full">
+                     {currentShifts.length === 0 && (
+                        <div className="text-gray-400 text-center mt-10 w-full font-medium text-sm">
+                           No shifts scheduled for {selectedLocation} today.
+                        </div>
+                     )}
+                     
+                     {currentShifts.map((shift, idx) => {
+                        const isDraggingThis = dragState && dragState.originalIndex === shift.originalIndex && dragState.employee === shift.employee;
+                        const renderStart = isDraggingThis && tempShift ? tempShift.startHour : shift.startHour;
+                        const renderEnd = isDraggingThis && tempShift ? tempShift.endHour : shift.endHour;
+                        
+                        const left = timeToPerc(renderStart);
+                        const width = widthPerc(renderStart, renderEnd);
+                        
+                        let colorClass = "bg-[#8ab4f8]/30 border-[#8ab4f8] text-[#3b6bb8]"; // Default Blue
+                        if (selectedLocation.toLowerCase() === 'whyte') colorClass = "bg-[#CAB1E3]/30 border-[#CAB1E3] text-[#5b4a6e]";
+                        if (selectedLocation.toLowerCase() === 'heritage') colorClass = "bg-[#ED9BB4]/30 border-[#ED9BB4] text-[#8a3e56]";
+                        if (selectedLocation.toLowerCase() === 'downtown') colorClass = "bg-[#A0B99B]/30 border-[#A0B99B] text-[#42523f]";
+
+                        // Check bounds against staff availability
+                        const staffInfo = staffAvailabilityForDate.find(s => s.name === shift.employee);
+                        let isOutOfBounds = true;
+                        
+                        if (staffInfo && staffInfo.availableLocs) {
+                           const locInfo = staffInfo.availableLocs.find(l => l.isSelected); // must be available at this location
+                           if (locInfo && locInfo.time) {
+                              const timeMatch = locInfo.time.match(/(\d+):(\d+)([ap])-(\d+):(\d+)([ap])/);
+                              if (timeMatch) {
+                                 let [_, sH, sM, sP, eH, eM, eP] = timeMatch;
+                                 const availStart = (parseInt(sH) % 12) + (sP === 'p' ? 12 : 0) + (parseInt(sM) / 60);
+                                 const availEnd = (parseInt(eH) % 12) + (eP === 'p' ? 12 : 0) + (parseInt(eM) / 60);
+                                 if (renderStart >= availStart && renderEnd <= availEnd) {
+                                    isOutOfBounds = false;
+                                 }
+                              }
+                           }
+                        }
+                        
+                        const formatHr = (hr: number) => {
+                           const fHr = Math.floor(hr) % 12 || 12;
+                           const m = Math.round((hr - Math.floor(hr)) * 60).toString().padStart(2, '0');
+                           const p = hr >= 12 ? 'p' : 'a';
+                           return `${fHr}:${m}${p}`;
+                        };
+
+                        return (
+                           <div key={`${shift.employee}-${idx}`} className="flex items-center w-full group relative">
+                              <div className="w-32 flex-shrink-0 text-sm font-bold text-gray-700 truncate pr-2 flex items-center justify-between">
+                                 {shift.employee}
+                                 <button onClick={() => handleDeleteShift(shift.employee, shift.originalIndex)} className="text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path fillRule="evenodd" d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 1 0 .23 1.482l.149-.022.841 10.518A2.75 2.75 0 0 0 7.596 19h4.807a2.75 2.75 0 0 0 2.742-2.53l.841-10.52.149.023a.75.75 0 0 0 .23-1.482A41.03 41.03 0 0 0 14 4.193V3.75A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4ZM8.58 7.72a.75.75 0 0 0-1.5.06l.3 7.5a.75.75 0 1 0 1.5-.06l-.3-7.5Zm4.34.06a.75.75 0 1 0-1.5-.06l-.3 7.5a.75.75 0 1 0 1.5.06l.3-7.5Z" clipRule="evenodd" /></svg>
+                                 </button>
+                              </div>
+                              <div className="flex-1 relative h-10 bg-transparent rounded-lg">
+                                 <div 
+                                    className={`absolute top-1 bottom-1 rounded-md border flex items-center shadow-sm whitespace-nowrap transition-all duration-75 ${colorClass} ${isDraggingThis ? 'ring-2 ring-sky-400 z-50' : 'hover:ring-1 hover:ring-sky-400'}`}
+                                    style={{ left: `${left}%`, width: `${width}%` }}
+                                 >
+                                    {/* Left Handle */}
+                                    <div 
+                                       className="absolute left-0 top-0 bottom-0 w-3 cursor-ew-resize hover:bg-black/10 z-10 rounded-l-md"
+                                       onPointerDown={(e) => handlePointerDown(e, shift, 'left')}
+                                    />
+                                    
+                                    <div className="flex justify-between items-center w-full px-2 pointer-events-none select-none relative overflow-hidden h-full">
+                                       <span className="text-[10px] font-bold opacity-80">{formatHr(renderStart)}</span>
+                                       
+                                       {isOutOfBounds && (
+                                          <span className="absolute inset-0 flex items-center justify-center text-[9px] font-black text-red-600/80 uppercase">
+                                             (Outside of Availability)
+                                          </span>
+                                       )}
+                                       
+                                       <span className="text-[10px] font-bold opacity-80">{formatHr(renderEnd)}</span>
+                                    </div>
+
+                                    {/* Right Handle */}
+                                    <div 
+                                       className="absolute right-0 top-0 bottom-0 w-3 cursor-ew-resize hover:bg-black/10 z-10 rounded-r-md"
+                                       onPointerDown={(e) => handlePointerDown(e, shift, 'right')}
+                                    />
+                                 </div>
+                              </div>
+                           </div>
+                        )
+                     })}
+                   </div>
+                </div>
+             </div>
+             
+             {/* Add Staff Footer */}
+             <div className="mt-4 flex items-center justify-center relative">
+                {showAddStaffDrop ? (
+                   <div className="flex items-center gap-2 bg-white p-2 border border-gray-200 rounded-xl shadow-lg relative z-20">
+                      <select 
+                        className="bg-gray-50 border border-gray-200 rounded-lg py-2 pl-3 pr-8 text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-sky-500/30"
+                        onChange={(e) => {
+                           if (e.target.value) handleAddStaffToGantt(e.target.value);
+                        }}
+                        defaultValue=""
                       >
-                        <option value="" disabled>Select Staff...</option>
-                        {staffData.map(s => (
-                          <option key={s.id} value={s.name}>{s.name}</option>
-                        ))}
+                         <option value="" disabled>Select Staff...</option>
+                         {staffData.map(s => (
+                            <option key={s.id} value={s.name}>{s.name}</option>
+                         ))}
                       </select>
-                      <button 
-                        onClick={() => deleteShift(shift.employee, shift.originalIndex)}
-                        className="p-2 text-gray-300 hover:text-red-500 transition-colors opacity-0 sm:group-hover:opacity-100 focus:opacity-100"
-                        title="Delete Shift"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                      <button onClick={() => setShowAddStaffDrop(false)} className="p-2 text-gray-400 hover:text-gray-700 transition-colors">
+                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5"><path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" /></svg>
                       </button>
-                    </div>
-                  ))
+                   </div>
+                ) : (
+                   <button 
+                     onClick={() => setShowAddStaffDrop(true)}
+                     className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-xl text-sm font-bold shadow-sm hover:shadow-md hover:border-gray-300 transition-all"
+                   >
+                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" /></svg>
+                     Add Staff
+                   </button>
                 )}
-                
-                <button 
-                  onClick={addShift}
-                  className="mt-2 w-full py-3 border-2 border-dashed border-gray-200 hover:border-gray-300 rounded-xl text-gray-500 hover:text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-2 transition-all font-bold text-sm"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
-                  Add Shift
-                </button>
              </div>
           </div>
 
