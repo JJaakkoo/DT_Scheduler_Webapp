@@ -37,6 +37,7 @@ export function ScheduleBuilder({
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [showReleaseModal, setShowReleaseModal] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
   // Gantt Drag State
@@ -48,6 +49,13 @@ export function ScheduleBuilder({
   const [staffSearchQuery, setStaffSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [sortTrigger, setSortTrigger] = useState(0);
+
+  useEffect(() => {
+    const cachedLoc = localStorage.getItem('dt_scheduler_location');
+    if (cachedLoc && LOCATIONS.includes(cachedLoc)) {
+      setSelectedLocation(cachedLoc);
+    }
+  }, []);
 
   const getLocalYMD = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 
@@ -462,7 +470,10 @@ export function ScheduleBuilder({
             <span className="text-sm font-medium text-gray-500">Location:</span>
             <select 
               value={selectedLocation} 
-              onChange={(e) => setSelectedLocation(e.target.value)}
+              onChange={(e) => {
+                 setSelectedLocation(e.target.value);
+                 localStorage.setItem('dt_scheduler_location', e.target.value);
+              }}
               className="bg-white border border-gray-200 text-gray-700 text-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 py-2 pl-3 pr-8 appearance-none cursor-pointer"
               style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'%236b7280\' stroke-width=\'2\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' d=\'M19.5 8.25l-7.5 7.5-7.5-7.5\'/%3E%3C/svg%3E")', backgroundPosition: 'right 0.5rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1em 1em' }}
             >
@@ -586,12 +597,6 @@ export function ScheduleBuilder({
                   >
                     {isSaving ? "Saving..." : "Save Draft"}
                   </button>
-                  <button 
-                    onClick={handlePublish}
-                    disabled={isSaving || isPublishing}
-                    className="text-gray-400 hover:text-red-500 border border-gray-100 hover:border-red-200 hover:bg-red-50 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors disabled:opacity-50"
-                  >
-                    {isPublishing ? "Publishing..." : "Publish Live"}
                   </button>
                 </div>
              </div>
@@ -789,6 +794,19 @@ export function ScheduleBuilder({
         </div>
       )}
 
+      {/* RELEASE SCHEDULE BUTTON */}
+      {!isLoading && targetPeriod && (
+         <div className="w-full flex justify-end px-2 sm:px-4 my-2">
+           <button 
+             onClick={() => setShowReleaseModal(true)}
+             disabled={isSaving || isPublishing}
+             className="bg-emerald-600 hover:bg-emerald-500 text-white px-8 py-3 rounded-2xl text-md font-bold shadow-sm hover:shadow-md transition-all disabled:opacity-50"
+           >
+             Release Schedule
+           </button>
+         </div>
+      )}
+
       {/* BOTTOM CARD: CALENDAR */}
       <div className="w-full bg-white rounded-3xl shadow-[0_4px_24px_rgba(0,0,0,0.05)] border border-gray-100 p-6 sm:p-8 flex flex-col">
           <div className="flex items-center justify-between mb-6">
@@ -879,6 +897,41 @@ export function ScheduleBuilder({
             })}
           </div>
       </div>
+      </div>
+
+      {/* RELEASE MODAL */}
+      {showReleaseModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+           <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl flex flex-col items-center">
+              <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-4">
+                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8 text-red-500"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+              </div>
+              <h3 className="text-xl font-bold text-gray-800 mb-2">Release Schedule?</h3>
+              <p className="text-gray-500 text-center text-sm mb-6">
+                 Are you sure you want to release the schedule to all staff? This action will overwrite the currently live schedule and notify staff.
+              </p>
+              <div className="flex w-full gap-3">
+                 <button 
+                    onClick={() => setShowReleaseModal(false)}
+                    disabled={isPublishing}
+                    className="flex-1 px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl transition-colors"
+                 >
+                    Cancel
+                 </button>
+                 <button 
+                    onClick={() => {
+                       handlePublish();
+                       setShowReleaseModal(false);
+                    }}
+                    disabled={isPublishing}
+                    className="flex-1 px-4 py-3 bg-red-500 hover:bg-red-400 text-white font-bold rounded-xl transition-colors disabled:opacity-50"
+                 >
+                    {isPublishing ? "Publishing..." : "Yes, Release"}
+                 </button>
+              </div>
+           </div>
+        </div>
+      )}
     </div>
   );
 }
