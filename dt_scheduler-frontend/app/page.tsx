@@ -74,7 +74,12 @@ function HomeContent() {
       
       // Auto-link their account if it's an unclaimed whitelisted staff row
       if (data?.user) {
-        await autoLinkUser(data.user.id, data.user.email || email);
+        try {
+          await autoLinkUser(data.user.id, data.user.email || email);
+        } catch (linkErr: any) {
+          console.error("autoLinkUser server action failed:", linkErr);
+          // Don't crash login if autoLinkUser server action fails
+        }
       }
       
       // They logged in manually, so clear any old Google tokens to prevent expired token errors
@@ -90,7 +95,14 @@ function HomeContent() {
       if (msg === '{}' || msg === '"{}"') {
         msg = "Invalid email or password.";
       }
-      setLoginError(String(msg));
+      
+      let detailedMsg = String(msg);
+      if (err?.name) detailedMsg = `${err.name}: ${detailedMsg}`;
+      if (err?.status) detailedMsg = `[HTTP ${err.status}] ${detailedMsg}`;
+      if (err?.code) detailedMsg = `[Code ${err.code}] ${detailedMsg}`;
+      
+      console.error("Full Login Error:", err);
+      setLoginError(detailedMsg);
     } finally {
       setIsLoading(false);
     }
