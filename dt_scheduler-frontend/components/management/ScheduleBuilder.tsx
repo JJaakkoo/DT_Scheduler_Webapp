@@ -564,8 +564,8 @@ export function ScheduleBuilder({
 
              <div className="relative flex-1 bg-gray-50/50 rounded-xl border border-gray-100 p-4 min-h-[300px] overflow-x-auto overflow-y-auto no-scrollbar">
                 <div className="min-w-[500px] min-h-full relative flex flex-col" ref={containerRef}>
-                   <div className="mt-8 relative w-full flex-1 min-h-[300px]">
-                      <div className="absolute top-10 bottom-0 left-24 right-24 flex border-l border-gray-200">
+                   {/* X-Axis Timeline (10am to 10pm) */}
+                   <div className="absolute top-10 bottom-0 left-24 right-24 flex border-l border-gray-200 pointer-events-none z-0">
                          {[10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22].map((hr, i) => (
                             <div key={hr} className="flex-1 relative">
                                <span className="absolute -top-7 left-0 -translate-x-1/2 text-xs font-bold text-gray-400 select-none">
@@ -578,7 +578,7 @@ export function ScheduleBuilder({
                                )}
                             </div>
                          ))}
-                      </div>
+                   </div>
 
                    {/* Gantt Rows */}
                    <div className="mt-4 flex flex-col gap-3 relative z-10 w-full">
