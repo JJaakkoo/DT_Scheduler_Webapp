@@ -259,12 +259,12 @@ export function ScheduleBuilder({
             {selectedDate ? selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }) : 'Select a date'}
          </h2>
 
-         <div className="flex items-center gap-3 w-full sm:w-auto">
-            <span className="text-sm font-medium text-gray-500 whitespace-nowrap">Location:</span>
+         <div className="w-full sm:w-auto flex items-center gap-2">
+            <span className="text-sm font-medium text-gray-500">Location:</span>
             <select 
               value={selectedLocation} 
               onChange={(e) => setSelectedLocation(e.target.value)}
-              className="bg-white border border-gray-200 text-gray-700 text-sm font-semibold rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 py-2 pl-3 pr-8 cursor-pointer w-full sm:w-auto shadow-sm appearance-none"
+              className="bg-white border border-gray-200 text-gray-700 text-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 py-2 pl-3 pr-8 appearance-none cursor-pointer"
               style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'%236b7280\' stroke-width=\'2\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' d=\'M19.5 8.25l-7.5 7.5-7.5-7.5\'/%3E%3C/svg%3E")', backgroundPosition: 'right 0.5rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1em 1em' }}
             >
               {LOCATIONS.map(loc => <option key={loc} value={loc}>{loc}</option>)}
