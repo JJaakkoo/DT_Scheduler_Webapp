@@ -58,7 +58,12 @@ export async function GET(request: Request): Promise<NextResponse> {
     await autoLinkUser(data.session.user.id, email);
     
     // Authorization successful: proceed to the requested route
-    return NextResponse.redirect(`${origin}${next}`);
+    let redirectUrl = `${origin}${next}`;
+    if (data.session.provider_token) {
+      redirectUrl += `#provider_token=${data.session.provider_token}`;
+    }
+    
+    return NextResponse.redirect(redirectUrl);
   } catch (error) {
     console.error('Auth callback unexpected error:', error);
     const { origin } = new URL(request.url);

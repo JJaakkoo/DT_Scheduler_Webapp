@@ -67,6 +67,18 @@ export default function Dashboard() {
       if (data?.session?.provider_token) {
         localStorage.setItem("google_access_token", data.session.provider_token);
       }
+      
+      // Also check the URL hash for a freshly forwarded provider_token (from SSR callback)
+      if (typeof window !== 'undefined' && window.location.hash) {
+        const hashStr = window.location.hash.substring(1);
+        const params = new URLSearchParams(hashStr);
+        const pToken = params.get('provider_token');
+        if (pToken) {
+          localStorage.setItem("google_access_token", pToken);
+          // Clean up the URL securely without triggering a reload
+          window.history.replaceState(null, '', window.location.pathname + window.location.search);
+        }
+      }
       if (data?.session?.user?.email) {
         setEmail(data.session.user.email);
       }
