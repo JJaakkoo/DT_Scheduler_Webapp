@@ -485,14 +485,42 @@ export function ScheduleBuilder({
              <div className="overflow-y-auto pr-2 space-y-2 no-scrollbar flex-1">
                  {staffAvailabilityForDate.map((s, idx) => {
                   const isScheduled = currentShifts.some(shift => shift.employee === s.name);
+                  
+                  let activeBorderClass = "border-teal-100";
+                  let activeHoverBorderClass = "hover:border-teal-300";
+                  let activeTextClass = "text-teal-900";
+                  let activeTimeClass = "text-teal-600";
+                  
+                  if (selectedLocation.toLowerCase() === 'whyte') {
+                     activeBorderClass = "border-[#CAB1E3]/70";
+                     activeHoverBorderClass = "hover:border-[#CAB1E3]";
+                     activeTextClass = "text-[#5b4a6e]";
+                     activeTimeClass = "text-[#8f80a3]";
+                  } else if (selectedLocation.toLowerCase() === 'heritage') {
+                     activeBorderClass = "border-[#ED9BB4]/70";
+                     activeHoverBorderClass = "hover:border-[#ED9BB4]";
+                     activeTextClass = "text-[#8a3e56]";
+                     activeTimeClass = "text-[#b06f84]";
+                  } else if (selectedLocation.toLowerCase() === 'downtown') {
+                     activeBorderClass = "border-[#A0B99B]/70";
+                     activeHoverBorderClass = "hover:border-[#A0B99B]";
+                     activeTextClass = "text-[#42523f]";
+                     activeTimeClass = "text-[#7b9177]";
+                  } else {
+                     activeBorderClass = "border-[#8ab4f8]/70";
+                     activeHoverBorderClass = "hover:border-[#8ab4f8]";
+                     activeTextClass = "text-[#3b6bb8]";
+                     activeTimeClass = "text-[#8ab4f8]";
+                  }
+                  
                   return (
                   <button 
                      key={idx} 
                      onClick={() => { if (!isScheduled) handleAddStaffToGantt(s.name); }}
-                     className={`w-full text-left p-3 rounded-xl border flex flex-col justify-center gap-1.5 transition-all focus:outline-none ${s.status === 'Available' ? 'bg-teal-50/50 border-teal-100' : 'bg-gray-50 border-gray-100'} ${!isScheduled ? 'hover:shadow-sm hover:border-teal-300 cursor-pointer' : 'opacity-60 cursor-default'}`}
+                     className={`w-full text-left p-3 rounded-xl border flex flex-col justify-center gap-1.5 transition-all focus:outline-none ${s.status === 'Available' ? `bg-white ${activeBorderClass}` : 'bg-gray-50 border-gray-100'} ${!isScheduled ? `hover:shadow-sm cursor-pointer ${s.status === 'Available' ? activeHoverBorderClass : 'hover:border-gray-300'}` : 'opacity-60 cursor-default'}`}
                   >
                      <div className="flex items-center justify-between">
-                        <span className={`font-semibold text-sm ${s.status === 'Available' ? 'text-teal-900' : 'text-gray-500'}`}>{s.name}</span>
+                        <span className={`font-semibold text-sm ${s.status === 'Available' ? activeTextClass : 'text-gray-500'}`}>{s.name}</span>
                         {s.status === 'Unavailable' && (
                            <span className="text-[10px] uppercase font-bold text-gray-400">Unavailable</span>
                         )}
@@ -508,7 +536,7 @@ export function ScheduleBuilder({
                                  <span className={`text-[11px] font-semibold tracking-wide uppercase ${locInfo.colorClass}`}>
                                     {locInfo.loc}
                                  </span>
-                                 <span className={`text-xs font-medium ${locInfo.isSelected ? 'text-teal-600' : 'text-gray-500'}`}>
+                                 <span className={`text-xs font-medium ${locInfo.isSelected ? activeTimeClass : 'text-gray-500'}`}>
                                     {locInfo.time}
                                  </span>
                               </div>
