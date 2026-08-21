@@ -462,11 +462,19 @@ export function ScheduleBuilder({
   return (
     <div className="w-full flex flex-col gap-6 relative">
       <div className="flex flex-col sm:flex-row gap-4 items-center justify-between w-full bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
-         <h2 className="text-lg font-bold text-gray-800 px-2">
+         <h2 className="text-lg font-bold text-gray-800 px-2 flex-1 text-left">
             {selectedDate ? selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }) : 'Select a date'}
          </h2>
 
-         <div className="w-full sm:w-auto flex items-center gap-2">
+         <button 
+           onClick={() => setShowReleaseModal(true)}
+           disabled={isSaving || isPublishing}
+           className="text-gray-400 hover:text-red-500 border border-gray-100 hover:border-red-200 hover:bg-red-50 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors disabled:opacity-50"
+         >
+           Release Schedule
+         </button>
+
+         <div className="w-full sm:w-auto flex items-center gap-2 flex-1 justify-end">
             <span className="text-sm font-medium text-gray-500">Location:</span>
             <select 
               value={selectedLocation} 
@@ -793,19 +801,6 @@ export function ScheduleBuilder({
         </div>
       )}
 
-      {/* RELEASE SCHEDULE BUTTON */}
-      {!isLoading && targetPeriod && (
-         <div className="w-full flex justify-end px-2 sm:px-4 my-2">
-           <button 
-             onClick={() => setShowReleaseModal(true)}
-             disabled={isSaving || isPublishing}
-             className="bg-emerald-600 hover:bg-emerald-500 text-white px-8 py-3 rounded-2xl text-md font-bold shadow-sm hover:shadow-md transition-all disabled:opacity-50"
-           >
-             Release Schedule
-           </button>
-         </div>
-      )}
-
       {/* BOTTOM CARD: CALENDAR */}
       <div className="w-full bg-white rounded-3xl shadow-[0_4px_24px_rgba(0,0,0,0.05)] border border-gray-100 p-6 sm:p-8 flex flex-col">
           <div className="flex items-center justify-between mb-6">
@@ -910,21 +905,21 @@ export function ScheduleBuilder({
               </p>
               <div className="flex w-full gap-3">
                  <button 
-                    onClick={() => setShowReleaseModal(false)}
-                    disabled={isPublishing}
-                    className="flex-1 px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl transition-colors"
-                 >
-                    Cancel
-                 </button>
-                 <button 
                     onClick={() => {
                        handlePublish();
                        setShowReleaseModal(false);
                     }}
                     disabled={isPublishing}
-                    className="flex-1 px-4 py-3 bg-red-500 hover:bg-red-400 text-white font-bold rounded-xl transition-colors disabled:opacity-50"
+                    className="flex-1 px-4 py-2 bg-red-500 hover:bg-red-400 text-white font-bold rounded-xl transition-colors disabled:opacity-50"
                  >
                     {isPublishing ? "Publishing..." : "Yes, Release"}
+                 </button>
+                 <button 
+                    onClick={() => setShowReleaseModal(false)}
+                    disabled={isPublishing}
+                    className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl transition-colors"
+                 >
+                    Cancel
                  </button>
               </div>
            </div>
