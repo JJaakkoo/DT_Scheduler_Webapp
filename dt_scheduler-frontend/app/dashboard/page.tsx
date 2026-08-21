@@ -517,19 +517,31 @@ export default function Dashboard() {
                   <img src="/dreamtealogo.svg" alt="Dream Tea Logo" className="object-contain w-28 h-auto" />
                 </div>
 
-                <input
-                  type="text"
-                  placeholder="Enter your name.."
-                  value={employeeName}
-                  onChange={(e) => setEmployeeName(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      executeSearch(employeeName, false);
-                    }
-                  }}
-                  className="w-full h-[48px] border-[1.5px] border-gray-300 rounded-full px-5 text-[15px] text-gray-700 bg-transparent outline-none focus:border-[#8ab4f8] focus:ring-1 focus:ring-[#8ab4f8] transition-all placeholder:text-gray-400 mb-2"
-                />
+                <div className="relative mb-2">
+                  <input
+                    type="text"
+                    placeholder="Enter your name.."
+                    value={employeeName}
+                    onChange={(e) => setEmployeeName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        executeSearch(employeeName, false);
+                      }
+                    }}
+                    className="w-full h-[48px] border-[1.5px] border-gray-300 rounded-full pl-5 pr-10 text-[15px] text-gray-700 bg-transparent outline-none focus:border-[#8ab4f8] focus:ring-1 focus:ring-[#8ab4f8] transition-all placeholder:text-gray-400"
+                  />
+                  {employeeName && (
+                    <button 
+                      onClick={() => { setEmployeeName(''); executeSearch('', false); }}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-200/50 transition-colors"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
               </div>
 
               <div className="flex-1 overflow-y-auto px-8 pb-4 no-scrollbar">

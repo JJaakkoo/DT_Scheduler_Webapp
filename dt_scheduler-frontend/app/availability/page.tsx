@@ -833,14 +833,19 @@ export default function AvailabilityPage() {
           </div>
 
           {/* SUBMISSION */}
-          <button disabled={isSubmitting} onClick={() => {
-              const missing = validDates.filter(d => !availabilityCache[d.toISOString().split('T')[0]]);
-              setMissingDates(missing);
-              setShowMissingModal(true);
-            }} 
-            className="w-full max-w-xs bg-white hover:bg-gray-50 text-gray-800 shadow-md shadow-gray-200 font-bold py-3 rounded-xl transition-all border border-gray-100 text-base mb-12 disabled:opacity-50">
-            {isSubmitting ? "Submitting..." : "Submit Availability"}
-          </button>
+          <div className="flex flex-col items-center w-full max-w-md mx-auto mb-12">
+            <button disabled={isSubmitting} onClick={() => {
+                const missing = validDates.filter(d => !availabilityCache[d.toISOString().split('T')[0]]);
+                setMissingDates(missing);
+                setShowMissingModal(true);
+              }} 
+              className="w-full max-w-xs bg-white hover:bg-gray-50 text-gray-800 shadow-md shadow-gray-200 font-bold py-3 rounded-xl transition-all border border-gray-100 text-base mb-3 disabled:opacity-50">
+              {isSubmitting ? "Submitting..." : "Submit Availability"}
+            </button>
+            <p className="text-xs text-gray-500 text-center px-4 leading-relaxed font-medium">
+              Made a mistake? No worries! You can always come back and update your schedule at any time by just resubmitting.
+            </p>
+          </div>
 
         </div>
       </div>
