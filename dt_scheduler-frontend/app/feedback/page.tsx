@@ -89,9 +89,9 @@ export default function FeedbackPage() {
           </div>
 
           {success ? (
-            <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-8 text-center flex flex-col items-center animate-in fade-in zoom-in duration-300">
-               <div className="w-16 h-16 bg-emerald-100 text-emerald-500 rounded-full flex items-center justify-center mb-4">
-                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-8 h-8">
+            <div className="bg-white border border-gray-100 rounded-2xl p-8 text-center flex flex-col items-center animate-in fade-in zoom-in duration-300 shadow-sm">
+               <div className="w-16 h-16 bg-white border-2 border-gray-100 text-green-600 rounded-full flex items-center justify-center mb-4 shadow-sm">
+                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-8 h-8">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                  </svg>
                </div>
