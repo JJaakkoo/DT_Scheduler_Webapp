@@ -147,7 +147,7 @@ export default function FeedbackPage() {
               <button 
                 type="submit" 
                 disabled={isSubmitting}
-                className="w-full h-[56px] mt-2 bg-[#8ab4f8] hover:bg-blue-400 text-white font-bold text-[16px] rounded-full shadow-[0_4px_14px_rgba(139,185,217,0.4)] transition-all flex items-center justify-center gap-2 disabled:opacity-70"
+                className="w-full h-[56px] mt-2 bg-[#8ab4f8] hover:bg-[#7ba8eb] hover:-translate-y-[1px] hover:shadow-[0_6px_16px_rgba(139,185,217,0.5)] text-white font-bold text-[16px] rounded-full shadow-[0_4px_14px_rgba(139,185,217,0.4)] transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:hover:translate-y-0 disabled:hover:shadow-[0_4px_14px_rgba(139,185,217,0.4)]"
               >
                 {isSubmitting ? (
                   <>
