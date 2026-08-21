@@ -513,22 +513,18 @@ export function ScheduleBuilder({
                   if (selectedLocation.toLowerCase() === 'whyte') {
                      activeBorderClass = "border-[#CAB1E3]/70";
                      activeHoverBorderClass = "hover:border-[#CAB1E3]";
-                     activeTextClass = "text-[#5b4a6e]";
                      activeTimeClass = "text-[#8f80a3]";
                   } else if (selectedLocation.toLowerCase() === 'heritage') {
                      activeBorderClass = "border-[#ED9BB4]/70";
                      activeHoverBorderClass = "hover:border-[#ED9BB4]";
-                     activeTextClass = "text-[#8a3e56]";
                      activeTimeClass = "text-[#b06f84]";
                   } else if (selectedLocation.toLowerCase() === 'downtown') {
                      activeBorderClass = "border-[#A0B99B]/70";
                      activeHoverBorderClass = "hover:border-[#A0B99B]";
-                     activeTextClass = "text-[#42523f]";
                      activeTimeClass = "text-[#7b9177]";
                   } else {
                      activeBorderClass = "border-[#8ab4f8]/70";
                      activeHoverBorderClass = "hover:border-[#8ab4f8]";
-                     activeTextClass = "text-[#3b6bb8]";
                      activeTimeClass = "text-[#8ab4f8]";
                   }
                   
@@ -539,7 +535,7 @@ export function ScheduleBuilder({
                      className={`w-full text-left p-3 rounded-xl border flex flex-col justify-center gap-1.5 transition-all focus:outline-none ${s.status === 'Available' ? `bg-white ${activeBorderClass}` : 'bg-gray-50 border-gray-100'} ${!isScheduled ? `hover:shadow-sm cursor-pointer ${s.status === 'Available' ? activeHoverBorderClass : 'hover:border-gray-300'}` : 'opacity-60 cursor-default'}`}
                   >
                      <div className="flex items-center justify-between">
-                        <span className={`font-semibold text-sm ${s.status === 'Available' ? activeTextClass : 'text-gray-500'}`}>{s.name}</span>
+                        <span className={`font-semibold text-sm ${s.status === 'Available' ? 'text-gray-900' : 'text-gray-500'}`}>{s.name}</span>
                         {s.status === 'Unavailable' && (
                            <span className="text-[10px] uppercase font-bold text-gray-400">Unavailable</span>
                         )}
