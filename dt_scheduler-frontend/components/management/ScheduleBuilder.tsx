@@ -103,6 +103,12 @@ export function ScheduleBuilder({
 
   const selectedDateStr = selectedDate ? selectedDate.toISOString().split('T')[0] : "";
 
+  // Stable sort order reference
+  const employeeOrderRef = useRef<string[]>([]);
+  useEffect(() => {
+      employeeOrderRef.current = [];
+  }, [selectedDateStr, selectedLocation]);
+
   // Get shifts for the currently selected date and location
   const currentShifts = useMemo(() => {
     const shifts: { employee: string, startHour: number, endHour: number, originalIndex: number }[] = [];
@@ -129,8 +135,22 @@ export function ScheduleBuilder({
        });
     }
     
-    // Sort by start time
-    return shifts.sort((a, b) => a.startHour - b.startHour);
+    // Sort using stable order to prevent jumping while dragging
+    shifts.sort((a, b) => {
+        let idxA = employeeOrderRef.current.indexOf(a.employee);
+        let idxB = employeeOrderRef.current.indexOf(b.employee);
+        
+        if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+        if (idxA !== -1) return -1;
+        if (idxB !== -1) return 1;
+        
+        return a.startHour - b.startHour;
+    });
+    
+    // Update stable order
+    employeeOrderRef.current = shifts.map(s => s.employee);
+    
+    return shifts;
   }, [draftData, selectedDateStr, selectedLocation]);
 
   // Gantt Chart Time Math Utilities
@@ -184,10 +204,10 @@ export function ScheduleBuilder({
      newTime = Math.max(10, Math.min(22, newTime)); // Clamp to 10am-10pm
      
      if (dragState.edge === 'left') {
-        newTime = Math.min(newTime, tempShift.endHour - 0.25); // At least 15 min long
+        newTime = Math.min(newTime, tempShift.endHour - 1); // At least 1 hour long
         setTempShift({ ...tempShift, startHour: newTime });
      } else {
-        newTime = Math.max(newTime, tempShift.startHour + 0.25); // At least 15 min long
+        newTime = Math.max(newTime, tempShift.startHour + 1); // At least 1 hour long
         setTempShift({ ...tempShift, endHour: newTime });
      }
   }, [dragState, tempShift]);
@@ -593,7 +613,10 @@ export function ScheduleBuilder({
                             type="text" 
                             placeholder="Search & Add Staff..." 
                             value={staffSearchQuery}
-                            onChange={(e) => setStaffSearchQuery(e.target.value)}
+                            onChange={(e) => {
+                                setStaffSearchQuery(e.target.value);
+                                setIsSearchFocused(true);
+                            }}
                             onFocus={() => setIsSearchFocused(true)}
                             onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
                             className="w-full bg-white border border-gray-200 text-gray-700 py-2.5 pl-10 pr-4 rounded-xl text-sm font-bold shadow-[0_2px_10px_rgba(0,0,0,0.02)] focus:ring-2 focus:ring-sky-500/30 focus:border-sky-400 outline-none transition-all placeholder:text-gray-400 placeholder:font-semibold"
@@ -601,7 +624,7 @@ export function ScheduleBuilder({
                      </div>
                      
                      {isSearchFocused && (
-                         <div className="absolute bottom-full mb-2 left-0 right-0 bg-white border border-gray-100 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.1)] max-h-60 overflow-y-auto z-50 flex flex-col p-1">
+                         <div className="absolute bottom-full mb-2 left-0 right-0 bg-white border border-gray-100 rounded-xl max-h-60 overflow-y-auto z-50 flex flex-col p-1">
                             {(() => {
                                const filtered = staffData.filter(s => 
                                    !currentShifts.some(shift => shift.employee === s.name) && 
