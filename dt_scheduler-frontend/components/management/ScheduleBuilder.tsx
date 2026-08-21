@@ -382,6 +382,7 @@ export function ScheduleBuilder({
 
   if (!targetPeriod) return <div className="p-8 text-center text-gray-500">Loading period...</div>;
 
+  return (
     <div className="w-full flex flex-col gap-6 relative">
       <div className="flex flex-col sm:flex-row gap-4 items-center justify-between w-full bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
          <h2 className="text-lg font-bold text-gray-800 px-2">
