@@ -412,9 +412,9 @@ export default function ManagementPage() {
         </div>
       </div>
 
-      <div className={`flex-1 w-full flex flex-col items-center py-6 mx-auto ${activeTab === 'availability-full' ? 'px-0 max-w-full' : 'px-2 sm:px-4 max-w-[1600px]'}`}>
-        <div className={`w-full bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col relative overflow-hidden transition-all duration-300 ${activeTab === 'availability-full' ? 'p-0 sm:p-0' : 'p-4 sm:p-6'}`}>
-            <div className={`flex border-b border-gray-100 mb-6 justify-between items-end ${activeTab === 'availability-full' ? 'px-6 pt-6 sm:px-8 sm:pt-8' : ''}`}>
+      <div className={`flex-1 w-full flex flex-col items-center py-6 mx-auto ${activeTab === 'availability-full' ? 'px-2 max-w-full' : 'px-2 sm:px-4 max-w-[1600px]'}`}>
+        <div className={`w-full bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col relative overflow-hidden transition-all duration-300 ${activeTab === 'availability-full' ? 'p-2 sm:p-2' : 'p-4 sm:p-6'}`}>
+            <div className={`flex border-b border-gray-100 mb-6 justify-between items-end ${activeTab === 'availability-full' ? 'px-6 pt-4 sm:px-8 sm:pt-6' : ''}`}>
               <div className="flex items-center gap-6">
                 <button
                   onClick={() => setActiveTab('staff')}
