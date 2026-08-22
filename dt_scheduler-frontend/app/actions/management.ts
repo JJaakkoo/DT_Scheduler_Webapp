@@ -17,7 +17,7 @@ export interface FormattedStaff {
   s_name: string;
   role: string;
   is_new: boolean;
-  main_location: string;
+  main_location: string | null;
   statusText: string;
   statusColor: string;
   isClickable: boolean;
@@ -34,8 +34,7 @@ export interface StaffInputData {
   temp_email: string;
   s_name: string;
   role: string;
-  is_new: boolean;
-  main_location: string;
+  main_location: string | null;
 }
 
 export interface StaffUpdateData {
@@ -44,7 +43,7 @@ export interface StaffUpdateData {
   s_name?: string;
   role?: string;
   is_new?: boolean;
-  main_location?: string;
+  main_location?: string | null;
 }
 
 export interface AvailabilityStaffInfo {
@@ -246,6 +245,10 @@ export async function addStaffRecord(data: StaffInputData): Promise<ActionRespon
   if (!data.name || !data.s_name || !data.role || !data.temp_email) {
     return { error: 'Missing required staff fields.' };
   }
+  
+  if (data.main_location !== undefined && data.main_location !== null && data.main_location !== '' && !['Strathcona', 'Downtown', 'Heritage'].includes(data.main_location)) {
+    return { error: 'Invalid main location.' };
+  }
 
   try {
     const { adminSupabase } = await requireAdminAuth();
@@ -256,8 +259,8 @@ export async function addStaffRecord(data: StaffInputData): Promise<ActionRespon
       temp_email: data.temp_email,
       s_name: data.s_name,
       role: data.role,
-      is_new: data.is_new,
-      main_location: data.main_location
+      is_new: true, // Always true for new staff
+      main_location: data.main_location || null
     };
 
     const { error } = await adminSupabase.from('staff').insert(insertData);
@@ -291,6 +294,12 @@ export async function updateStaffRecord(id: string, updates: StaffUpdateData): P
   // Validation
   if (!id || typeof id !== 'string') return { error: 'Invalid staff ID.' };
   if (!updates || typeof updates !== 'object') return { error: 'Invalid update data.' };
+  if (updates.is_new !== undefined && typeof updates.is_new !== 'boolean') {
+    return { error: 'is_new must be a boolean.' };
+  }
+  if (updates.main_location !== undefined && updates.main_location !== null && updates.main_location !== '' && !['Strathcona', 'Downtown', 'Heritage'].includes(updates.main_location)) {
+    return { error: 'Invalid main location.' };
+  }
 
   try {
     const { adminSupabase } = await requireAdminAuth();

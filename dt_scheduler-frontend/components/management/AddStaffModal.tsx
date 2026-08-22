@@ -11,7 +11,6 @@ export function AddStaffModal({ isOpen, onClose, onSuccess }: AddStaffModalProps
   const [addEmail, setAddEmail] = useState('');
   const [addSName, setAddSName] = useState('');
   const [addMainLocation, setAddMainLocation] = useState('Strathcona');
-  const [addIsNew, setAddIsNew] = useState(false);
   const [isAddingStaff, setIsAddingStaff] = useState(false);
 
   if (!isOpen) return null;
@@ -26,8 +25,7 @@ export function AddStaffModal({ isOpen, onClose, onSuccess }: AddStaffModalProps
       temp_email: addEmail,
       s_name: addSName,
       role: 'unclaimed',
-      is_new: addIsNew,
-      main_location: addMainLocation
+      main_location: addMainLocation || null
     });
     
     if (error) {
@@ -38,7 +36,6 @@ export function AddStaffModal({ isOpen, onClose, onSuccess }: AddStaffModalProps
       setAddEmail('');
       setAddSName('');
       setAddMainLocation('Strathcona');
-      setAddIsNew(false);
       onSuccess("Successfully Added!");
     }
     setIsAddingStaff(false);
@@ -72,16 +69,10 @@ export function AddStaffModal({ isOpen, onClose, onSuccess }: AddStaffModalProps
               <div className="flex-1">
                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 ml-1">Main Location</label>
                 <select value={addMainLocation} onChange={e => setAddMainLocation(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-[15px] outline-none focus:ring-2 focus:ring-[#8ab4f8]/30 focus:border-[#8ab4f8] transition-all">
+                  <option value="">None</option>
                   <option value="Strathcona">Strathcona</option>
                   <option value="Downtown">Downtown</option>
                   <option value="Heritage">Heritage</option>
-                </select>
-              </div>
-              <div className="flex-1">
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 ml-1">New Status</label>
-                <select value={addIsNew ? 'yes' : 'no'} onChange={e => setAddIsNew(e.target.value === 'yes')} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-[15px] outline-none focus:ring-2 focus:ring-[#8ab4f8]/30 focus:border-[#8ab4f8] transition-all">
-                  <option value="no">No</option>
-                  <option value="yes">Yes (New)</option>
                 </select>
               </div>
             </div>

@@ -13,7 +13,7 @@ export function StaffRow({ staff, onSave, onViewAvailability }: { staff: any, on
   const [sName, setSName] = useState(staff.s_name || '');
   const [role, setRole] = useState(staff.role || '');
   const [isNew, setIsNew] = useState(staff.is_new || false);
-  const [mainLocation, setMainLocation] = useState(staff.main_location || 'Strathcona');
+  const [mainLocation, setMainLocation] = useState(staff.main_location || '');
 
   const handleDelete = async () => {
     setIsDeleting(true);
@@ -38,7 +38,7 @@ export function StaffRow({ staff, onSave, onViewAvailability }: { staff: any, on
       s_name: sName,
       role,
       is_new: isNew,
-      main_location: mainLocation
+      main_location: mainLocation || null
     });
     
     setIsSaving(false);
@@ -71,7 +71,7 @@ export function StaffRow({ staff, onSave, onViewAvailability }: { staff: any, on
     setSName(staff.s_name || '');
     setRole(staff.role || '');
     setIsNew(staff.is_new || false);
-    setMainLocation(staff.main_location || 'Strathcona');
+    setMainLocation(staff.main_location || '');
     setIsEditing(false);
   };
 
@@ -81,7 +81,7 @@ export function StaffRow({ staff, onSave, onViewAvailability }: { staff: any, on
   };
 
   return (
-    <tr className="hover:bg-gray-50 transition-colors">
+    <tr onDoubleClick={() => !isEditing && setIsEditing(true)} className="hover:bg-gray-50 transition-colors">
       <td className="px-3 py-3">
         {isEditing ? (
           <input type="text" value={name} onChange={e => setName(e.target.value)} className="w-full max-w-[120px] p-1 border rounded text-[13px] focus:ring-1 focus:ring-black outline-none" />
@@ -135,12 +135,13 @@ export function StaffRow({ staff, onSave, onViewAvailability }: { staff: any, on
       <td className="px-3 py-3">
         {isEditing ? (
           <select value={mainLocation} onChange={e => setMainLocation(e.target.value)} className="w-full min-w-[110px] p-1 border rounded text-[13px] focus:ring-1 focus:ring-black outline-none bg-white">
+            <option value="">None</option>
             <option value="Strathcona">Strathcona</option>
             <option value="Downtown">Downtown</option>
             <option value="Heritage">Heritage</option>
           </select>
         ) : (
-          <span className="text-gray-700">{staff.main_location || 'Strathcona'}</span>
+          <span className="text-gray-700">{staff.main_location || '-'}</span>
         )}
       </td>
       <td className="px-3 py-3">
