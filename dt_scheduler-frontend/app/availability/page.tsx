@@ -478,7 +478,8 @@ export default function AvailabilityPage() {
          setTimeout(() => setToastMessage(null), 3000);
       } else {
          // 4. Update staff is_active to true
-         const { error: activeError } = await supabase.from('staff').update({ is_active: true }).eq('id', userData.id);
+         const { setSelfActiveStatus } = await import('@/app/actions/management');
+         const { error: activeError } = await setSelfActiveStatus();
          if (activeError) {
              console.error("Failed to update staff active status:", activeError);
          }

@@ -541,3 +541,30 @@ export async function updateStaffActiveStatus(staffId: string, isActive: boolean
     return { error: 'An unexpected error occurred while updating active status.' };
   }
 }
+
+/**
+ * Allows a staff member to securely set their own active status.
+ * @returns {Promise<ActionResponse>} Success status or error message.
+ */
+export async function setSelfActiveStatus(): Promise<ActionResponse> {
+  try {
+    const supabase = await createClient();
+    const adminSupabase = createAdminClient();
+    
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) throw new Error('Unauthorized');
+    
+    const { error } = await adminSupabase.from('staff').update({ is_active: true }).eq('staff_id', user.id);
+    
+    if (error) {
+      console.error('setSelfActiveStatus error:', error);
+      return { error: 'Failed to update active status.' };
+    }
+    
+    return { success: true };
+  } catch (error: any) {
+    if (error.message === 'Unauthorized') return { error: 'Unauthorized' };
+    console.error('setSelfActiveStatus error:', error);
+    return { error: 'An unexpected error occurred.' };
+  }
+}
