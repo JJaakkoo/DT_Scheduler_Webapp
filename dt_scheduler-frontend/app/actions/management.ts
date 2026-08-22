@@ -270,8 +270,49 @@ export async function addStaffRecord(data: StaffInputData): Promise<ActionRespon
       main_location: data.main_location || null
     };
 
-    const { error } = await adminSupabase.from('staff').insert(insertData);
+    const { data: insertedData, error } = await adminSupabase.from('staff').insert(insertData).select('id, main_location').single();
     if (error) return { error: error.message };
+    
+    // --- Place new staff at the left of their location group ---
+    const { data: allStaff, error: fetchErr } = await adminSupabase.from('staff').select('id, sort_order, main_location, s_name, name');
+    
+    if (allStaff && !fetchErr) {
+       const existingStaff = allStaff.filter(s => s.id !== insertedData.id);
+       
+       const sorted = [...existingStaff].sort((a, b) => {
+          const oA = a.sort_order || 0;
+          const oB = b.sort_order || 0;
+          if (oA > 0 || oB > 0) {
+             if (oA === 0) return 1;
+             if (oB === 0) return -1;
+             return oA - oB;
+          }
+          
+          const locOrder: Record<string, number> = { 'heritage': 1, 'strathcona': 2, 'whyte': 2, 'downtown': 3 };
+          const locA = locOrder[(a.main_location || '').toLowerCase()] || 4;
+          const locB = locOrder[(b.main_location || '').toLowerCase()] || 4;
+          if (locA !== locB) return locA - locB;
+          
+          return (a.s_name || a.name || "").localeCompare(b.s_name || b.name || "");
+       });
+       
+       const newLoc = (insertData.main_location || '').toLowerCase();
+       let insertIdx = sorted.findIndex(s => (s.main_location || '').toLowerCase() === newLoc);
+       
+       if (insertIdx === -1) {
+          // If no staff in that location, insert at end
+          insertIdx = sorted.length;
+       }
+       
+       const newOrderIds = sorted.map(s => s.id);
+       newOrderIds.splice(insertIdx, 0, insertedData.id);
+       
+       // Update all sort orders in bulk
+       const promises = newOrderIds.map((id, index) => 
+          adminSupabase.from('staff').update({ sort_order: index + 1 }).eq('id', id)
+       );
+       await Promise.all(promises);
+    }
     
     if (insertData.temp_email) {
       const { error: whitelistError } = await adminSupabase

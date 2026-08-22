@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 
 interface AddStaffModalProps {
   isOpen: boolean;
@@ -12,6 +13,7 @@ export function AddStaffModal({ isOpen, onClose, onSuccess }: AddStaffModalProps
   const [addSName, setAddSName] = useState('');
   const [addMainLocation, setAddMainLocation] = useState('Strathcona');
   const [isAddingStaff, setIsAddingStaff] = useState(false);
+  const router = useRouter();
 
   if (!isOpen) return null;
 
@@ -37,6 +39,7 @@ export function AddStaffModal({ isOpen, onClose, onSuccess }: AddStaffModalProps
       setAddSName('');
       setAddMainLocation('Strathcona');
       onSuccess("Successfully Added!");
+      router.refresh();
     }
     setIsAddingStaff(false);
   };

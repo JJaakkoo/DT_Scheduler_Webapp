@@ -263,20 +263,6 @@ export function AvailabilityFullView({ staffData, validDates, periodAvailability
           <tr>
             <th className="sticky left-0 z-30 bg-gray-100 min-w-[120px] p-1.5 border border-gray-300 align-bottom">
               <div className="w-full flex flex-col gap-1">
-                {(manualOrder.length > 0 || staffData.some(s => (s.sort_order || 0) > 0)) && (
-                  <button 
-                    onClick={() => { 
-                      setManualOrder([]); 
-                      startTransition(() => {
-                        resetStaffSortOrder().then(() => router.refresh());
-                      });
-                    }} 
-                    disabled={isPending}
-                    className="w-full text-[10px] text-gray-500 hover:text-gray-700 bg-gray-200/50 rounded py-0.5 cursor-pointer font-bold transition-colors disabled:opacity-50"
-                  >
-                    {isPending ? 'Resetting...' : 'Reset Order'}
-                  </button>
-                )}
                 <input
                   ref={searchInputRef}
                   type="text"
@@ -319,20 +305,20 @@ export function AvailabilityFullView({ staffData, validDates, periodAvailability
                   ${dragTarget?.id === staff.id && dragTarget?.side === 'right' ? 'border-r-4 border-r-blue-500 z-20 shadow-[4px_0_10px_rgba(59,130,246,0.3)]' : ''}
                 `}
               >
-                <div className="flex flex-col w-full h-full relative group">
+                <div className="flex flex-col w-full h-full group">
                   {staff.is_new ? (
                     <div className="w-full bg-emerald-100 text-emerald-700 text-[9px] py-1 border-b border-gray-300 leading-none">NEW</div>
                   ) : (
                     <div className="w-full h-[17px] border-b border-gray-300"></div>
                   )}
-                  <button 
-                    onClick={() => handleActiveToggle(staff.id, false)}
-                    className="absolute top-0 right-0 w-4 h-[17px] flex items-center justify-center text-[10px] text-gray-400 hover:text-red-500 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                    title="Remove from active view"
-                  >
-                    ×
-                  </button>
-                  <div className={`flex-1 flex items-center justify-center p-2 min-h-[32px] ${matchedStaffId === staff.id ? 'bg-transparent' : getRoleBgColor(staff.role)}`}>
+                  <div className={`flex-1 flex items-center justify-center p-2 min-h-[32px] relative ${matchedStaffId === staff.id ? 'bg-transparent' : getRoleBgColor(staff.role)}`}>
+                    <button 
+                      onClick={() => handleActiveToggle(staff.id, false)}
+                      className="absolute top-0 right-0 w-4 h-4 flex items-center justify-center text-[10px] text-gray-400 hover:text-red-500 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity z-10 rounded-bl"
+                      title="Remove from active view"
+                    >
+                      ×
+                    </button>
                     {staff.s_name || staff.name}
                   </div>
                 </div>

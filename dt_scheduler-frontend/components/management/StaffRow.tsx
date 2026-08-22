@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export function StaffRow({ staff, onSave, onViewAvailability }: { staff: any, onSave: () => void, onViewAvailability?: (name: string) => void }) {
   const [isEditing, setIsEditing] = useState(false);
@@ -15,6 +16,7 @@ export function StaffRow({ staff, onSave, onViewAvailability }: { staff: any, on
   const [isActive, setIsActive] = useState(staff.is_active ?? true);
   const [isNew, setIsNew] = useState(staff.is_new || false);
   const [mainLocation, setMainLocation] = useState(staff.main_location || '');
+  const router = useRouter();
 
   const handleDelete = async () => {
     setIsDeleting(true);
@@ -25,6 +27,7 @@ export function StaffRow({ staff, onSave, onViewAvailability }: { staff: any, on
     if (success) {
       setIsDeleteDialogOpen(false);
       onSave(); // Refresh table
+      router.refresh();
     } else {
       alert("Failed to delete: " + error);
     }
@@ -47,6 +50,7 @@ export function StaffRow({ staff, onSave, onViewAvailability }: { staff: any, on
     if (success) {
       setIsEditing(false);
       onSave();
+      router.refresh();
     } else {
       alert("Failed to save: " + error);
     }
@@ -83,6 +87,19 @@ export function StaffRow({ staff, onSave, onViewAvailability }: { staff: any, on
     return new Date(dateString).toLocaleDateString();
   };
 
+  const toggleActiveStatus = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const { updateStaffActiveStatus } = await import('@/app/actions/management');
+    const newStatus = staff.is_active === false ? true : false;
+    
+    const { success, error } = await updateStaffActiveStatus(staff.id, newStatus);
+    if (success) {
+      onSave();
+    } else {
+      alert("Failed to update status: " + error);
+    }
+  };
+
   return (
     <tr onDoubleClick={() => !isEditing && setIsEditing(true)} className="hover:bg-gray-50 transition-colors">
       <td className="px-3 py-3">
@@ -94,9 +111,17 @@ export function StaffRow({ staff, onSave, onViewAvailability }: { staff: any, on
         ) : (
           <div className="flex justify-center">
             {staff.is_active !== false ? (
-              <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.4)]" title="Active"></div>
+              <div 
+                onClick={toggleActiveStatus}
+                className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.4)] cursor-pointer hover:bg-emerald-500 transition-colors" 
+                title="Active (Click to deactivate)"
+              ></div>
             ) : (
-              <div className="w-2.5 h-2.5 rounded-full bg-gray-300" title="Inactive"></div>
+              <div 
+                onClick={toggleActiveStatus}
+                className="w-2.5 h-2.5 rounded-full bg-gray-300 cursor-pointer hover:bg-gray-400 transition-colors" 
+                title="Inactive (Click to activate)"
+              ></div>
             )}
           </div>
         )}
