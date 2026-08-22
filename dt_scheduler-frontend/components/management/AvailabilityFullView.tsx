@@ -98,12 +98,16 @@ export function AvailabilityFullView({ staffData, validDates, periodAvailability
               {/* Top Left Corner */}
             </th>
             {sortedStaff.map((staff, idx) => (
-              <th key={staff.id} className="min-w-[70px] p-2 border border-gray-300 text-gray-700 bg-gray-100 uppercase tracking-tight align-top">
-                <div className="flex flex-col items-center justify-center gap-1 min-h-[32px]">
-                  <span>{staff.s_name || staff.name}</span>
-                  {staff.is_new && (
-                    <span className="bg-emerald-100 text-emerald-700 text-[9px] px-1.5 py-0.5 rounded border border-emerald-200 leading-none">NEW</span>
+              <th key={staff.id} className="min-w-[70px] p-0 border border-gray-300 text-gray-700 bg-gray-100 uppercase tracking-tight align-top">
+                <div className="flex flex-col w-full h-full">
+                  {staff.is_new ? (
+                    <div className="w-full bg-emerald-100 text-emerald-700 text-[9px] py-1 border-b border-gray-300 leading-none">NEW</div>
+                  ) : (
+                    <div className="w-full h-[17px] border-b border-gray-300"></div>
                   )}
+                  <div className="flex-1 flex items-center justify-center p-2 min-h-[32px]">
+                    {staff.s_name || staff.name}
+                  </div>
                 </div>
               </th>
             ))}
@@ -156,12 +160,16 @@ export function AvailabilityFullView({ staffData, validDates, periodAvailability
               {/* Bottom Left Corner */}
             </th>
             {sortedStaff.map((staff) => (
-              <th key={staff.id} className="min-w-[70px] p-2 border border-gray-300 text-gray-700 bg-gray-100 uppercase tracking-tight align-bottom">
-                <div className="flex flex-col items-center justify-center gap-1 min-h-[32px]">
-                  {staff.is_new && (
-                    <span className="bg-emerald-100 text-emerald-700 text-[9px] px-1.5 py-0.5 rounded border border-emerald-200 leading-none">NEW</span>
+              <th key={staff.id} className="min-w-[70px] p-0 border border-gray-300 text-gray-700 bg-gray-100 uppercase tracking-tight align-bottom">
+                <div className="flex flex-col w-full h-full">
+                  {staff.is_new ? (
+                    <div className="w-full bg-emerald-100 text-emerald-700 text-[9px] py-1 border-b border-gray-300 leading-none">NEW</div>
+                  ) : (
+                    <div className="w-full h-[17px] border-b border-gray-300"></div>
                   )}
-                  <span>{staff.s_name || staff.name}</span>
+                  <div className="flex-1 flex items-center justify-center p-2 min-h-[32px]">
+                    {staff.s_name || staff.name}
+                  </div>
                 </div>
               </th>
             ))}
