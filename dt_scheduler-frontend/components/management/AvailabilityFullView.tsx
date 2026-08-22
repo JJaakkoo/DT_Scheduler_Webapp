@@ -223,7 +223,7 @@ export function AvailabilityFullView({ staffData, validDates, periodAvailability
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search (Ctrl+F)"
-                  className="w-full text-[10px] p-1 border border-gray-300 rounded outline-none focus:border-[#8ab4f8] font-normal placeholder-gray-400"
+                  className="w-full text-xs p-1.5 border border-gray-300 rounded outline-none focus:border-[#8ab4f8] font-semibold placeholder-gray-400"
                 />
               </div>
             </th>
