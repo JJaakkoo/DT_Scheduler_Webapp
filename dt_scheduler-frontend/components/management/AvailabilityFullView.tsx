@@ -151,6 +151,11 @@ export function AvailabilityFullView({ staffData, validDates, periodAvailability
     setDragTarget(null);
   };
 
+  const handleDragEnd = () => {
+    setDraggedStaffId(null);
+    setDragTarget(null);
+  };
+
   const handleDrop = (e: React.DragEvent, targetStaffId: string) => {
     e.preventDefault();
     setDragTarget(null);
@@ -308,6 +313,7 @@ export function AvailabilityFullView({ staffData, validDates, periodAvailability
                 onDragOver={(e) => handleDragOver(e, staff.id)}
                 onDragLeave={handleDragLeave}
                 onDrop={(e) => handleDrop(e, staff.id)}
+                onDragEnd={handleDragEnd}
                 ref={el => { columnRefs.current[staff.id] = el; }}
                 className={`min-w-[70px] p-0 border border-gray-300 text-gray-700 uppercase tracking-tight align-top cursor-grab active:cursor-grabbing transition-colors duration-200
                   ${draggedStaffId === staff.id ? 'opacity-50 scale-95' : ''} 
