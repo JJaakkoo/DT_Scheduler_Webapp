@@ -6,9 +6,10 @@ interface AvailabilityFullViewProps {
   staffData: any[];
   validDates: Date[];
   periodAvailability: any[];
+  onRefresh?: () => void;
 }
 
-export function AvailabilityFullView({ staffData, validDates, periodAvailability }: AvailabilityFullViewProps) {
+export function AvailabilityFullView({ staffData, validDates, periodAvailability, onRefresh }: AvailabilityFullViewProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [matchedStaffId, setMatchedStaffId] = useState<string | null>(null);
   const [manualOrder, setManualOrder] = useState<string[]>([]);
@@ -90,6 +91,7 @@ export function AvailabilityFullView({ staffData, validDates, periodAvailability
   const handleActiveToggle = (staffId: string, isActive: boolean) => {
     startTransition(() => {
       updateStaffActiveStatus(staffId, isActive).then(() => {
+        if (onRefresh) onRefresh();
         router.refresh();
       });
     });

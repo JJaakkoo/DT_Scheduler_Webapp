@@ -79,7 +79,7 @@ export default function ManagementPage() {
     setIsAddStaffModalOpen(false);
     setToastMessage(message);
     setTimeout(() => setToastMessage(null), 3000);
-    fetchData();
+    handleRefresh();
   };
 
   const handleViewAvailability = (name: string) => {
@@ -588,6 +588,7 @@ export default function ManagementPage() {
                staffData={staffData}
                validDates={validDates}
                periodAvailability={periodAvailability}
+               onRefresh={handleRefresh}
              />
           )}
         </div>
