@@ -202,8 +202,8 @@ export function AvailabilityFullView({ staffData, validDates, periodAvailability
   };
 
   return (
-    <div className="w-full bg-white relative overflow-auto border border-gray-200 shadow-[0_4px_24px_rgba(0,0,0,0.05)] rounded-xl" style={{ maxHeight: "calc(100vh - 200px)" }}>
-      <table className="w-max border-collapse text-[11px] font-bold text-center">
+    <div className="w-full bg-white relative overflow-auto border border-gray-200 shadow-[0_4px_24px_rgba(0,0,0,0.05)] rounded-xl h-[calc(100vh-180px)]">
+      <table className="w-max h-full border-collapse text-[11px] font-bold text-center">
         {/* TOP HEADER */}
         <thead className="sticky top-0 z-20 bg-gray-100 shadow-sm">
           <tr>
@@ -260,21 +260,21 @@ export function AvailabilityFullView({ staffData, validDates, periodAvailability
           {validDates.map((date, rIdx) => {
             const isWeekend = date.getDay() === 0 || date.getDay() === 6;
             return (
-              <tr key={rIdx} className="h-[44px]">
+              <tr key={rIdx}>
                 {/* STICKY DATE COLUMN */}
-                <td className={`sticky left-0 z-10 border border-gray-300 px-3 py-1 font-bold whitespace-nowrap text-left ${isWeekend ? 'bg-gray-100 text-gray-800' : 'bg-white text-gray-600'}`}>
-                  {formatDateShort(date)}
+                <td className={`sticky left-0 z-10 border border-gray-300 px-3 py-1 font-bold whitespace-nowrap text-left h-[1px] ${isWeekend ? 'bg-gray-100 text-gray-800' : 'bg-white text-gray-600'}`}>
+                  <div className="h-full flex items-center">{formatDateShort(date)}</div>
                 </td>
                 
                 {/* STAFF CELLS */}
                 {sortedStaff.map((staff, idx) => {
                   const cellEntries = getCellData(date, staff.id);
                   if (!cellEntries || cellEntries.length === 0) {
-                    return <td key={staff.id} className={`border border-gray-300 ${isLocationChange(idx) ? 'border-l-[3px] border-l-gray-400' : ''} ${matchedStaffId === staff.id ? 'bg-blue-50/50' : 'bg-white'}`}></td>;
+                    return <td key={staff.id} className={`border border-gray-300 h-[1px] ${isLocationChange(idx) ? 'border-l-[3px] border-l-gray-400' : ''} ${matchedStaffId === staff.id ? 'bg-blue-50/50' : 'bg-white'}`}></td>;
                   }
 
                   return (
-                    <td key={staff.id} className={`border border-gray-300 p-0 align-top ${isLocationChange(idx) ? 'border-l-[3px] border-l-gray-400' : ''} ${matchedStaffId === staff.id ? 'bg-blue-50/50' : ''}`}>
+                    <td key={staff.id} className={`border border-gray-300 p-0 align-top h-[1px] ${isLocationChange(idx) ? 'border-l-[3px] border-l-gray-400' : ''} ${matchedStaffId === staff.id ? 'bg-blue-50/50' : ''}`}>
                       <div className="flex flex-col w-full h-full">
                         {cellEntries.map((entry, i) => (
                           <div 
@@ -290,8 +290,8 @@ export function AvailabilityFullView({ staffData, validDates, periodAvailability
                   );
                 })}
                 {/* STICKY DATE COLUMN RIGHT */}
-                <td className={`sticky right-0 z-10 border border-gray-300 px-3 py-1 font-bold whitespace-nowrap text-right ${isWeekend ? 'bg-gray-100 text-gray-800' : 'bg-white text-gray-600'}`}>
-                  {formatDateShort(date)}
+                <td className={`sticky right-0 z-10 border border-gray-300 px-3 py-1 font-bold whitespace-nowrap text-right h-[1px] ${isWeekend ? 'bg-gray-100 text-gray-800' : 'bg-white text-gray-600'}`}>
+                  <div className="h-full flex items-center justify-end">{formatDateShort(date)}</div>
                 </td>
               </tr>
             );
