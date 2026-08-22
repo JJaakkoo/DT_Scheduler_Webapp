@@ -11,6 +11,7 @@ interface AvailabilityFullViewProps {
 export function AvailabilityFullView({ staffData, validDates, periodAvailability }: AvailabilityFullViewProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [matchedStaffId, setMatchedStaffId] = useState<string | null>(null);
+  const [manualOrder, setManualOrder] = useState<string[]>([]);
   const [draggedStaffId, setDraggedStaffId] = useState<string | null>(null);
   const [dragTarget, setDragTarget] = useState<{ id: string, side: 'left' | 'right' } | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
