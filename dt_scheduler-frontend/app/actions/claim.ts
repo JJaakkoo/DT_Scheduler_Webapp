@@ -228,7 +228,7 @@ export async function autoLinkUser(userId: string, email: string): Promise<void>
     const { data: staffData, error: findError } = await adminSupabase
       .from('staff')
       .select('id, role, staff_id')
-      .eq('temp_email', email)
+      .ilike('temp_email', email)
       .maybeSingle();
 
     if (findError) {

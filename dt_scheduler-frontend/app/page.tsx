@@ -159,6 +159,18 @@ function HomeContent() {
       if (data?.user?.identities && data.user.identities.length === 0) {
         throw new Error("Account already exists. Please log in.");
       }
+
+      if (data?.session) {
+        try {
+          await autoLinkUser(data.user.id, data.user.email || email);
+        } catch (linkErr: any) {
+          console.error("autoLinkUser server action failed:", linkErr);
+        }
+        localStorage.removeItem("google_access_token"); 
+        localStorage.setItem("nexus_role", "staff");
+        router.push("/dashboard");
+        return;
+      }
       
       setSuccessMessage("Sign up successful! Please check your email to confirm your account.");
 
