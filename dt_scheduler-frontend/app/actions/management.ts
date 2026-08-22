@@ -23,6 +23,7 @@ export interface FormattedStaff {
   statusColor: string;
   isClickable: boolean;
   availabilityScore: number;
+  sort_order: number;
 }
 
 export interface StaffTableDataResponse {
@@ -43,9 +44,11 @@ export interface StaffUpdateData {
   temp_email?: string;
   s_name?: string;
   role?: string;
+  role?: string;
   is_active?: boolean;
   is_new?: boolean;
   main_location?: string | null;
+  sort_order?: number;
 }
 
 export interface AvailabilityStaffInfo {
@@ -146,7 +149,7 @@ export async function getStaffTableData(): Promise<StaffTableDataResponse> {
     
     const { data: staff, error } = await adminSupabase
       .from('staff')
-      .select('id, staff_id, name, temp_email, email, role, s_name, created_at, is_new, main_location, is_active')
+      .select('id, staff_id, name, temp_email, email, role, s_name, created_at, is_new, main_location, is_active, sort_order')
       .order('name');
       
     if (error) return { error: 'Failed to fetch staff' };
@@ -225,7 +228,8 @@ export async function getStaffTableData(): Promise<StaffTableDataResponse> {
             statusText,
             statusColor,
             isClickable,
-            availabilityScore: statusScore
+            availabilityScore: statusScore,
+            sort_order: s.sort_order || 0
         };
     });
     
@@ -431,6 +435,50 @@ export async function unlinkStaffAccount(id: string): Promise<ActionResponse> {
   } catch (error: any) {
     if (error.message === 'Unauthorized') return { error: 'Unauthorized' };
     console.error('unlinkStaffAccount error:', error);
+    return { error: 'Unexpected error occurred' };
+  }
+}
+
+/**
+ * Updates the sort_order of staff based on a newly provided ordered array of IDs.
+ * @param {string[]} orderedIds - The array of staff IDs in their new order.
+ */
+export async function updateStaffSortOrder(orderedIds: string[]): Promise<ActionResponse> {
+  if (!Array.isArray(orderedIds)) return { error: 'Invalid order data.' };
+  try {
+    const { adminSupabase } = await requireAdminAuth();
+    // Using a loop to update each staff record. In a high scale app, consider an RPC or bulk upsert.
+    // Given the small size, parallel updates work fine.
+    const promises = orderedIds.map((id, index) => 
+      adminSupabase.from('staff').update({ sort_order: index + 1 }).eq('id', id)
+    );
+    await Promise.all(promises);
+    return { success: true };
+  } catch (error: any) {
+    if (error.message === 'Unauthorized') return { error: 'Unauthorized' };
+    console.error('updateStaffSortOrder error:', error);
+    return { error: 'Unexpected error occurred' };
+  }
+}
+
+/**
+ * Resets the sort_order of all staff to 0 (default).
+ */
+export async function resetStaffSortOrder(): Promise<ActionResponse> {
+  try {
+    const { adminSupabase } = await requireAdminAuth();
+    // Supabase update without an eq() filter updates all rows if no condition, 
+    // but the JS client requires a filter. We can use .neq('id', 'uuid-0...') or .gt('created_at', '0') 
+    // or just fetch all and update.
+    const { data: staffIds } = await adminSupabase.from('staff').select('id');
+    if (staffIds) {
+      const promises = staffIds.map(s => adminSupabase.from('staff').update({ sort_order: 0 }).eq('id', s.id));
+      await Promise.all(promises);
+    }
+    return { success: true };
+  } catch (error: any) {
+    if (error.message === 'Unauthorized') return { error: 'Unauthorized' };
+    console.error('resetStaffSortOrder error:', error);
     return { error: 'Unexpected error occurred' };
   }
 }

@@ -1,4 +1,6 @@
-import React, { useMemo, useRef, useState, useEffect } from "react";
+import React, { useMemo, useRef, useState, useEffect, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { updateStaffSortOrder, resetStaffSortOrder } from "@/app/actions/management";
 
 interface AvailabilityFullViewProps {
   staffData: any[];
@@ -9,21 +11,14 @@ interface AvailabilityFullViewProps {
 export function AvailabilityFullView({ staffData, validDates, periodAvailability }: AvailabilityFullViewProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [matchedStaffId, setMatchedStaffId] = useState<string | null>(null);
-  const [manualOrder, setManualOrder] = useState<string[]>([]);
   const [draggedStaffId, setDraggedStaffId] = useState<string | null>(null);
+  const [dragTarget, setDragTarget] = useState<{ id: string, side: 'left' | 'right' } | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const columnRefs = useRef<{ [key: string]: HTMLTableCellElement | null }>({});
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
 
-  useEffect(() => {
-    const savedOrder = localStorage.getItem("nexus_management_full_view_order");
-    if (savedOrder) {
-      try {
-        setManualOrder(JSON.parse(savedOrder));
-      } catch (e) {
-        console.error("Failed to parse manual order from local storage");
-      }
-    }
-  }, []);
+
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -46,6 +41,14 @@ export function AvailabilityFullView({ staffData, validDates, periodAvailability
         if (indexA !== -1 && indexB !== -1) return indexA - indexB;
         if (indexA !== -1) return -1;
         if (indexB !== -1) return 1;
+      } else {
+        const orderA = a.sort_order || 0;
+        const orderB = b.sort_order || 0;
+        if (orderA > 0 || orderB > 0) {
+            if (orderA === 0) return 1;
+            if (orderB === 0) return -1;
+            return orderA - orderB;
+        }
       }
 
       // 1. Active status (active first)
@@ -107,13 +110,30 @@ export function AvailabilityFullView({ staffData, validDates, periodAvailability
     e.dataTransfer.effectAllowed = 'move';
   };
 
-  const handleDragOver = (e: React.DragEvent) => {
+  const handleDragOver = (e: React.DragEvent, targetId: string) => {
     e.preventDefault(); 
     e.dataTransfer.dropEffect = 'move';
+    if (!draggedStaffId || draggedStaffId === targetId) {
+      if (dragTarget) setDragTarget(null);
+      return;
+    }
+    
+    const targetRect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const midPoint = targetRect.left + targetRect.width / 2;
+    const side = e.clientX < midPoint ? 'left' : 'right';
+    
+    if (dragTarget?.id !== targetId || dragTarget?.side !== side) {
+      setDragTarget({ id: targetId, side });
+    }
+  };
+
+  const handleDragLeave = () => {
+    setDragTarget(null);
   };
 
   const handleDrop = (e: React.DragEvent, targetStaffId: string) => {
     e.preventDefault();
+    setDragTarget(null);
     if (!draggedStaffId || draggedStaffId === targetStaffId) return;
 
     let newOrder = manualOrder.length > 0 ? [...manualOrder] : sortedStaff.map(s => s.id);
@@ -125,12 +145,21 @@ export function AvailabilityFullView({ staffData, validDates, periodAvailability
     const draggedIdx = newOrder.indexOf(draggedStaffId);
     newOrder.splice(draggedIdx, 1);
     
-    const targetIdx = newOrder.indexOf(targetStaffId);
+    let targetIdx = newOrder.indexOf(targetStaffId);
+    if (dragTarget?.side === 'right') {
+      targetIdx += 1;
+    }
+    
     newOrder.splice(targetIdx, 0, draggedStaffId);
 
-    setManualOrder(newOrder);
-    localStorage.setItem("nexus_management_full_view_order", JSON.stringify(newOrder));
+    setManualOrder(newOrder); // Optimistic update
     setDraggedStaffId(null);
+    
+    startTransition(() => {
+        updateStaffSortOrder(newOrder).then(() => {
+            router.refresh();
+        });
+    });
   };
 
   const getFormatHr = (isoString: string) => {
@@ -201,6 +230,14 @@ export function AvailabilityFullView({ staffData, validDates, periodAvailability
     return currLoc !== prevLoc;
   };
 
+  const getRoleBgColor = (role: string) => {
+    const r = (role || '').toLowerCase();
+    if (r === 'manager') return 'bg-[#fabf8f]';
+    if (r === 'supervisor') return 'bg-[#bfbfbf]';
+    if (r === 'assistant supervisor' || r === 'assistant_supervisor') return 'bg-[#d8d8d8]';
+    return 'bg-gray-100';
+  };
+
   return (
     <div className="w-full bg-white relative overflow-auto border border-gray-200 shadow-[0_4px_24px_rgba(0,0,0,0.05)] rounded-xl h-[calc(100vh-180px)]">
       <table className="w-max h-full border-collapse text-[11px] font-bold text-center">
@@ -209,12 +246,18 @@ export function AvailabilityFullView({ staffData, validDates, periodAvailability
           <tr>
             <th className="sticky left-0 z-30 bg-gray-100 min-w-[120px] p-1.5 border border-gray-300 align-bottom">
               <div className="w-full flex flex-col gap-1">
-                {manualOrder.length > 0 && (
+                {(manualOrder.length > 0 || staffData.some(s => (s.sort_order || 0) > 0)) && (
                   <button 
-                    onClick={() => { setManualOrder([]); localStorage.removeItem("nexus_management_full_view_order"); }} 
-                    className="w-full text-[10px] text-gray-500 hover:text-gray-700 bg-gray-200/50 rounded py-0.5 cursor-pointer font-bold transition-colors"
+                    onClick={() => { 
+                      setManualOrder([]); 
+                      startTransition(() => {
+                        resetStaffSortOrder().then(() => router.refresh());
+                      });
+                    }} 
+                    disabled={isPending}
+                    className="w-full text-[10px] text-gray-500 hover:text-gray-700 bg-gray-200/50 rounded py-0.5 cursor-pointer font-bold transition-colors disabled:opacity-50"
                   >
-                    Reset Order
+                    {isPending ? 'Resetting...' : 'Reset Order'}
                   </button>
                 )}
                 <input
@@ -232,10 +275,17 @@ export function AvailabilityFullView({ staffData, validDates, periodAvailability
                 key={staff.id} 
                 draggable
                 onDragStart={(e) => handleDragStart(e, staff.id)}
-                onDragOver={handleDragOver}
+                onDragOver={(e) => handleDragOver(e, staff.id)}
+                onDragLeave={handleDragLeave}
                 onDrop={(e) => handleDrop(e, staff.id)}
                 ref={el => { columnRefs.current[staff.id] = el; }}
-                className={`min-w-[70px] p-0 border border-gray-300 text-gray-700 uppercase tracking-tight align-top cursor-grab active:cursor-grabbing ${draggedStaffId === staff.id ? 'opacity-50' : ''} ${isLocationChange(idx) ? 'border-l-[3px] border-l-gray-400' : ''} ${matchedStaffId === staff.id ? 'bg-blue-100 ring-2 ring-blue-400 z-10' : 'bg-gray-100'}`}
+                className={`min-w-[70px] p-0 border border-gray-300 text-gray-700 uppercase tracking-tight align-top cursor-grab active:cursor-grabbing transition-colors duration-200
+                  ${draggedStaffId === staff.id ? 'opacity-50 scale-95' : ''} 
+                  ${isLocationChange(idx) ? 'border-l-[3px] border-l-gray-400' : ''} 
+                  ${matchedStaffId === staff.id ? 'bg-blue-100 ring-2 ring-blue-400 z-10' : getRoleBgColor(staff.role)}
+                  ${dragTarget?.id === staff.id && dragTarget.side === 'left' ? 'border-l-4 border-l-blue-500 z-20 shadow-[-4px_0_10px_rgba(59,130,246,0.3)]' : ''}
+                  ${dragTarget?.id === staff.id && dragTarget.side === 'right' ? 'border-r-4 border-r-blue-500 z-20 shadow-[4px_0_10px_rgba(59,130,246,0.3)]' : ''}
+                `}
               >
                 <div className="flex flex-col w-full h-full">
                   {staff.is_new ? (
@@ -269,12 +319,17 @@ export function AvailabilityFullView({ staffData, validDates, periodAvailability
                 {/* STAFF CELLS */}
                 {sortedStaff.map((staff, idx) => {
                   const cellEntries = getCellData(date, staff.id);
+                  const dragClasses = `
+                    ${dragTarget?.id === staff.id && dragTarget.side === 'left' ? 'border-l-4 border-l-blue-500 z-20 bg-blue-50/10' : ''}
+                    ${dragTarget?.id === staff.id && dragTarget.side === 'right' ? 'border-r-4 border-r-blue-500 z-20 bg-blue-50/10' : ''}
+                  `;
+
                   if (!cellEntries || cellEntries.length === 0) {
-                    return <td key={staff.id} className={`border border-gray-300 h-[1px] ${isLocationChange(idx) ? 'border-l-[3px] border-l-gray-400' : ''} ${matchedStaffId === staff.id ? 'bg-blue-50/50' : 'bg-white'}`}></td>;
+                    return <td key={staff.id} className={`border border-gray-300 h-[1px] transition-colors duration-200 ${isLocationChange(idx) ? 'border-l-[3px] border-l-gray-400' : ''} ${matchedStaffId === staff.id ? 'bg-blue-50/50' : 'bg-white'} ${dragClasses}`}></td>;
                   }
 
                   return (
-                    <td key={staff.id} className={`border border-gray-300 p-0 align-top h-[1px] ${isLocationChange(idx) ? 'border-l-[3px] border-l-gray-400' : ''} ${matchedStaffId === staff.id ? 'bg-blue-50/50' : ''}`}>
+                    <td key={staff.id} className={`border border-gray-300 p-0 align-top h-[1px] transition-colors duration-200 ${isLocationChange(idx) ? 'border-l-[3px] border-l-gray-400' : ''} ${matchedStaffId === staff.id ? 'bg-blue-50/50' : ''} ${dragClasses}`}>
                       <div className="flex flex-col w-full h-full">
                         {cellEntries.map((entry, i) => (
                           <div 
@@ -305,7 +360,12 @@ export function AvailabilityFullView({ staffData, validDates, periodAvailability
               {/* Bottom Left Corner */}
             </th>
             {sortedStaff.map((staff, idx) => (
-              <th key={staff.id} className={`min-w-[70px] p-2 border border-gray-300 text-gray-700 uppercase tracking-tight align-middle ${isLocationChange(idx) ? 'border-l-[3px] border-l-gray-400' : ''} ${matchedStaffId === staff.id ? 'bg-blue-100 ring-2 ring-blue-400 z-10' : 'bg-gray-100'}`}>
+              <th key={staff.id} className={`min-w-[70px] p-2 border border-gray-300 text-gray-700 uppercase tracking-tight align-middle transition-colors duration-200
+                  ${isLocationChange(idx) ? 'border-l-[3px] border-l-gray-400' : ''} 
+                  ${matchedStaffId === staff.id ? 'bg-blue-100 ring-2 ring-blue-400 z-10' : getRoleBgColor(staff.role)}
+                  ${dragTarget?.id === staff.id && dragTarget.side === 'left' ? 'border-l-4 border-l-blue-500 z-20 shadow-[-4px_0_10px_rgba(59,130,246,0.3)]' : ''}
+                  ${dragTarget?.id === staff.id && dragTarget.side === 'right' ? 'border-r-4 border-r-blue-500 z-20 shadow-[4px_0_10px_rgba(59,130,246,0.3)]' : ''}
+              `}>
                 {staff.s_name || staff.name}
               </th>
             ))}
