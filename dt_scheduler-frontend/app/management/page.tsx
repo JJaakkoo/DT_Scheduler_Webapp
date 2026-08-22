@@ -405,7 +405,7 @@ export default function ManagementPage() {
       <div className={`flex-1 w-full flex flex-col items-center py-6 mx-auto ${activeTab === 'availability-full' ? 'px-0 max-w-full' : 'px-4 sm:px-8 max-w-7xl'}`}>
         <div className={`w-full bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col relative overflow-hidden transition-all duration-300 ${activeTab === 'availability-full' ? 'p-0 sm:p-0' : 'p-6 sm:p-8'}`}>
             <div className={`flex border-b border-gray-100 mb-6 justify-between items-end ${activeTab === 'availability-full' ? 'px-6 pt-6 sm:px-8 sm:pt-8' : ''}`}>
-              <div className="flex space-x-6">
+              <div className="flex items-center gap-6">
                 <button
                   onClick={() => setActiveTab('staff')}
                   className={`pb-3 text-[15px] font-semibold transition-colors relative ${activeTab === 'staff' ? 'text-sky-500' : 'text-gray-500 hover:text-gray-800'}`}
@@ -413,6 +413,7 @@ export default function ManagementPage() {
                   Staff
                   {activeTab === 'staff' && <div className="absolute bottom-[-1px] left-0 right-0 h-[2px] bg-sky-500 rounded-t-full" />}
                 </button>
+                <div className="w-px h-5 bg-gray-200 mb-3" />
                 <button
                   onClick={() => setActiveTab('scheduling')}
                   className={`pb-3 text-[15px] font-semibold transition-colors relative ${activeTab === 'scheduling' ? 'text-sky-500' : 'text-gray-500 hover:text-gray-800'}`}
@@ -420,6 +421,7 @@ export default function ManagementPage() {
                   Availability
                   {activeTab === 'scheduling' && <div className="absolute bottom-[-1px] left-0 right-0 h-[2px] bg-sky-500 rounded-t-full" />}
                 </button>
+                <div className="w-px h-5 bg-gray-200 mb-3" />
                 <button
                   onClick={() => setActiveTab('builder')}
                   className={`pb-3 text-[15px] font-semibold transition-colors relative ${activeTab === 'builder' ? 'text-sky-500' : 'text-gray-500 hover:text-gray-800'}`}
@@ -427,6 +429,7 @@ export default function ManagementPage() {
                   Schedule Builder
                   {activeTab === 'builder' && <div className="absolute bottom-[-1px] left-0 right-0 h-[2px] bg-sky-500 rounded-t-full" />}
                 </button>
+                <div className="w-px h-5 bg-gray-200 mb-3" />
                 <button
                   onClick={() => setActiveTab('availability-full')}
                   className={`pb-3 text-[15px] font-semibold transition-colors relative ${activeTab === 'availability-full' ? 'text-sky-500' : 'text-gray-500 hover:text-gray-800'}`}
@@ -493,10 +496,16 @@ export default function ManagementPage() {
                   <th className="px-3 py-3 font-medium cursor-pointer hover:bg-gray-100 transition-colors select-none" onClick={() => handleSort('s_name')}>
                     <div className="flex items-center gap-1">S Name {sortField === 's_name' && (sortDirection === 'asc' ? '↑' : '↓')}</div>
                   </th>
-                  <th className="px-3 py-3 font-medium cursor-pointer hover:bg-gray-100 transition-colors select-none" onClick={() => handleSort('role')}>
-                    <div className="flex items-center gap-1">Role {sortField === 'role' && (sortDirection === 'asc' ? '↑' : '↓')}</div>
+                  <th className="px-3 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors w-[15%]" onClick={() => handleSort('role')}>
+                    Role {sortField === 'role' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="px-3 py-3 font-medium cursor-pointer hover:bg-gray-100 transition-colors select-none" onClick={() => handleSort('created_at')}>
+                  <th className="px-3 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors w-[12%]" onClick={() => handleSort('main_location')}>
+                    Main Location {sortField === 'main_location' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="px-3 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors w-[8%]" onClick={() => handleSort('is_new')}>
+                    Status {sortField === 'is_new' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="px-3 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors w-[15%]" onClick={() => handleSort('created_at')}>
                     <div className="flex items-center gap-1">Created At {sortField === 'created_at' && (sortDirection === 'asc' ? '↑' : '↓')}</div>
                   </th>
                   <th className="px-3 py-3 font-medium cursor-pointer hover:bg-gray-100 transition-colors select-none" onClick={() => handleSort('statusText')}>
@@ -511,14 +520,14 @@ export default function ManagementPage() {
                 ))}
                 {sortedStaffData.length === 0 && !isLoading && (
                   <tr>
-                    <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
+                    <td colSpan={10} className="px-4 py-8 text-center text-gray-500">
                       {staffSearchQuery ? "No matching staff found." : "No staff records found."}
                     </td>
                   </tr>
                 )}
                 {isLoading && (
                   <tr>
-                    <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
+                    <td colSpan={10} className="px-4 py-8 text-center text-gray-500">
                       Loading staff data...
                     </td>
                   </tr>

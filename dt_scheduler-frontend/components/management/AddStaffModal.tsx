@@ -10,6 +10,8 @@ export function AddStaffModal({ isOpen, onClose, onSuccess }: AddStaffModalProps
   const [addName, setAddName] = useState('');
   const [addEmail, setAddEmail] = useState('');
   const [addSName, setAddSName] = useState('');
+  const [addMainLocation, setAddMainLocation] = useState('Strathcona');
+  const [addIsNew, setAddIsNew] = useState(false);
   const [isAddingStaff, setIsAddingStaff] = useState(false);
 
   if (!isOpen) return null;
@@ -23,7 +25,9 @@ export function AddStaffModal({ isOpen, onClose, onSuccess }: AddStaffModalProps
       name: addName,
       temp_email: addEmail,
       s_name: addSName,
-      role: 'unclaimed'
+      role: 'unclaimed',
+      is_new: addIsNew,
+      main_location: addMainLocation
     });
     
     if (error) {
@@ -33,6 +37,8 @@ export function AddStaffModal({ isOpen, onClose, onSuccess }: AddStaffModalProps
       setAddName('');
       setAddEmail('');
       setAddSName('');
+      setAddMainLocation('Strathcona');
+      setAddIsNew(false);
       onSuccess("Successfully Added!");
     }
     setIsAddingStaff(false);
@@ -61,6 +67,23 @@ export function AddStaffModal({ isOpen, onClose, onSuccess }: AddStaffModalProps
               <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 ml-1">S Name (Schedule Match)</label>
               <input type="text" placeholder="John" value={addSName} onChange={e => setAddSName(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-[15px] outline-none focus:ring-2 focus:ring-[#8ab4f8]/30 focus:border-[#8ab4f8] transition-all placeholder:text-gray-400" />
               <p className="text-[11px] text-gray-400 mt-1 ml-1">Exact name as it appears in the raw schedule</p>
+            </div>
+            <div className="flex gap-4">
+              <div className="flex-1">
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 ml-1">Main Location</label>
+                <select value={addMainLocation} onChange={e => setAddMainLocation(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-[15px] outline-none focus:ring-2 focus:ring-[#8ab4f8]/30 focus:border-[#8ab4f8] transition-all">
+                  <option value="Strathcona">Strathcona</option>
+                  <option value="Downtown">Downtown</option>
+                  <option value="Heritage">Heritage</option>
+                </select>
+              </div>
+              <div className="flex-1">
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 ml-1">New Status</label>
+                <select value={addIsNew ? 'yes' : 'no'} onChange={e => setAddIsNew(e.target.value === 'yes')} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-[15px] outline-none focus:ring-2 focus:ring-[#8ab4f8]/30 focus:border-[#8ab4f8] transition-all">
+                  <option value="no">No</option>
+                  <option value="yes">Yes (New)</option>
+                </select>
+              </div>
             </div>
             <button onClick={handleAddStaff} disabled={isAddingStaff} className="w-full bg-[#8ab4f8] text-white font-bold py-3.5 rounded-xl shadow-sm hover:opacity-90 hover:shadow transition-all disabled:opacity-50 mt-2">
               {isAddingStaff ? "Adding..." : "Add Staff"}

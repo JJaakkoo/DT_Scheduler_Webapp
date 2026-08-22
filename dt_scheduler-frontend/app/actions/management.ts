@@ -16,6 +16,8 @@ export interface FormattedStaff {
   created_at: string;
   s_name: string;
   role: string;
+  is_new: boolean;
+  main_location: string;
   statusText: string;
   statusColor: string;
   isClickable: boolean;
@@ -32,6 +34,8 @@ export interface StaffInputData {
   temp_email: string;
   s_name: string;
   role: string;
+  is_new: boolean;
+  main_location: string;
 }
 
 export interface StaffUpdateData {
@@ -39,6 +43,8 @@ export interface StaffUpdateData {
   temp_email?: string;
   s_name?: string;
   role?: string;
+  is_new?: boolean;
+  main_location?: string;
 }
 
 export interface AvailabilityStaffInfo {
@@ -139,7 +145,7 @@ export async function getStaffTableData(): Promise<StaffTableDataResponse> {
     
     const { data: staff, error } = await adminSupabase
       .from('staff')
-      .select('id, staff_id, name, temp_email, email, role, s_name, created_at')
+      .select('id, staff_id, name, temp_email, email, role, s_name, created_at, is_new, main_location')
       .order('name');
       
     if (error) return { error: 'Failed to fetch staff' };
@@ -212,6 +218,8 @@ export async function getStaffTableData(): Promise<StaffTableDataResponse> {
             created_at: s.created_at,
             s_name: s.s_name,
             role: s.role,
+            is_new: s.is_new,
+            main_location: s.main_location,
             statusText,
             statusColor,
             isClickable,
@@ -247,7 +255,9 @@ export async function addStaffRecord(data: StaffInputData): Promise<ActionRespon
       name: data.name,
       temp_email: data.temp_email,
       s_name: data.s_name,
-      role: data.role
+      role: data.role,
+      is_new: data.is_new,
+      main_location: data.main_location
     };
 
     const { error } = await adminSupabase.from('staff').insert(insertData);
@@ -291,6 +301,8 @@ export async function updateStaffRecord(id: string, updates: StaffUpdateData): P
     if (updates.temp_email !== undefined) safeUpdates.temp_email = updates.temp_email;
     if (updates.s_name !== undefined) safeUpdates.s_name = updates.s_name;
     if (updates.role !== undefined) safeUpdates.role = updates.role;
+    if (updates.is_new !== undefined) safeUpdates.is_new = updates.is_new;
+    if (updates.main_location !== undefined) safeUpdates.main_location = updates.main_location;
     
     if (Object.keys(safeUpdates).length === 0) {
       return { error: 'No valid fields to update.' };

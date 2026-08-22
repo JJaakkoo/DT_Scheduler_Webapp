@@ -12,6 +12,8 @@ export function StaffRow({ staff, onSave, onViewAvailability }: { staff: any, on
   const [tempEmail, setTempEmail] = useState(staff.temp_email || '');
   const [sName, setSName] = useState(staff.s_name || '');
   const [role, setRole] = useState(staff.role || '');
+  const [isNew, setIsNew] = useState(staff.is_new || false);
+  const [mainLocation, setMainLocation] = useState(staff.main_location || 'Strathcona');
 
   const handleDelete = async () => {
     setIsDeleting(true);
@@ -34,7 +36,9 @@ export function StaffRow({ staff, onSave, onViewAvailability }: { staff: any, on
       name,
       temp_email: tempEmail,
       s_name: sName,
-      role
+      role,
+      is_new: isNew,
+      main_location: mainLocation
     });
     
     setIsSaving(false);
@@ -66,6 +70,8 @@ export function StaffRow({ staff, onSave, onViewAvailability }: { staff: any, on
     setTempEmail(staff.temp_email || '');
     setSName(staff.s_name || '');
     setRole(staff.role || '');
+    setIsNew(staff.is_new || false);
+    setMainLocation(staff.main_location || 'Strathcona');
     setIsEditing(false);
   };
 
@@ -124,6 +130,27 @@ export function StaffRow({ staff, onSave, onViewAvailability }: { staff: any, on
           </select>
         ) : (
           <span className="capitalize">{staff.role || '-'}</span>
+        )}
+      </td>
+      <td className="px-3 py-3">
+        {isEditing ? (
+          <select value={mainLocation} onChange={e => setMainLocation(e.target.value)} className="w-full min-w-[110px] p-1 border rounded text-[13px] focus:ring-1 focus:ring-black outline-none bg-white">
+            <option value="Strathcona">Strathcona</option>
+            <option value="Downtown">Downtown</option>
+            <option value="Heritage">Heritage</option>
+          </select>
+        ) : (
+          <span className="text-gray-700">{staff.main_location || 'Strathcona'}</span>
+        )}
+      </td>
+      <td className="px-3 py-3">
+        {isEditing ? (
+          <select value={isNew ? 'yes' : 'no'} onChange={e => setIsNew(e.target.value === 'yes')} className="w-full min-w-[80px] p-1 border rounded text-[13px] focus:ring-1 focus:ring-black outline-none bg-white">
+            <option value="no">No</option>
+            <option value="yes">Yes (New)</option>
+          </select>
+        ) : (
+          staff.is_new ? <span className="px-2 py-1 rounded bg-green-100 text-green-700 text-xs font-bold uppercase tracking-wider">New</span> : null
         )}
       </td>
       <td className="px-3 py-3 text-gray-500 text-xs">
