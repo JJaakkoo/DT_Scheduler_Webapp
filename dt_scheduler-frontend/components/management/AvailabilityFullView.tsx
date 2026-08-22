@@ -8,6 +8,7 @@ interface AvailabilityFullViewProps {
 
 export function AvailabilityFullView({ staffData, validDates, periodAvailability }: AvailabilityFullViewProps) {
   const [searchQuery, setSearchQuery] = useState('');
+  const [matchedStaffId, setMatchedStaffId] = useState<string | null>(null);
   const [manualOrder, setManualOrder] = useState<string[]>([]);
   const [draggedStaffId, setDraggedStaffId] = useState<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -52,9 +53,19 @@ export function AvailabilityFullView({ staffData, validDates, periodAvailability
       const activeB = b.is_active !== false ? 1 : 0;
       if (activeA !== activeB) return activeB - activeA;
 
-      // 2. Main Location (Alphabetical)
+      // 2. Main Location (Heritage -> Strathcona -> Downtown -> Other)
+      const locOrder: Record<string, number> = {
+        'heritage': 1,
+        'strathcona': 2,
+        'whyte': 2,
+        'downtown': 3
+      };
       const locA = (a.main_location || "zzz").toLowerCase();
       const locB = (b.main_location || "zzz").toLowerCase();
+      const orderA = locOrder[locA] || 4;
+      const orderB = locOrder[locB] || 4;
+      
+      if (orderA !== orderB) return orderA - orderB;
       if (locA !== locB) return locA.localeCompare(locB);
 
       // 3. Name
@@ -65,14 +76,29 @@ export function AvailabilityFullView({ staffData, validDates, periodAvailability
   }, [staffData, manualOrder]);
 
   useEffect(() => {
-    if (!searchQuery) return;
+    if (!searchQuery) {
+      setMatchedStaffId(null);
+      return;
+    }
     const query = searchQuery.toLowerCase();
     const match = sortedStaff.find(s => 
       (s.s_name || '').toLowerCase().includes(query) || 
       (s.name || '').toLowerCase().includes(query)
     );
-    if (match && columnRefs.current[match.id]) {
-      columnRefs.current[match.id]?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    if (match) {
+      setMatchedStaffId(match.id);
+      if (columnRefs.current[match.id]) {
+        const el = columnRefs.current[match.id] as HTMLElement;
+        const container = el.closest('.overflow-auto');
+        if (container) {
+          container.scrollTo({
+            left: el.offsetLeft - 140, 
+            behavior: 'smooth'
+          });
+        }
+      }
+    } else {
+      setMatchedStaffId(null);
     }
   }, [searchQuery, sortedStaff]);
 
@@ -168,6 +194,13 @@ export function AvailabilityFullView({ staffData, validDates, periodAvailability
     return `${day} ${month} ${weekday}`;
   };
 
+  const isLocationChange = (idx: number) => {
+    if (idx === 0) return false;
+    const currLoc = (sortedStaff[idx].main_location || '').toLowerCase();
+    const prevLoc = (sortedStaff[idx - 1].main_location || '').toLowerCase();
+    return currLoc !== prevLoc;
+  };
+
   return (
     <div className="w-full bg-white relative overflow-auto border border-gray-200 shadow-[0_4px_24px_rgba(0,0,0,0.05)] rounded-xl" style={{ maxHeight: "calc(100vh - 200px)" }}>
       <table className="w-max border-collapse text-[11px] font-bold text-center">
@@ -202,7 +235,7 @@ export function AvailabilityFullView({ staffData, validDates, periodAvailability
                 onDragOver={handleDragOver}
                 onDrop={(e) => handleDrop(e, staff.id)}
                 ref={el => { columnRefs.current[staff.id] = el; }}
-                className={`min-w-[70px] p-0 border border-gray-300 text-gray-700 bg-gray-100 uppercase tracking-tight align-top cursor-grab active:cursor-grabbing ${draggedStaffId === staff.id ? 'opacity-50' : ''}`}
+                className={`min-w-[70px] p-0 border border-gray-300 text-gray-700 uppercase tracking-tight align-top cursor-grab active:cursor-grabbing ${draggedStaffId === staff.id ? 'opacity-50' : ''} ${isLocationChange(idx) ? 'border-l-[3px] border-l-gray-400' : ''} ${matchedStaffId === staff.id ? 'bg-blue-100 ring-2 ring-blue-400 z-10' : 'bg-gray-100'}`}
               >
                 <div className="flex flex-col w-full h-full">
                   {staff.is_new ? (
@@ -227,22 +260,22 @@ export function AvailabilityFullView({ staffData, validDates, periodAvailability
           {validDates.map((date, rIdx) => {
             const isWeekend = date.getDay() === 0 || date.getDay() === 6;
             return (
-              <tr key={rIdx}>
+              <tr key={rIdx} className="h-[44px]">
                 {/* STICKY DATE COLUMN */}
                 <td className={`sticky left-0 z-10 border border-gray-300 px-3 py-1 font-bold whitespace-nowrap text-left ${isWeekend ? 'bg-gray-100 text-gray-800' : 'bg-white text-gray-600'}`}>
                   {formatDateShort(date)}
                 </td>
                 
                 {/* STAFF CELLS */}
-                {sortedStaff.map((staff) => {
+                {sortedStaff.map((staff, idx) => {
                   const cellEntries = getCellData(date, staff.id);
                   if (!cellEntries || cellEntries.length === 0) {
-                    return <td key={staff.id} className="border border-gray-300 bg-white"></td>;
+                    return <td key={staff.id} className={`border border-gray-300 ${isLocationChange(idx) ? 'border-l-[3px] border-l-gray-400' : ''} ${matchedStaffId === staff.id ? 'bg-blue-50/50' : 'bg-white'}`}></td>;
                   }
 
                   return (
-                    <td key={staff.id} className="border border-gray-300 p-0 align-top">
-                      <div className="flex flex-col w-full h-full min-h-[30px]">
+                    <td key={staff.id} className={`border border-gray-300 p-0 align-top ${isLocationChange(idx) ? 'border-l-[3px] border-l-gray-400' : ''} ${matchedStaffId === staff.id ? 'bg-blue-50/50' : ''}`}>
+                      <div className="flex flex-col w-full h-full">
                         {cellEntries.map((entry, i) => (
                           <div 
                             key={i} 
@@ -271,18 +304,9 @@ export function AvailabilityFullView({ staffData, validDates, periodAvailability
             <th className="sticky left-0 z-30 bg-gray-100 min-w-[80px] p-2 border border-gray-300">
               {/* Bottom Left Corner */}
             </th>
-            {sortedStaff.map((staff) => (
-              <th key={staff.id} className="min-w-[70px] p-0 border border-gray-300 text-gray-700 bg-gray-100 uppercase tracking-tight align-bottom">
-                <div className="flex flex-col w-full h-full">
-                  {staff.is_new ? (
-                    <div className="w-full bg-emerald-100 text-emerald-700 text-[9px] py-1 border-b border-gray-300 leading-none">NEW</div>
-                  ) : (
-                    <div className="w-full h-[17px] border-b border-gray-300"></div>
-                  )}
-                  <div className="flex-1 flex items-center justify-center p-2 min-h-[32px]">
-                    {staff.s_name || staff.name}
-                  </div>
-                </div>
+            {sortedStaff.map((staff, idx) => (
+              <th key={staff.id} className={`min-w-[70px] p-2 border border-gray-300 text-gray-700 uppercase tracking-tight align-middle ${isLocationChange(idx) ? 'border-l-[3px] border-l-gray-400' : ''} ${matchedStaffId === staff.id ? 'bg-blue-100 ring-2 ring-blue-400 z-10' : 'bg-gray-100'}`}>
+                {staff.s_name || staff.name}
               </th>
             ))}
             <th className="sticky right-0 z-30 bg-gray-100 min-w-[80px] p-2 border border-gray-300">
