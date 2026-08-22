@@ -8,6 +8,7 @@ import { StaffRow } from "@/components/management/StaffRow";
 import { AddStaffModal } from "@/components/management/AddStaffModal";
 import { AvailabilityTab } from "@/components/management/AvailabilityTab";
 import { ScheduleBuilder } from "@/components/management/ScheduleBuilder";
+import { AvailabilityFullView } from "@/components/management/AvailabilityFullView";
 
 export default function ManagementPage() {
   const router = useRouter();
@@ -52,7 +53,7 @@ export default function ManagementPage() {
   };
 
   const [staffData, setStaffData] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState<'staff' | 'scheduling' | 'builder'>('staff');
+  const [activeTab, setActiveTab] = useState<'staff' | 'scheduling' | 'builder' | 'availability-full'>('staff');
   const [isLoading, setIsLoading] = useState(true);
   const [visibleCount, setVisibleCount] = useState(10);
   const [sortField, setSortField] = useState<string | null>(null);
@@ -94,7 +95,7 @@ export default function ManagementPage() {
 
     const cachedTab = localStorage.getItem("nexus_management_tab");
      
-    if (cachedTab) setActiveTab(cachedTab as 'staff' | 'scheduling' | 'builder');
+    if (cachedTab) setActiveTab(cachedTab as 'staff' | 'scheduling' | 'builder' | 'availability-full');
 
     const cachedSearch = localStorage.getItem("nexus_management_search");
      
@@ -401,9 +402,9 @@ export default function ManagementPage() {
         </div>
       </div>
 
-      <div className="flex-1 w-full flex flex-col items-center py-6 px-4 sm:px-8 max-w-7xl mx-auto">
-        <div className="w-full bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8 flex flex-col relative overflow-hidden transition-all duration-300">
-            <div className="flex border-b border-gray-100 mb-6 justify-between items-end">
+      <div className={`flex-1 w-full flex flex-col items-center py-6 mx-auto ${activeTab === 'availability-full' ? 'px-0 max-w-full' : 'px-4 sm:px-8 max-w-7xl'}`}>
+        <div className={`w-full bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col relative overflow-hidden transition-all duration-300 ${activeTab === 'availability-full' ? 'p-0 sm:p-0' : 'p-6 sm:p-8'}`}>
+            <div className={`flex border-b border-gray-100 mb-6 justify-between items-end ${activeTab === 'availability-full' ? 'px-6 pt-6 sm:px-8 sm:pt-8' : ''}`}>
               <div className="flex space-x-6">
                 <button
                   onClick={() => setActiveTab('staff')}
@@ -425,6 +426,13 @@ export default function ManagementPage() {
                 >
                   Schedule Builder
                   {activeTab === 'builder' && <div className="absolute bottom-[-1px] left-0 right-0 h-[2px] bg-sky-500 rounded-t-full" />}
+                </button>
+                <button
+                  onClick={() => setActiveTab('availability-full')}
+                  className={`pb-3 text-[15px] font-semibold transition-colors relative ${activeTab === 'availability-full' ? 'text-sky-500' : 'text-gray-500 hover:text-gray-800'}`}
+                >
+                  Availability - Full View
+                  {activeTab === 'availability-full' && <div className="absolute bottom-[-1px] left-0 right-0 h-[2px] bg-sky-500 rounded-t-full" />}
                 </button>
               </div>
               <button 
@@ -550,6 +558,14 @@ export default function ManagementPage() {
                setSelectedDate={setSelectedDate}
                handlePrevPeriod={handlePrevPeriod}
                handleNextPeriod={handleNextPeriod}
+             />
+          )}
+
+          {activeTab === 'availability-full' && (
+             <AvailabilityFullView 
+               staffData={staffData}
+               validDates={validDates}
+               periodAvailability={periodAvailability}
              />
           )}
         </div>
