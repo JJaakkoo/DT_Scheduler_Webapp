@@ -589,6 +589,7 @@ export default function ManagementPage() {
                validDates={validDates}
                periodAvailability={periodAvailability}
                onRefresh={handleRefresh}
+               isRefreshing={isLoading || isFetchingAvail}
              />
           )}
         </div>
