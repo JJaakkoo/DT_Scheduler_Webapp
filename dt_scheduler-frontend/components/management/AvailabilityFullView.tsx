@@ -68,10 +68,10 @@ export function AvailabilityFullView({ staffData, validDates, periodAvailability
         'whyte': 2,
         'downtown': 3
       };
-      const locA = (a.main_location || "zzz").toLowerCase();
-      const locB = (b.main_location || "zzz").toLowerCase();
-      const orderA = locOrder[locA] || 4;
-      const orderB = locOrder[locB] || 4;
+      const locA = (a.main_location || "").toLowerCase().trim();
+      const locB = (b.main_location || "").toLowerCase().trim();
+      const orderA = locA === "" ? 0 : (locOrder[locA] || 4);
+      const orderB = locB === "" ? 0 : (locOrder[locB] || 4);
       
       if (orderA !== orderB) return orderA - orderB;
       if (locA !== locB) return locA.localeCompare(locB);

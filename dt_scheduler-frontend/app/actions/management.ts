@@ -289,9 +289,13 @@ export async function addStaffRecord(data: StaffInputData): Promise<ActionRespon
           }
           
           const locOrder: Record<string, number> = { 'heritage': 1, 'strathcona': 2, 'whyte': 2, 'downtown': 3 };
-          const locA = locOrder[(a.main_location || '').toLowerCase()] || 4;
-          const locB = locOrder[(b.main_location || '').toLowerCase()] || 4;
+          const locAStr = (a.main_location || '').toLowerCase().trim();
+          const locBStr = (b.main_location || '').toLowerCase().trim();
+          const locA = locAStr === '' ? 0 : (locOrder[locAStr] || 4);
+          const locB = locBStr === '' ? 0 : (locOrder[locBStr] || 4);
           if (locA !== locB) return locA - locB;
+          
+          if (locAStr !== locBStr) return locAStr.localeCompare(locBStr);
           
           return (a.s_name || a.name || "").localeCompare(b.s_name || b.name || "");
        });
