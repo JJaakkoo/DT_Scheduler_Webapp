@@ -34,7 +34,9 @@ export function AvailabilityFullView({ staffData, validDates, periodAvailability
 
   // Sort staff by manual order, then active status, then location, then alphabetically
   const sortedStaff = useMemo(() => {
-    return [...staffData].sort((a, b) => {
+    return [...staffData]
+      .filter((s) => s.is_active !== false)
+      .sort((a, b) => {
       // 0. Manual Order
       if (manualOrder.length > 0) {
         const indexA = manualOrder.indexOf(a.id);
