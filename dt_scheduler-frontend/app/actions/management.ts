@@ -44,7 +44,6 @@ export interface StaffUpdateData {
   temp_email?: string;
   s_name?: string;
   role?: string;
-  role?: string;
   is_active?: boolean;
   is_new?: boolean;
   main_location?: string | null;
