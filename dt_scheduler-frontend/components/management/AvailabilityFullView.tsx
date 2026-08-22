@@ -7,9 +7,20 @@ interface AvailabilityFullViewProps {
 }
 
 export function AvailabilityFullView({ staffData, validDates, periodAvailability }: AvailabilityFullViewProps) {
-  // Sort staff alphabetically by s_name
+  // Sort staff by active status, then location, then alphabetically
   const sortedStaff = useMemo(() => {
     return [...staffData].sort((a, b) => {
+      // 1. Active status (active first)
+      const activeA = a.is_active !== false ? 1 : 0;
+      const activeB = b.is_active !== false ? 1 : 0;
+      if (activeA !== activeB) return activeB - activeA;
+
+      // 2. Main Location (Alphabetical)
+      const locA = (a.main_location || "zzz").toLowerCase();
+      const locB = (b.main_location || "zzz").toLowerCase();
+      if (locA !== locB) return locA.localeCompare(locB);
+
+      // 3. Name
       const nameA = (a.s_name || "").toLowerCase();
       const nameB = (b.s_name || "").toLowerCase();
       return nameA.localeCompare(nameB);
@@ -87,8 +98,13 @@ export function AvailabilityFullView({ staffData, validDates, periodAvailability
               {/* Top Left Corner */}
             </th>
             {sortedStaff.map((staff, idx) => (
-              <th key={staff.id} className="min-w-[70px] p-2 border border-gray-300 text-gray-700 bg-gray-100 uppercase tracking-tight">
-                {staff.s_name || staff.name}
+              <th key={staff.id} className="min-w-[70px] p-2 border border-gray-300 text-gray-700 bg-gray-100 uppercase tracking-tight align-top">
+                <div className="flex flex-col items-center justify-center gap-1 min-h-[32px]">
+                  <span>{staff.s_name || staff.name}</span>
+                  {staff.is_new && (
+                    <span className="bg-emerald-100 text-emerald-700 text-[9px] px-1.5 py-0.5 rounded border border-emerald-200 leading-none">NEW</span>
+                  )}
+                </div>
               </th>
             ))}
           </tr>
@@ -140,8 +156,13 @@ export function AvailabilityFullView({ staffData, validDates, periodAvailability
               {/* Bottom Left Corner */}
             </th>
             {sortedStaff.map((staff) => (
-              <th key={staff.id} className="min-w-[70px] p-2 border border-gray-300 text-gray-700 bg-gray-100 uppercase tracking-tight">
-                {staff.s_name || staff.name}
+              <th key={staff.id} className="min-w-[70px] p-2 border border-gray-300 text-gray-700 bg-gray-100 uppercase tracking-tight align-bottom">
+                <div className="flex flex-col items-center justify-center gap-1 min-h-[32px]">
+                  {staff.is_new && (
+                    <span className="bg-emerald-100 text-emerald-700 text-[9px] px-1.5 py-0.5 rounded border border-emerald-200 leading-none">NEW</span>
+                  )}
+                  <span>{staff.s_name || staff.name}</span>
+                </div>
               </th>
             ))}
           </tr>
