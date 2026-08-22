@@ -475,9 +475,28 @@ export async function resetStaffSortOrder(): Promise<ActionResponse> {
       await Promise.all(promises);
     }
     return { success: true };
-  } catch (error: any) {
-    if (error.message === 'Unauthorized') return { error: 'Unauthorized' };
+  } catch (error) {
     console.error('resetStaffSortOrder error:', error);
-    return { error: 'Unexpected error occurred' };
+    return { error: 'An unexpected error occurred while resetting sorting order.' };
+  }
+}
+
+export async function updateStaffActiveStatus(staffId: string, isActive: boolean): Promise<ActionResponse> {
+  if (!staffId || typeof staffId !== 'string') return { error: 'Invalid staff ID.' };
+  if (typeof isActive !== 'boolean') return { error: 'Invalid active status.' };
+  
+  try {
+    const { adminSupabase } = await requireAdminAuth();
+    const { error } = await adminSupabase.from('staff').update({ is_active: isActive }).eq('id', staffId);
+    
+    if (error) {
+      console.error('updateStaffActiveStatus error:', error);
+      return { error: 'Failed to update active status. Please try again.' };
+    }
+    
+    return { success: true };
+  } catch (error) {
+    console.error('updateStaffActiveStatus error:', error);
+    return { error: 'An unexpected error occurred while updating active status.' };
   }
 }

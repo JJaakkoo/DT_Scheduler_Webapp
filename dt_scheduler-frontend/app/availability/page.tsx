@@ -477,6 +477,12 @@ export default function AvailabilityPage() {
          setToastMessage({ text: "Failed to submit availability. " + (upsertError?.message || ""), type: 'error' });
          setTimeout(() => setToastMessage(null), 3000);
       } else {
+         // 4. Update staff is_active to true
+         const { error: activeError } = await supabase.from('staff').update({ is_active: true }).eq('id', userData.id);
+         if (activeError) {
+             console.error("Failed to update staff active status:", activeError);
+         }
+         
          setToastMessage({ text: "Availability successfully submitted!", type: 'success' });
          setTimeout(() => setToastMessage(null), 3000);
       }

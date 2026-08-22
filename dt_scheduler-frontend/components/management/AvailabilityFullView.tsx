@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useState, useEffect, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { updateStaffSortOrder, resetStaffSortOrder } from "@/app/actions/management";
+import { updateStaffSortOrder, resetStaffSortOrder, updateStaffActiveStatus } from "@/app/actions/management";
 
 interface AvailabilityFullViewProps {
   staffData: any[];
@@ -80,6 +80,20 @@ export function AvailabilityFullView({ staffData, validDates, periodAvailability
       return nameA.localeCompare(nameB);
     });
   }, [staffData, manualOrder]);
+
+  const inactiveStaff = useMemo(() => {
+    return [...staffData]
+      .filter(s => s.is_active === false)
+      .sort((a, b) => (a.s_name || a.name).localeCompare(b.s_name || b.name));
+  }, [staffData]);
+
+  const handleActiveToggle = (staffId: string, isActive: boolean) => {
+    startTransition(() => {
+      updateStaffActiveStatus(staffId, isActive).then(() => {
+        router.refresh();
+      });
+    });
+  };
 
   useEffect(() => {
     if (!searchQuery) {
@@ -271,6 +285,21 @@ export function AvailabilityFullView({ staffData, validDates, periodAvailability
                   placeholder="Search (Ctrl+F)"
                   className="w-full text-xs p-1.5 border border-gray-300 rounded outline-none focus:border-[#8ab4f8] font-semibold placeholder-gray-400"
                 />
+                <select
+                  value=""
+                  onChange={(e) => {
+                    if (e.target.value) {
+                      handleActiveToggle(e.target.value, true);
+                    }
+                  }}
+                  disabled={isPending}
+                  className="w-full text-[10px] p-1 border border-gray-300 rounded outline-none bg-white text-gray-500 font-bold focus:border-[#8ab4f8] disabled:opacity-50"
+                >
+                  <option value="" disabled>+ Add Staff</option>
+                  {inactiveStaff.map(s => (
+                    <option key={s.id} value={s.id}>{s.s_name || s.name}</option>
+                  ))}
+                </select>
               </div>
             </th>
             {sortedStaff.map((staff, idx) => (
@@ -285,18 +314,25 @@ export function AvailabilityFullView({ staffData, validDates, periodAvailability
                 className={`min-w-[70px] p-0 border border-gray-300 text-gray-700 uppercase tracking-tight align-top cursor-grab active:cursor-grabbing transition-colors duration-200
                   ${draggedStaffId === staff.id ? 'opacity-50 scale-95' : ''} 
                   ${isLocationChange(idx) ? 'border-l-[3px] border-l-gray-400' : ''} 
-                  ${matchedStaffId === staff.id ? 'bg-blue-100 ring-2 ring-blue-400 z-10' : getRoleBgColor(staff.role)}
+                  ${matchedStaffId === staff.id ? 'bg-blue-100 ring-2 ring-blue-400 z-10' : 'bg-gray-100'}
                   ${dragTarget?.id === staff.id && dragTarget?.side === 'left' ? 'border-l-4 border-l-blue-500 z-20 shadow-[-4px_0_10px_rgba(59,130,246,0.3)]' : ''}
                   ${dragTarget?.id === staff.id && dragTarget?.side === 'right' ? 'border-r-4 border-r-blue-500 z-20 shadow-[4px_0_10px_rgba(59,130,246,0.3)]' : ''}
                 `}
               >
-                <div className="flex flex-col w-full h-full">
+                <div className="flex flex-col w-full h-full relative group">
                   {staff.is_new ? (
                     <div className="w-full bg-emerald-100 text-emerald-700 text-[9px] py-1 border-b border-gray-300 leading-none">NEW</div>
                   ) : (
                     <div className="w-full h-[17px] border-b border-gray-300"></div>
                   )}
-                  <div className="flex-1 flex items-center justify-center p-2 min-h-[32px]">
+                  <button 
+                    onClick={() => handleActiveToggle(staff.id, false)}
+                    className="absolute top-0 right-0 w-4 h-[17px] flex items-center justify-center text-[10px] text-gray-400 hover:text-red-500 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                    title="Remove from active view"
+                  >
+                    ×
+                  </button>
+                  <div className={`flex-1 flex items-center justify-center p-2 min-h-[32px] ${matchedStaffId === staff.id ? 'bg-transparent' : getRoleBgColor(staff.role)}`}>
                     {staff.s_name || staff.name}
                   </div>
                 </div>
