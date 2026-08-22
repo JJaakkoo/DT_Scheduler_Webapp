@@ -317,7 +317,7 @@ export function AvailabilityFullView({ staffData, validDates, periodAvailability
                 ref={el => { columnRefs.current[staff.id] = el; }}
                 className={`min-w-[70px] p-0 border border-gray-300 text-gray-700 uppercase tracking-tight align-top cursor-grab active:cursor-grabbing transition-colors duration-200
                   ${draggedStaffId === staff.id ? 'opacity-50 scale-95' : ''} 
-                  ${isLocationChange(idx) ? 'border-l-[3px] border-l-gray-400' : ''} 
+                  ${isLocationChange(idx) ? 'border-l-[2px] border-l-gray-300' : ''} 
                   ${matchedStaffId === staff.id ? 'bg-blue-100 ring-2 ring-blue-400 z-10' : 'bg-gray-100'}
                   ${dragTarget?.id === staff.id && dragTarget?.side === 'left' ? 'border-l-4 border-l-blue-500 z-20 shadow-[-4px_0_10px_rgba(59,130,246,0.3)]' : ''}
                   ${dragTarget?.id === staff.id && dragTarget?.side === 'right' ? 'border-r-4 border-r-blue-500 z-20 shadow-[4px_0_10px_rgba(59,130,246,0.3)]' : ''}
@@ -368,11 +368,11 @@ export function AvailabilityFullView({ staffData, validDates, periodAvailability
                   `;
 
                   if (!cellEntries || cellEntries.length === 0) {
-                    return <td key={staff.id} className={`border border-gray-300 h-[1px] transition-colors duration-200 ${isLocationChange(idx) ? 'border-l-[3px] border-l-gray-400' : ''} ${matchedStaffId === staff.id ? 'bg-blue-50/50' : 'bg-white'} ${dragClasses}`}></td>;
+                    return <td key={staff.id} className={`border border-gray-300 h-[1px] transition-colors duration-200 ${isLocationChange(idx) ? 'border-l-[2px] border-l-gray-300' : ''} ${matchedStaffId === staff.id ? 'bg-blue-50/50' : 'bg-white'} ${dragClasses}`}></td>;
                   }
 
                   return (
-                    <td key={staff.id} className={`border border-gray-300 p-0 align-top h-[1px] transition-colors duration-200 ${isLocationChange(idx) ? 'border-l-[3px] border-l-gray-400' : ''} ${matchedStaffId === staff.id ? 'bg-blue-50/50' : ''} ${dragClasses}`}>
+                    <td key={staff.id} className={`border border-gray-300 p-0 align-top h-[1px] transition-colors duration-200 ${isLocationChange(idx) ? 'border-l-[2px] border-l-gray-300' : ''} ${matchedStaffId === staff.id ? 'bg-blue-50/50' : ''} ${dragClasses}`}>
                       <div className="flex flex-col w-full h-full">
                         {cellEntries.map((entry, i) => (
                           <div 
@@ -404,7 +404,7 @@ export function AvailabilityFullView({ staffData, validDates, periodAvailability
             </th>
             {sortedStaff.map((staff, idx) => (
               <th key={staff.id} className={`min-w-[70px] p-2 border border-gray-300 text-gray-700 uppercase tracking-tight align-middle transition-colors duration-200
-                  ${isLocationChange(idx) ? 'border-l-[3px] border-l-gray-400' : ''} 
+                  ${isLocationChange(idx) ? 'border-l-[2px] border-l-gray-300' : ''} 
                   ${matchedStaffId === staff.id ? 'bg-blue-100 ring-2 ring-blue-400 z-10' : getRoleBgColor(staff.role)}
                   ${dragTarget?.id === staff.id && dragTarget?.side === 'left' ? 'border-l-4 border-l-blue-500 z-20 shadow-[-4px_0_10px_rgba(59,130,246,0.3)]' : ''}
                   ${dragTarget?.id === staff.id && dragTarget?.side === 'right' ? 'border-r-4 border-r-blue-500 z-20 shadow-[4px_0_10px_rgba(59,130,246,0.3)]' : ''}
