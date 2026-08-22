@@ -160,7 +160,7 @@ function HomeContent() {
         throw new Error("Account already exists. Please log in.");
       }
 
-      if (data?.session) {
+      if (data?.session && data?.user) {
         try {
           await autoLinkUser(data.user.id, data.user.email || email);
         } catch (linkErr: any) {
@@ -235,6 +235,7 @@ function HomeContent() {
     // Clear any stale role or token data so it doesn't conflict after redirect
     localStorage.removeItem("nexus_role");
     localStorage.removeItem("google_access_token");
+    localStorage.removeItem("nexus_login_time");
     document.cookie = "nexus_role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
     
     try {
@@ -380,7 +381,8 @@ function HomeContent() {
                 <button 
                   type="button"
                   onClick={handleGoogleLogin}
-                  className="w-full max-w-[280px] h-[48px] bg-white border border-gray-300 text-gray-700 font-medium text-[14px] rounded-full hover:bg-gray-50 hover:shadow-sm transition-all flex items-center justify-center gap-3 mb-3"
+                  disabled={isLoading}
+                  className="w-full max-w-[280px] h-[48px] bg-white border border-gray-300 text-gray-700 font-medium text-[14px] rounded-full hover:bg-gray-50 hover:shadow-sm transition-all flex items-center justify-center gap-3 mb-3 disabled:opacity-50"
                 >
                   <GoogleLogoIcon />
                   Sign in with Google
@@ -389,7 +391,8 @@ function HomeContent() {
                 <button 
                   type="button"
                   onClick={handleGuestLogin}
-                  className="w-full max-w-[280px] h-[48px] bg-white border-2 border-gray-200 text-gray-600 font-bold text-[14px] rounded-full hover:bg-gray-50 hover:border-gray-300 transition-colors flex items-center justify-center gap-2 mb-3"
+                  disabled={isLoading}
+                  className="w-full max-w-[280px] h-[48px] bg-white border-2 border-gray-200 text-gray-600 font-bold text-[14px] rounded-full hover:bg-gray-50 hover:border-gray-300 transition-colors flex items-center justify-center gap-2 mb-3 disabled:opacity-50"
                 >
                   <GuestIcon />
                   Sign in as Guest
