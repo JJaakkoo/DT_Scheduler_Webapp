@@ -280,6 +280,16 @@ export default function ManagementPage() {
   const sortedStaffData = [...staffData].sort((a, b) => {
     if (!sortField) return 0;
     
+    if (sortField === 'is_active') {
+      const aVal = a.is_active ? 1 : 0;
+      const bVal = b.is_active ? 1 : 0;
+      return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
+    }
+    if (sortField === 'is_new') {
+      const aVal = a.is_new ? 1 : 0;
+      const bVal = b.is_new ? 1 : 0;
+      return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
+    }
     if (sortField === 'statusText') {
        const scoreA = a.availabilityScore || 0;
        const scoreB = b.availabilityScore || 0;
@@ -483,7 +493,10 @@ export default function ManagementPage() {
             </div>
             <table className="w-full text-left text-[13px] text-gray-600 border-collapse whitespace-nowrap">
               <thead className="bg-gray-50 text-gray-700 text-xs uppercase border-b border-gray-200">
-                <tr>
+                <tr className="bg-gray-50 border-b border-gray-100">
+                  <th className="px-3 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors w-[6%]" onClick={() => handleSort('is_active')}>
+                    Active {sortField === 'is_active' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
                   <th className="px-3 py-3 font-medium cursor-pointer hover:bg-gray-100 transition-colors select-none" onClick={() => handleSort('name')}>
                     <div className="flex items-center gap-1">Name {sortField === 'name' && (sortDirection === 'asc' ? '↑' : '↓')}</div>
                   </th>
@@ -520,14 +533,14 @@ export default function ManagementPage() {
                 ))}
                 {sortedStaffData.length === 0 && !isLoading && (
                   <tr>
-                    <td colSpan={10} className="px-4 py-8 text-center text-gray-500">
+                    <td colSpan={11} className="px-4 py-8 text-center text-gray-500">
                       {staffSearchQuery ? "No matching staff found." : "No staff records found."}
                     </td>
                   </tr>
                 )}
                 {isLoading && (
                   <tr>
-                    <td colSpan={10} className="px-4 py-8 text-center text-gray-500">
+                    <td colSpan={11} className="px-4 py-8 text-center text-gray-500">
                       Loading staff data...
                     </td>
                   </tr>

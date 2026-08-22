@@ -16,6 +16,7 @@ export interface FormattedStaff {
   created_at: string;
   s_name: string;
   role: string;
+  is_active: boolean;
   is_new: boolean;
   main_location: string | null;
   statusText: string;
@@ -42,6 +43,7 @@ export interface StaffUpdateData {
   temp_email?: string;
   s_name?: string;
   role?: string;
+  is_active?: boolean;
   is_new?: boolean;
   main_location?: string | null;
 }
@@ -144,7 +146,7 @@ export async function getStaffTableData(): Promise<StaffTableDataResponse> {
     
     const { data: staff, error } = await adminSupabase
       .from('staff')
-      .select('id, staff_id, name, temp_email, email, role, s_name, created_at, is_new, main_location')
+      .select('id, staff_id, name, temp_email, email, role, s_name, created_at, is_new, main_location, is_active')
       .order('name');
       
     if (error) return { error: 'Failed to fetch staff' };
@@ -217,6 +219,7 @@ export async function getStaffTableData(): Promise<StaffTableDataResponse> {
             created_at: s.created_at,
             s_name: s.s_name,
             role: s.role,
+            is_active: s.is_active,
             is_new: s.is_new,
             main_location: s.main_location,
             statusText,
@@ -259,6 +262,7 @@ export async function addStaffRecord(data: StaffInputData): Promise<ActionRespon
       temp_email: data.temp_email,
       s_name: data.s_name,
       role: data.role,
+      is_active: true, // Always true for new staff
       is_new: true, // Always true for new staff
       main_location: data.main_location || null
     };
@@ -294,6 +298,9 @@ export async function updateStaffRecord(id: string, updates: StaffUpdateData): P
   // Validation
   if (!id || typeof id !== 'string') return { error: 'Invalid staff ID.' };
   if (!updates || typeof updates !== 'object') return { error: 'Invalid update data.' };
+  if (updates.is_active !== undefined && typeof updates.is_active !== 'boolean') {
+    return { error: 'is_active must be a boolean.' };
+  }
   if (updates.is_new !== undefined && typeof updates.is_new !== 'boolean') {
     return { error: 'is_new must be a boolean.' };
   }
@@ -310,6 +317,7 @@ export async function updateStaffRecord(id: string, updates: StaffUpdateData): P
     if (updates.temp_email !== undefined) safeUpdates.temp_email = updates.temp_email;
     if (updates.s_name !== undefined) safeUpdates.s_name = updates.s_name;
     if (updates.role !== undefined) safeUpdates.role = updates.role;
+    if (updates.is_active !== undefined) safeUpdates.is_active = updates.is_active;
     if (updates.is_new !== undefined) safeUpdates.is_new = updates.is_new;
     if (updates.main_location !== undefined) safeUpdates.main_location = updates.main_location;
     

@@ -12,6 +12,7 @@ export function StaffRow({ staff, onSave, onViewAvailability }: { staff: any, on
   const [tempEmail, setTempEmail] = useState(staff.temp_email || '');
   const [sName, setSName] = useState(staff.s_name || '');
   const [role, setRole] = useState(staff.role || '');
+  const [isActive, setIsActive] = useState(staff.is_active ?? true);
   const [isNew, setIsNew] = useState(staff.is_new || false);
   const [mainLocation, setMainLocation] = useState(staff.main_location || '');
 
@@ -37,6 +38,7 @@ export function StaffRow({ staff, onSave, onViewAvailability }: { staff: any, on
       temp_email: tempEmail,
       s_name: sName,
       role,
+      is_active: isActive,
       is_new: isNew,
       main_location: mainLocation || null
     });
@@ -70,6 +72,7 @@ export function StaffRow({ staff, onSave, onViewAvailability }: { staff: any, on
     setTempEmail(staff.temp_email || '');
     setSName(staff.s_name || '');
     setRole(staff.role || '');
+    setIsActive(staff.is_active ?? true);
     setIsNew(staff.is_new || false);
     setMainLocation(staff.main_location || '');
     setIsEditing(false);
@@ -82,6 +85,22 @@ export function StaffRow({ staff, onSave, onViewAvailability }: { staff: any, on
 
   return (
     <tr onDoubleClick={() => !isEditing && setIsEditing(true)} className="hover:bg-gray-50 transition-colors">
+      <td className="px-3 py-3">
+        {isEditing ? (
+          <select value={isActive ? 'yes' : 'no'} onChange={e => setIsActive(e.target.value === 'yes')} className="w-full min-w-[80px] p-1 border rounded text-[13px] focus:ring-1 focus:ring-black outline-none bg-white">
+            <option value="yes">Yes</option>
+            <option value="no">No</option>
+          </select>
+        ) : (
+          <div className="flex justify-center">
+            {staff.is_active !== false ? (
+              <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.4)]" title="Active"></div>
+            ) : (
+              <div className="w-2.5 h-2.5 rounded-full bg-gray-300" title="Inactive"></div>
+            )}
+          </div>
+        )}
+      </td>
       <td className="px-3 py-3">
         {isEditing ? (
           <input type="text" value={name} onChange={e => setName(e.target.value)} className="w-full max-w-[120px] p-1 border rounded text-[13px] focus:ring-1 focus:ring-black outline-none" />
