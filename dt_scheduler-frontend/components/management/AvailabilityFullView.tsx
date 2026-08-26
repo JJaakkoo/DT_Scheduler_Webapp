@@ -304,15 +304,11 @@ export function AvailabilityFullView({ staffData, validDates, periodAvailability
             {sortedStaff.map((staff, idx) => (
               <th 
                 key={staff.id} 
-                draggable
-                onDragStart={(e) => handleDragStart(e, staff.id)}
                 onDragOver={(e) => handleDragOver(e, staff.id)}
                 onDragLeave={handleDragLeave}
                 onDrop={(e) => handleDrop(e, staff.id)}
-                onDragEnd={handleDragEnd}
                 ref={el => { columnRefs.current[staff.id] = el; }}
-                className={`min-w-[70px] p-0 border border-gray-300 text-gray-700 uppercase tracking-tight align-top cursor-grab active:cursor-grabbing transition-colors duration-200
-                  ${draggedStaffId === staff.id ? 'opacity-50 scale-95' : ''} 
+                className={`min-w-[70px] p-0 border border-gray-300 text-gray-700 uppercase tracking-tight align-top transition-colors duration-200
                   ${isLocationChange(idx) ? 'border-l-[3px] border-l-gray-400' : ''} 
                   ${matchedStaffId === staff.id ? 'bg-blue-100 ring-2 ring-blue-400 z-10' : 'bg-gray-100'}
                   ${dragTarget?.id === staff.id && dragTarget?.side === 'left' ? 'border-l-4 border-l-blue-500 z-20 shadow-[-4px_0_10px_rgba(59,130,246,0.3)]' : ''}
@@ -325,7 +321,12 @@ export function AvailabilityFullView({ staffData, validDates, periodAvailability
                   ) : (
                     <div className="w-full h-[17px] border-b border-gray-300"></div>
                   )}
-                  <div className={`flex-1 flex items-center justify-center p-2 min-h-[32px] relative ${matchedStaffId === staff.id ? 'bg-transparent' : getRoleBgColor(staff.role)}`}>
+                  <div 
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, staff.id)}
+                    onDragEnd={handleDragEnd}
+                    className={`flex-1 flex items-center justify-center p-2 min-h-[32px] relative cursor-grab active:cursor-grabbing transition-all ${matchedStaffId === staff.id ? 'bg-transparent' : getRoleBgColor(staff.role)} ${draggedStaffId === staff.id ? 'opacity-50 scale-95' : ''}`}
+                  >
                     <button 
                       onClick={() => handleActiveToggle(staff.id, false)}
                       className="absolute top-0 right-0 w-4 h-4 flex items-center justify-center text-[10px] text-gray-400 hover:text-red-500 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity z-10 rounded-bl"
