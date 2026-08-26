@@ -546,6 +546,7 @@ export default function Dashboard() {
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
                         e.preventDefault();
+                        e.currentTarget.blur();
                         executeSearch(employeeName, false);
                       }
                     }}
