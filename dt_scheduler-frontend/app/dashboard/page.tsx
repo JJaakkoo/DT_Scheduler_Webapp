@@ -52,7 +52,7 @@ export default function Dashboard() {
       const now = Date.now();
       if (!loginTime) {
         localStorage.setItem("nexus_login_time", now.toString());
-      } else if (now - parseInt(loginTime, 10) > 48 * 60 * 60 * 1000) {
+      } else if (now - parseInt(loginTime, 10) > 7 * 24 * 60 * 60 * 1000) {
         supabase.auth.signOut().then(() => {
           localStorage.removeItem("nexus_role");
           localStorage.removeItem("google_access_token");

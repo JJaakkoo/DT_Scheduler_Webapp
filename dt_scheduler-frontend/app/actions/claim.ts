@@ -59,7 +59,7 @@ export async function getCurrentUserRole(): Promise<CurrentUserRoleResponse> {
     const adminSupabase = createAdminClient();
     
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { role: 'guest' };
+    if (!user) return { role: 'unclaimed' };
 
     const { data: staffData } = await adminSupabase
       .from('staff')
