@@ -245,40 +245,53 @@ def get_schedule_data(employee_name, force_sync=False, access_token=None, req_mo
 
 import uuid
 import hashlib
-from icalendar import Calendar, Event, Timezone, TimezoneStandard, TimezoneDaylight
+# from icalendar import Calendar, Event, Timezone, TimezoneStandard, TimezoneDaylight - Removed since we are manually constructing the ICS to bypass folding rules
 
 def generate_ics_from_shifts(shifts, employee_name):
     """Helper to convert JSON shifts back into a downloadable .ics file"""
-    cal = Calendar()
-    cal.add('prodid', '-//Dream Tea Schedule Portal//jakozeng.ca//')
-    cal.add('version', '2.0')
-    edmonton_tz = pytz.timezone('America/Edmonton')
+    import pytz
+    from datetime import datetime, timezone
 
+    edmonton_tz = pytz.timezone('America/Edmonton')
+    
+    lines = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "PRODID:-//Dream Tea Schedule Portal//jakozeng.ca//",
+        "CALSCALE:GREGORIAN"
+    ]
+    
+    dtstamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    
     for shift in shifts:
-        event = Event()
-        event.add('summary', shift['summary'])
-        event.add('description', shift['description'])
-        
-        # Deterministic UID to avoid "Processed zero events" error on re-imports
-        uid_string = f"{employee_name}_{shift['start']['dateTime']}_{shift['end']['dateTime']}_{shift.get('summary', '')}"
-        deterministic_uid = hashlib.md5(uid_string.encode('utf-8')).hexdigest()
-        event.add('uid', deterministic_uid + '@jakozeng.ca')
-        
         start_dt_local = edmonton_tz.localize(datetime.strptime(shift['start']['dateTime'], "%Y-%m-%dT%H:%M:%S"))
         end_dt_local = edmonton_tz.localize(datetime.strptime(shift['end']['dateTime'], "%Y-%m-%dT%H:%M:%S"))
         
-        # Convert directly to UTC to bypass Google Calendar's timezone parser entirely
-        event.add('dtstart', start_dt_local.astimezone(timezone.utc))
-        event.add('dtend', end_dt_local.astimezone(timezone.utc))
-        event.add('dtstamp', datetime.now(timezone.utc))
-        cal.add_component(event)
-
-    ics_bytes = cal.to_ical()
+        start_dt_utc = start_dt_local.astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        end_dt_utc = end_dt_local.astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        
+        # Fresh UID to bypass Google Calendar deduplication during re-imports
+        new_uid = f"new-{uuid.uuid4().hex}@jakozeng.ca"
+        
+        # Strip newlines from summary and description to prevent ICS corruption
+        summary = shift.get('summary', '').replace('\n', ' ').replace('\r', '')
+        description = shift.get('description', '').replace('\n', ' ').replace('\r', '')
+        
+        lines.append("BEGIN:VEVENT")
+        lines.append(f"SUMMARY:{summary}")
+        lines.append(f"DTSTART:{start_dt_utc}")
+        lines.append(f"DTEND:{end_dt_utc}")
+        lines.append(f"DTSTAMP:{dtstamp}")
+        lines.append(f"UID:{new_uid}")
+        if description:
+            lines.append(f"DESCRIPTION:{description}")
+        lines.append("END:VEVENT")
+        
+    lines.append("END:VCALENDAR")
+    lines.append("") # Add a blank string to ensure trailing CRLF when joined
     
-    # Enforce strict CRLF (\r\n) line endings across the entire file for Google Calendar compliance
-    ics_string = ics_bytes.decode('utf-8')
-    ics_string = ics_string.replace('\r\n', '\n').replace('\r', '\n').replace('\n', '\r\n')
-    
+    # Manually join with strict CRLF to ensure compliance without line folding
+    ics_string = "\r\n".join(lines)
     return ics_string.encode('utf-8')
 
 
