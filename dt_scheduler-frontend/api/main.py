@@ -243,6 +243,8 @@ def get_schedule_data(employee_name, force_sync=False, access_token=None, req_mo
         traceback.print_exc()
         return None, None, "ERROR", str(e)
 
+import uuid
+from icalendar import Calendar, Event, Timezone, TimezoneStandard, TimezoneDaylight
 
 def generate_ics_from_shifts(shifts, employee_name):
     """Helper to convert JSON shifts back into a downloadable .ics file"""
@@ -251,10 +253,32 @@ def generate_ics_from_shifts(shifts, employee_name):
     cal.add('version', '2.0')
     edmonton_tz = pytz.timezone('America/Edmonton')
 
+    tz = Timezone()
+    tz.add('TZID', 'America/Edmonton')
+    
+    tz_standard = TimezoneStandard()
+    tz_standard.add('TZNAME', 'MST')
+    tz_standard.add('DTSTART', datetime(1970, 11, 1, 2, 0, 0))
+    tz_standard.add('RRULE', {'freq': 'yearly', 'bymonth': 11, 'byday': '1su'})
+    tz_standard.add('TZOFFSETFROM', timedelta(hours=-6))
+    tz_standard.add('TZOFFSETTO', timedelta(hours=-7))
+    tz.add_component(tz_standard)
+    
+    tz_daylight = TimezoneDaylight()
+    tz_daylight.add('TZNAME', 'MDT')
+    tz_daylight.add('DTSTART', datetime(1970, 3, 8, 2, 0, 0))
+    tz_daylight.add('RRULE', {'freq': 'yearly', 'bymonth': 3, 'byday': '2su'})
+    tz_daylight.add('TZOFFSETFROM', timedelta(hours=-7))
+    tz_daylight.add('TZOFFSETTO', timedelta(hours=-6))
+    tz.add_component(tz_daylight)
+    
+    cal.add_component(tz)
+
     for shift in shifts:
         event = Event()
         event.add('summary', shift['summary'])
         event.add('description', shift['description'])
+        event.add('uid', str(uuid.uuid4()) + '@jakozeng.ca')
         start_dt = edmonton_tz.localize(datetime.strptime(shift['start']['dateTime'], "%Y-%m-%dT%H:%M:%S"))
         end_dt = edmonton_tz.localize(datetime.strptime(shift['end']['dateTime'], "%Y-%m-%dT%H:%M:%S"))
         event.add('dtstart', start_dt)

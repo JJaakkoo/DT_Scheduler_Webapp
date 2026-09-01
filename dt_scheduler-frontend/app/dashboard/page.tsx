@@ -644,7 +644,7 @@ export default function Dashboard() {
                     type="button" 
                     disabled={isLoading || isSyncing || !activeQuery}
                     className={`w-full h-[48px] text-white text-[15px] font-bold rounded-full transition-all shadow-[0_4px_14px_rgba(139,185,217,0.4)] flex items-center justify-center gap-2 focus:outline-none
-                      ${(isLoading || isSyncing || !activeQuery) ? 'bg-gray-400 cursor-not-allowed' : (isDownloaded ? 'bg-emerald-400 hover:bg-emerald-500' : 'bg-[#8ab4f8] hover:bg-blue-400')}`}
+                      ${(isLoading || isSyncing || !activeQuery) ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#8ab4f8] hover:bg-blue-400'}`}
                     onClick={() => handleDownloadICS()}
                   >
                     {isDownloaded ? (
