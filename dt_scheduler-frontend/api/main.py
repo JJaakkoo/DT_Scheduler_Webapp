@@ -328,6 +328,27 @@ def download_schedule():
     if not shifts or len(shifts) == 0:
         return jsonify({"error": f"No shifts found for {employee_name}."}), 404
 
+    # The get_schedule_data function returns multiple periods (current and previous)
+    # For the ICS download, we strictly want ONLY the most recent period.
+    # 'metadata' contains the db_record for the most recent period.
+    if metadata and 'schedule_data' in metadata:
+        employee_key = employee_name.strip().lower()
+        recent_shifts = []
+        if employee_key == "master":
+            for emp, emp_shifts in metadata.get('schedule_data', {}).items():
+                for shift in emp_shifts:
+                    shift_with_name = shift.copy()
+                    shift_with_name['employee'] = emp
+                    recent_shifts.append(shift_with_name)
+        else:
+            recent_shifts.extend(metadata.get('schedule_data', {}).get(employee_key, []))
+            
+        recent_shifts.sort(key=lambda x: x.get('start', {}).get('dateTime', x.get('start', {}).get('date', '')))
+        shifts = recent_shifts
+        
+        if not shifts or len(shifts) == 0:
+            return jsonify({"error": f"No recent shifts found for {employee_name}."}), 404
+
     ics_data = generate_ics_from_shifts(shifts, employee_name)
     
     filename = f"{employee_name.title()} schedule.ics"
