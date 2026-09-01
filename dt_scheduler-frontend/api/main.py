@@ -244,6 +244,7 @@ def get_schedule_data(employee_name, force_sync=False, access_token=None, req_mo
         return None, None, "ERROR", str(e)
 
 import uuid
+import hashlib
 from icalendar import Calendar, Event, Timezone, TimezoneStandard, TimezoneDaylight
 
 def generate_ics_from_shifts(shifts, employee_name):
@@ -253,40 +254,32 @@ def generate_ics_from_shifts(shifts, employee_name):
     cal.add('version', '2.0')
     edmonton_tz = pytz.timezone('America/Edmonton')
 
-    tz = Timezone()
-    tz.add('TZID', 'America/Edmonton')
-    
-    tz_standard = TimezoneStandard()
-    tz_standard.add('TZNAME', 'MST')
-    tz_standard.add('DTSTART', datetime(1970, 11, 1, 2, 0, 0))
-    tz_standard.add('RRULE', {'freq': 'yearly', 'bymonth': 11, 'byday': '1su'})
-    tz_standard.add('TZOFFSETFROM', timedelta(hours=-6))
-    tz_standard.add('TZOFFSETTO', timedelta(hours=-7))
-    tz.add_component(tz_standard)
-    
-    tz_daylight = TimezoneDaylight()
-    tz_daylight.add('TZNAME', 'MDT')
-    tz_daylight.add('DTSTART', datetime(1970, 3, 8, 2, 0, 0))
-    tz_daylight.add('RRULE', {'freq': 'yearly', 'bymonth': 3, 'byday': '2su'})
-    tz_daylight.add('TZOFFSETFROM', timedelta(hours=-7))
-    tz_daylight.add('TZOFFSETTO', timedelta(hours=-6))
-    tz.add_component(tz_daylight)
-    
-    cal.add_component(tz)
-
     for shift in shifts:
         event = Event()
         event.add('summary', shift['summary'])
         event.add('description', shift['description'])
-        event.add('uid', str(uuid.uuid4()) + '@jakozeng.ca')
-        start_dt = edmonton_tz.localize(datetime.strptime(shift['start']['dateTime'], "%Y-%m-%dT%H:%M:%S"))
-        end_dt = edmonton_tz.localize(datetime.strptime(shift['end']['dateTime'], "%Y-%m-%dT%H:%M:%S"))
-        event.add('dtstart', start_dt)
-        event.add('dtend', end_dt)
+        
+        # Deterministic UID to avoid "Processed zero events" error on re-imports
+        uid_string = f"{employee_name}_{shift['start']['dateTime']}_{shift['end']['dateTime']}_{shift.get('summary', '')}"
+        deterministic_uid = hashlib.md5(uid_string.encode('utf-8')).hexdigest()
+        event.add('uid', deterministic_uid + '@jakozeng.ca')
+        
+        start_dt_local = edmonton_tz.localize(datetime.strptime(shift['start']['dateTime'], "%Y-%m-%dT%H:%M:%S"))
+        end_dt_local = edmonton_tz.localize(datetime.strptime(shift['end']['dateTime'], "%Y-%m-%dT%H:%M:%S"))
+        
+        # Convert directly to UTC to bypass Google Calendar's timezone parser entirely
+        event.add('dtstart', start_dt_local.astimezone(timezone.utc))
+        event.add('dtend', end_dt_local.astimezone(timezone.utc))
         event.add('dtstamp', datetime.now(timezone.utc))
         cal.add_component(event)
 
-    return cal.to_ical()
+    ics_bytes = cal.to_ical()
+    
+    # Enforce strict CRLF (\r\n) line endings across the entire file for Google Calendar compliance
+    ics_string = ics_bytes.decode('utf-8')
+    ics_string = ics_string.replace('\r\n', '\n').replace('\r', '\n').replace('\n', '\r\n')
+    
+    return ics_string.encode('utf-8')
 
 
 def get_token_from_header():
