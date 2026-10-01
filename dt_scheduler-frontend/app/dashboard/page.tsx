@@ -113,9 +113,7 @@ export default function Dashboard() {
             }
             // Save the new token and instantly trigger a force sync!
             localStorage.setItem("google_access_token", tokenResponse.access_token);
-            if (activeQuery) {
-               executeSearch(activeQuery, true); // Re-run the search with the new token
-            }
+            executeSearch(activeQuery, true); // Re-run the search with the new token
           },
         });
         (window as any).googleTokenClient = client;
@@ -148,6 +146,19 @@ export default function Dashboard() {
 
       const response = await fetch(`/api/schedule?name=MASTER`, { headers });
       const data = await response.json();
+      
+      // --- TOKEN LOGIC ENGINE ---
+      if (data.sync_status === "TOKEN_REQUIRED" || data.sync_status === "TOKEN_EXPIRED") {
+        const client = (window as any).googleTokenClient;
+        const currentRole = localStorage.getItem("nexus_role") || '';
+        if (client && STAFF_ROLES.includes(currentRole)) {
+           setAuthError("Schedule needs updating! Please link your Google account to sync the latest version from Jacky.");
+           client.requestAccessToken(); // Pops open the Google Window!
+        }
+      } else if (data.sync_status === "EMAIL_NOT_FOUND") {
+        setError("Your Google login has expired, please log in again.");
+      }
+
       if (response.ok) {
         setMasterShifts(data.shifts || []);
         if (data.metadata) setMetadata(data.metadata);
@@ -270,11 +281,13 @@ export default function Dashboard() {
 
   const executeSearch = async (nameToSearch: string, forceSync = false) => {
     const query = nameToSearch.trim();
-    if (!query) return;
+    if (!query && !forceSync) return;
     if (query === activeQuery && !forceSync) return;
     
-    setActiveQuery(query);
-    localStorage.setItem("nexus_default_search_name", query);
+    if (query) {
+      setActiveQuery(query);
+      localStorage.setItem("nexus_default_search_name", query);
+    }
     setError(null);
     setAuthError(null);
     
@@ -286,7 +299,8 @@ export default function Dashboard() {
       const headers: HeadersInit = {};
       if (token) headers['Authorization'] = `Bearer ${token}`;
 
-      const response = await fetch(`/api/schedule?name=${encodeURIComponent(query)}&force_sync=${forceSync}`, {
+      const apiName = query || "MASTER";
+      const response = await fetch(`/api/schedule?name=${encodeURIComponent(apiName)}&force_sync=${forceSync}`, {
         headers
       });
       const data = await response.json();
@@ -306,10 +320,12 @@ export default function Dashboard() {
         setError("Your Google login has expired, please log in again.");
       }
 
-      setShifts(data.shifts || []);
+      if (query) {
+        setShifts(data.shifts || []);
+      }
       setMetadata(data.metadata || null);
 
-      if (data.shifts && data.shifts.length === 0 && !data.error) {
+      if (query && data.shifts && data.shifts.length === 0 && !data.error) {
         setError(`No shifts found for ${query} this period.`);
       }
 
@@ -662,7 +678,7 @@ export default function Dashboard() {
 
                   <button 
                     onClick={() => executeSearch(activeQuery, true)}
-                    disabled={isSyncing || isLoading || !activeQuery}
+                    disabled={isSyncing || isLoading}
                     className="w-full h-[40px] bg-white border-2 border-gray-200 text-gray-500 font-semibold rounded-full hover:bg-gray-50 hover:border-gray-300 transition-colors text-[13px] flex items-center justify-center gap-1.5 disabled:opacity-50 focus:outline-none"
                   >
                     {isSyncing ? (
